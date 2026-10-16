@@ -1,5 +1,7 @@
 # FirstTask
 
+[![Verify FirstTask](https://github.com/sasivarnan/firsttask-falkordb/actions/workflows/verify.yml/badge.svg)](https://github.com/sasivarnan/firsttask-falkordb/actions/workflows/verify.yml)
+
 A new employee portal that finds outdated guidance before a first contribution.
 
 **Status:** working local graph workflow. OpenAI live function calling and layout selection passed. Public deployment still needs hosting configuration. Do not submit this as a completed hosted agent until those checks pass.

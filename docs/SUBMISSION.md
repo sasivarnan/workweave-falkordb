@@ -10,7 +10,7 @@ The demo includes an employee home, a live graph walkthrough, query evidence and
 
 Data: synthetic. AI assistance: Codex helped implement, test and document the project under participant direction. Participant technical review is pending.
 
-Public repository: PENDING VERIFICATION
+Public repository: https://github.com/sasivarnan/firsttask-falkordb (published and verified)
 Live demo: PENDING
 Demo video: PENDING
 Blog: local draft; not published

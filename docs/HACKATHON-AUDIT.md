@@ -25,7 +25,7 @@ This is an evidence audit, not a prediction of winning. No numerical judging wei
 | 7 Deadline | Submit before the stated cutoff. |
 | 8 Event work | First commit: October 16; participant must confirm actual start. |
 | 9 Reuse | shadcn and dependencies attributed; original implementation in Git. |
-| 10 Deliverables | README, model and queries ready; public repository, video and hosting need verification. |
+| 10 Deliverables | README, model and queries ready; public repository verified; video and hosting pending. |
 | 11 AI disclosure | Explicit in README and blog. |
 | 12 Understanding | Participant review guide prepared; human verification pending. |
 | 13 Contribution | User chose scope and design; technical understanding must be demonstrated. |
@@ -79,7 +79,7 @@ A judge should see the benefit within 15 seconds: an outdated starter guide and 
 ## Remaining release gates
 
 1. Confirm registration, actual development start and participant understanding.
-2. Verify public GitHub repository and licence.
+2. Public repository and MIT licence verified: https://github.com/sasivarnan/firsttask-falkordb.
 3. Select hosting, deploy with HTTPS, verify live agent and isolated workspaces.
 4. Record the final working demo and put its public URL in the submission.
 5. Review and publish the blog if entering the side prize.
