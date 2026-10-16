@@ -64,6 +64,7 @@ class Store:
   if self.q('workspace_check','MATCH (m:Meta {id:$id}) RETURN m.id',{'id':'seed'},True):
    self.seed_assignments()
    self.seed_week()
+   self.seed_search()
    self.g.execute_command('EXPIRE',self.name,86400)
    return
   for label,id,title,body in NODES:
@@ -75,6 +76,7 @@ class Store:
    self.q('create_index',f'CREATE INDEX FOR (n:{label}) ON (n.id)',write=True)
   self.seed_assignments()
   self.seed_week()
+  self.seed_search()
   self.q('seed_complete','CREATE (:Meta {id:$id})',{'id':'seed'},True)
   self.g.execute_command('EXPIRE',self.name,86400)
   self.trace=[]
@@ -92,6 +94,14 @@ class Store:
   for id,day,title,body,target in steps:
    self.q('seed_week_step','MATCH (e:Employee {id:"maya"}),(target {id:$target}) MERGE (w:WeekStep {id:$id}) SET w.day=$day,w.title=$title,w.body=$body MERGE (e)-[:HAS_WEEK_STEP]->(w) MERGE (w)-[:OPENS]->(target)',{'id':id,'day':day,'title':title,'body':body,'target':target},True)
   self.q('week_ready','CREATE (:Meta {id:"week-v1"})',write=True)
+ def seed_search(self):
+  if self.q('search_version','MATCH (:Meta {id:"search-v1"}) RETURN true'):return
+  self.q('create_document_search','CALL db.idx.fulltext.createNodeIndex("Document","title","body")',write=True)
+  self.q('search_ready','CREATE (:Meta {id:"search-v1"})',write=True)
+ def search(self,text):
+  terms=re.findall(r'[a-zA-Z0-9]+',str(text)[:200])[:12]
+  if not terms:raise ValueError('Enter a document search term')
+  return self.q('search_company_documents','CALL db.idx.fulltext.queryNodes("Document",$query) YIELD node,score RETURN node.id,node.title,node.body,score ORDER BY score DESC LIMIT 10',{'query':'|'.join(terms)})
  def context(self):
   task=self.q('get_assignment_context','MATCH (e:Employee {id:$employee})-[:ASSIGNED_TO]->(a:Assignment {id:$assignment})-[:TOUCHES]->(s:Service) RETURN a.title,a.body,s.title,s.id',{'employee':'maya','assignment':self.assignment})
   if not task:raise ValueError('This assignment is not assigned to the current employee')

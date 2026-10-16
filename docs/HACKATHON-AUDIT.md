@@ -86,3 +86,7 @@ A judge should see the benefit within 15 seconds: an outdated starter guide and 
 6. Submit Company Brain before the deadline; retain receipt.
 
 No gate is complete merely because a draft, deployment file or screenshot exists.
+
+## Implementation and verification after audit
+
+27 tests pass. Added exact-decision review gating and native document full-text search. A separate unique Compose database survived stop/start with AOF and named storage. Only that test container/network was removed; its volume was retained as firsttask-audit-a8e6605cc52b_graph-data. No existing application database was restarted. The query catalogue is generated from current code, not copied from examples.

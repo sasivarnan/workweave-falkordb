@@ -20,7 +20,7 @@ The model calls a fixed onboarding-context tool. It then selects the order of va
 
 ## The parts we tested
 
-The local test suite has 23 passing checks. It covers persistent state, workspace isolation, outdated guidance, missing ownership, conflicting decisions, reset, and model contract failures. Model responses in the contract tests are mocked.
+The local test suite has 27 passing checks. It covers persistent state, workspace isolation, outdated guidance, missing ownership, conflicting decisions, reset, and model contract failures. Model responses in the contract tests are mocked.
 
 A separate reproducible evaluation passed eight graph cases: outdated guidance, replacement, unapproved replacement, conflicting approvals, missing source, a second assignment, missing reviewer, and stale saved plan. A simple word-overlap top-document diagnostic matched expected guidance in one case. This narrow diagnostic is not a same-model RAG benchmark. FirstTask receives curated graph relationships that the text retrieval method does not use; ingestion quality is outside this evaluation. The script and full outputs ship with the source.
 
@@ -47,3 +47,9 @@ voyagi, Agent memory that tells you when it couldn't check: https://dev.to/voyag
 ## Links to add
 
 Public repository, live demo, demo video, graph model, evaluation results, and organizer submission link.
+
+## From finding to action
+
+The prototype now stores a review request only after the employee has read current guidance, completed required training, saved non-empty working notes and has a recorded reviewer. The request links the decision identity and reviewer. No message is sent. A test found that comparing decision titles could miss a replacement with the same text; the plan check now compares source-linked decision IDs.
+
+Company knowledge uses FalkorDB full-text indexing over document titles and bodies. Search relevance helps find documents; approval and supersession relationships still determine operational guidance.

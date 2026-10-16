@@ -50,3 +50,7 @@ The production build passed after the UI reduction. Browser checks confirmed sav
 ## Reproducible eight-case evaluation
 
 Run `python scripts/evaluate.py` with local FalkorDB. Output: `evaluation-results.json` and the public UI report. The run passed 8/8 graph checks. A top-one word-overlap document retrieval diagnostic matched the expected guidance in 1/8 cases. This is not a same-model comparison or evidence of superiority over modern RAG. Both methods use the same document text; the graph method additionally receives curated relations and approval flags. Fixtures and expected answers are builder-authored. Missing-source and conflicting-approval cases require abstention. The missing-owner and stale-plan cases also check those behaviours. No model calls are made.
+
+## Final resource-audit verification
+
+27 tests pass. New cases cover prerequisite-gated review requests, repeated request updates, missing-reviewer refusal, same-title replacement identity, and native full-text lookup. A separate unique Compose project retained its graph across database stop/start. This proves that tested local persistence configuration, not public deployment availability.

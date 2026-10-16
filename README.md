@@ -71,6 +71,10 @@ Render Free can sleep. Its filesystem is temporary. All onboarding state is stor
 
 Track: **Company Brain**. See [the full audit](docs/HACKATHON-AUDIT.md), [participant technical review](docs/PARTICIPANT-REVIEW.md), and [submission draft](docs/SUBMISSION.md).
 
+## Cypher catalogue
+
+[Generated query catalogue](docs/CYPHER.md). Refresh with `python scripts/export_queries.py`.
+
 ## Tests
 
 ```sh
@@ -135,3 +139,7 @@ Open `/judge` for the two-minute review path, an executable graph walkthrough, a
 ## Review requests
 
 A review request is stored in FalkorDB after current reading, required training, non-empty saved notes and a recorded reviewer are verified. It links the exact decision identity and reviewer. Decision changes invalidate the plan even when the replacement has the same title. Requests remain visible with their original evidence; no email or external notification is sent.
+
+## Company document search
+
+Knowledge search uses FalkorDB full-text indexes over Document.title and Document.body. Input is converted to bounded plain-word terms and passed as a query parameter. A search hit is not an approval signal.

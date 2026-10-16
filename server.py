@@ -38,7 +38,7 @@ class Handler(BaseHTTPRequestHandler):
  def do_POST(self):
   # All writes require the same-origin UI header. No cross-origin CORS is enabled.
   if self.headers.get('X-FirstTask')!='portal':return self.respond(403,{'error':'Use the FirstTask portal'})
-  if self.path not in ['/api/reset','/api/action','/api/context','/api/agent']:return self.respond(404,{'error':'Not found'})
+  if self.path not in ['/api/reset','/api/action','/api/context','/api/agent','/api/search']:return self.respond(404,{'error':'Not found'})
   try:
    length=int(self.headers.get('Content-Length','0'))
    if length>4096:raise ValueError('Request too large')
@@ -60,12 +60,14 @@ class Handler(BaseHTTPRequestHandler):
     s=Store(token,body.get('assignment','checkout'));s.seed();mode='Graph tools · no model call'
     if self.path=='/api/reset':s.reset()
     elif self.path=='/api/action':s.action(body.get('name'),str(body.get('note','')))
-    elif self.path not in ['/api/context','/api/agent']:return self.respond(404,{'error':'Not found'},cookie)
+    elif self.path not in ['/api/context','/api/agent','/api/search']:return self.respond(404,{'error':'Not found'},cookie)
     if self.path=='/api/agent':
      if not AGENT_SLOTS.acquire(blocking=False):return self.respond(429,{'error':'The agent is busy. Try again shortly.'},cookie)
      try:context,selection=run(s,str(body.get('prompt','')));mode='Live '+provider().title()+' tool call + model-selected layout'
      finally:AGENT_SLOTS.release()
-    else:context=s.context();selection=None
+    else:
+     context=s.context();selection=None
+     if self.path=='/api/search':context['searchResults']=s.search(body.get('query',''))
     self.respond(200,{'messages':compose(context,selection),'trace':s.trace,'mode':mode},cookie)
   except ValueError as e:self.respond(400,{'error':str(e)})
   except Exception:self.respond(503,{'error':'The database or AI provider is unavailable. No answer was substituted. Check the server configuration and connection.'})

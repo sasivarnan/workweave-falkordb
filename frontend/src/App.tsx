@@ -19,7 +19,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { Trace, TraceLine, TraceTitle, TraceDescription, TraceCollapsible, TraceCollapsibleTrigger, TraceCollapsibleContent } from '@/components/ui/trace'
 
 type Context = {
- reviewRequest:string[][]; findings:string[][]; week:[number,string,string,string,string][]; colleagues:string[][]; assignment:string; assignments:string[][]; guidanceRead:boolean; task: string[][]; people: string[][]; decisions: (string|null)[][];
+ searchResults?:[string,string,string,number][]; reviewRequest:string[][]; findings:string[][]; week:[number,string,string,string,string][]; colleagues:string[][]; assignment:string; assignments:string[][]; guidanceRead:boolean; task: string[][]; people: string[][]; decisions: (string|null)[][];
  conflicts: [string,string,string,string,string,string[]][];
  training: [string,string,boolean][]; plan: string[][]; paths: string[][][];
  sources: string[][]; current: string|null; needsReview: boolean; ambiguous: boolean;
@@ -47,6 +47,7 @@ export default function App(){
  const judgeMode=window.location.pathname==='/judge'
  const [assignment,setAssignment]=useState(()=>judgeMode?'checkout':localStorage.getItem('firsttask-assignment')||'checkout')
  const [result,setResult]=useState<Result|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false)
+ const [searchQuery,setSearchQuery]=useState('')
  const [evaluation,setEvaluation]=useState<Evaluation|null>(null)
  const [evaluationError,setEvaluationError]=useState(false)
  const [tab,setTab]=useState(judgeMode?'proof':'home'),[prompt,setPrompt]=useState(''),[note,setNote]=useState('')
@@ -89,7 +90,7 @@ export default function App(){
  useEffect(()=>{void request('/api/context');return ()=>{playRef.current++;activeTransition.current?.skipTransition()}},[])
  useEffect(()=>{if(tab==='sources'&&openSources[0])document.getElementById('source-'+openSources[0])?.scrollIntoView({behavior:'instant',block:'center'})},[tab,openSources])
  function stop(){playRef.current++;setPlaying(false)}
- function showSource(id:string){stop();transition(()=>{setOpenSources([id]);setTab('sources')})}
+ function showSource(id:string){stop();transition(()=>{setOpenSources([id]);setTab('sources');setResult(previous=>{if(!previous)return previous;const next=structuredClone(previous);const data=next.messages[2].updateDataModel?.value.context;if(data)delete data.searchResults;return next})})}
  async function act(name:string){stop();await request('/api/action',{name,note})}
  const steps=[
   {label:'Read your assignment and connected evidence',path:'/api/context',body:{}},
@@ -171,7 +172,7 @@ export default function App(){
      </div>}
 
     </TabsContent>
-    <TabsContent value="sources" className="space-y-6"><h1 className="font-heading text-3xl font-semibold tracking-tight">Knowledge</h1><p className="text-sm text-muted-foreground">Company documents and the decisions behind your work.</p><Accordion value={openSources} onValueChange={v=>setOpenSources(v.map(String))} multiple>{context?.sources.map(r=><AccordionItem id={'source-'+r[0]} key={r[0]} value={r[0]}><AccordionTrigger>{r[1]}</AccordionTrigger><AccordionContent><p>{r[2]}</p>{context.decisions.some(d=>d[2]===r[0])&&<Button variant="outline" disabled={busy||context.ambiguous||context.guidanceRead} onClick={()=>void act('review')}>{context.guidanceRead?'Marked as read':'Mark current guidance as read'}</Button>}</AccordionContent></AccordionItem>)}</Accordion><Button variant="ghost" size="sm" onClick={()=>navigate('evidence')}>Technical inspector</Button></TabsContent>
+    <TabsContent value="sources" className="space-y-6"><h1 className="font-heading text-3xl font-semibold tracking-tight">Knowledge</h1><p className="text-sm text-muted-foreground">Company documents and the decisions behind your work.</p><form className="flex gap-2" onSubmit={e=>{e.preventDefault();void request('/api/search',{query:searchQuery})}}><Label htmlFor="document-search" className="sr-only">Search company documents</Label><Input id="document-search" value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} placeholder="Search company documents…" maxLength={200} required/><Button type="submit" disabled={busy}>Search</Button>{context?.searchResults&&<Button variant="outline" disabled={busy} onClick={()=>{setSearchQuery('');void request('/api/context')}}>Clear</Button>}</form>{context?.searchResults&&<p role="status" className="text-xs text-muted-foreground">{context.searchResults.length} matching documents. Search relevance does not establish approval.</p>}<Accordion value={openSources} onValueChange={v=>setOpenSources(v.map(String))} multiple>{(context?.searchResults||context?.sources)?.map(r=><AccordionItem id={'source-'+r[0]} key={r[0]} value={r[0]}><AccordionTrigger>{r[1]}</AccordionTrigger><AccordionContent><p>{r[2]}</p>{context.decisions.some(d=>d[2]===r[0])&&<Button variant="outline" disabled={busy||context.ambiguous||context.guidanceRead} onClick={()=>void act('review')}>{context.guidanceRead?'Marked as read':'Mark current guidance as read'}</Button>}</AccordionContent></AccordionItem>)}</Accordion><Button variant="ghost" size="sm" onClick={()=>navigate('evidence')}>Technical inspector</Button></TabsContent>
     <TabsContent value="people" className="space-y-6"><h1 className="font-heading text-3xl font-semibold tracking-tight">People</h1><p className="text-sm text-muted-foreground">People who can help with your current assignment.</p><Card><CardContent className="space-y-5 pt-6">{context?.people.map(r=><div key={r[0]} className="flex items-center gap-3"><Avatar><AvatarFallback>{r[1].split(' ').map(n=>n[0]).join('')}</AvatarFallback></Avatar><div><p className="font-medium">{r[1]}</p><p className="text-sm text-muted-foreground">{r[3]==='REVIEWER_FOR'?'Current reviewer':'Approved alternate'}</p><p className="text-xs text-muted-foreground">{r[2]}</p></div></div>)}{context&&!context.people.length&&<p>Ask Payments to assign a reviewer.</p>}</CardContent></Card></TabsContent>
     <TabsContent value="evidence" className="space-y-5 pt-5"><Button variant="ghost" onClick={()=>navigate('sources')}>Back to company knowledge</Button><p className="text-sm text-muted-foreground">Completed graph operations for the latest successful request. These results are not streamed live.</p>
      {busy&&<Trace><TraceLine status="running"><TraceTitle>Processing request</TraceTitle><TraceDescription>Waiting for completed results</TraceDescription></TraceLine></Trace>}

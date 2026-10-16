@@ -69,4 +69,8 @@ class GraphTests(unittest.TestCase):
   with self.assertRaises(ValueError):self.s.action('request-review')
  def test_21_same_title_new_identity_requires_review(self):
   self.s.action('accept','Initial plan');self.s.action('replace');self.s.q('fixture','MATCH (d:Decision {id:"provider-c"}) SET d.title="Use Provider B"',write=True);self.assertTrue(self.s.context()['needsReview'])
+ def test_22_fulltext_search(self):
+  rows=self.s.search('refund sandbox');self.assertTrue(any(r[0]=='refund-source' for r in rows));self.assertTrue(all(len(r)==4 for r in rows))
+  self.s.seed();self.assertTrue(self.s.search('checkout'))
+  with self.assertRaises(ValueError):self.s.search('***')
 if __name__=='__main__':unittest.main(verbosity=2)
