@@ -45,4 +45,8 @@ class GraphTests(unittest.TestCase):
   self.assertEqual(self.s.context()['plan'][0][2],'Checkout note');self.assertEqual(other.context()['plan'][0][2],'Refund note')
  def test_15_unknown_assignment(self):
   with self.assertRaises(ValueError):Store(self.s.name.removeprefix('firsttask_'),'unknown').context()
+ def test_16_read_guidance_changes(self):
+  self.s.action('review');self.assertTrue(self.s.context()['guidanceRead'])
+  other=Store(self.s.name.removeprefix('firsttask_'),'refunds');self.assertFalse(other.context()['guidanceRead'])
+  self.s.action('replace');self.assertFalse(self.s.context()['guidanceRead'])
 if __name__=='__main__':unittest.main(verbosity=2)

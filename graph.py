@@ -103,7 +103,8 @@ class Store:
   execution_plan=str(self.g.explain(lookup,{'id':self.assignment}))
   self.trace.append({'tool':'explain_assignment_lookup','query':lookup,'arguments':{'id':self.assignment},'rows':0,'ms':round((time.monotonic()-plan_start)*1000,2),'executionPlan':execution_plan})
   current=decisions[0][1] if len(decisions)==1 else None
-  return {'assignment':self.assignment,'assignments':assignments,'task':task,'people':people,'decisions':decisions,'conflicts':conflicts,'training':training,'plan':plan,'paths':path,'sources':sources,'current':current,'needsReview':bool(plan and plan[0][1]!=current),'ambiguous':len(decisions)!=1 or not decisions[0][2],'direct':direct,'connected':connected}
+  read=self.q('get_read_guidance','MATCH (:Employee {id:$employee})-[:READ_GUIDANCE]->(:Decision {id:$decision}) RETURN true',{'employee':'maya','decision':decisions[0][0] if len(decisions)==1 else ''})
+  return {'guidanceRead':bool(read),'assignment':self.assignment,'assignments':assignments,'task':task,'people':people,'decisions':decisions,'conflicts':conflicts,'training':training,'plan':plan,'paths':path,'sources':sources,'current':current,'needsReview':bool(plan and plan[0][1]!=current),'ambiguous':len(decisions)!=1 or not decisions[0][2],'direct':direct,'connected':connected}
  def action(self,name,note=''):
   if name in ('replace','remove-owner') and self.assignment!='checkout':raise ValueError('This sample change is available only for the checkout assignment')
   if name=='replace':
@@ -113,6 +114,10 @@ class Store:
   elif name=='complete':
    self.context()
    self.q('complete_learning_step','MATCH (e:Employee {id:$employee})-[:ASSIGNED_TO]->(a:Assignment {id:$assignment})-[:REQUIRES]->(t:Training) MERGE (e)-[:COMPLETED]->(t)',{'employee':'maya','assignment':self.assignment},True)
+  elif name=='review':
+   c=self.context()
+   if c['ambiguous']:raise ValueError('Resolve current guidance before marking it as read')
+   self.q('mark_guidance_read','MATCH (e:Employee {id:$employee}),(d:Decision {id:$decision}) MERGE (e)-[:READ_GUIDANCE]->(d)',{'employee':'maya','decision':c['decisions'][0][0]},True)
   elif name=='accept':
    c=self.context()
    if c['ambiguous']:raise ValueError('Resolve current guidance before accepting a plan')
