@@ -1,0 +1,38 @@
+import sys,secrets,unittest
+from pathlib import Path
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+from graph import Store
+from ui import compose
+class GraphTests(unittest.TestCase):
+ def setUp(self):
+  self.s=Store(secrets.token_hex(16));self.s.seed()
+ def tearDown(self):self.s.g.delete()
+ def test_01_guidance(self):
+  c=self.s.context();self.assertEqual(c['current'],'Use Provider B');self.assertEqual(c['conflicts'][0][0],'guide');self.assertEqual(len(c['conflicts'][0][5]),5)
+ def test_02_native_path(self):self.assertEqual(self.s.context()['paths'][0][0],['Maya Chen','Ship your first checkout change','Checkout service'])
+ def test_03_replace_review(self):
+  self.s.action('accept','Mentor review');self.s.action('replace');c=self.s.context();self.assertEqual(c['current'],'Use Provider C');self.assertTrue(c['needsReview']);self.assertEqual(c['plan'][0][1],'Use Provider B')
+ def test_04_missing_owner(self):
+  self.s.action('remove-owner');c=self.s.context();self.assertEqual(c['people'],[]);self.assertIn('QuestionForm',[x['component'] for x in compose(c)[1]['updateComponents']['components']])
+ def test_05_completed_training(self):
+  self.s.action('complete');self.assertTrue(self.s.context()['training'][0][2])
+ def test_06_new_session(self):
+  self.s.action('accept','Saved note');self.s.action('complete');other=Store(self.s.name.removeprefix('firsttask_'));c=other.context();self.assertEqual(c['plan'][0][2],'Saved note');self.assertTrue(c['training'][0][2])
+ def test_07_isolation(self):
+  other=Store(secrets.token_hex(16));other.seed()
+  try:self.s.action('complete');self.assertFalse(other.context()['training'][0][2])
+  finally:other.g.delete()
+ def test_08_conflicting_current_decisions(self):
+  self.s.q('test_conflict','CREATE (d:Decision {id:"unresolved",title:"Other provider",approved:true}) WITH d MATCH (s:Service {id:"checkout-service"}) CREATE (d)-[:APPLIES_TO]->(s)',write=True)
+  self.assertTrue(self.s.context()['ambiguous'])
+  with self.assertRaises(ValueError):self.s.action('accept')
+ def test_09_idempotent_seed(self):
+  self.s.seed();self.assertEqual(len(self.s.context()['decisions']),1)
+ def test_10_invalid_layout(self):
+  with self.assertRaises(ValueError):compose(self.s.context(),['Script'])
+ def test_11_invalid_actions(self):
+  with self.assertRaises(ValueError):self.s.action('delete-all')
+  with self.assertRaises(ValueError):Store('../../invalid')
+ def test_12_reset(self):
+  self.s.action('replace');self.s.action('complete');self.s.reset();c=self.s.context();self.assertEqual(c['current'],'Use Provider B');self.assertFalse(c['training'][0][2])
+if __name__=='__main__':unittest.main(verbosity=2)
