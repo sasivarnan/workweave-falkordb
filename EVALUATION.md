@@ -17,7 +17,7 @@ The model responses in these checks are mocked. No live model quality, latency, 
 - Live Gemini verification is optional; OpenAI is now the tested provider.
 - Official A2UI schema conformance beyond the custom supported subset.
 - Public deployment, secure database connection, and persistence after restarts.
-- Same-model document-search baseline and the planned eight-case comparison.
+- Same-model document-search baseline. The separate eight-case graph diagnostic is complete; see below.
 - Real-user observation and feedback.
 - Final demo video and blog measurements.
 
@@ -46,3 +46,7 @@ The production build passed after the UI reduction. Browser checks confirmed sav
 22 automated checks passed after adding the employee home. The new graph check verifies five ordered week steps, reviewers across both assignments, idempotent migration, retained notes, and reviewer removal. Frontend production build passed. Browser checks verified Home, a first-day document link, and navigation to checkout with the correct guidance and reviewer.
 
 23 checks passed after adding cross-assignment home findings. The new test verifies that a refund context still surfaces the affected checkout task, follows the replacement decision, and hides unapproved decisions. Production build passed. Browser checks verified the affected-task action and approved-source document.
+
+## Reproducible eight-case evaluation
+
+Run `python scripts/evaluate.py` with local FalkorDB. Output: `evaluation-results.json` and the public UI report. The run passed 8/8 graph checks. A top-one word-overlap document retrieval diagnostic matched the expected guidance in 1/8 cases. This is not a same-model comparison or evidence of superiority over modern RAG. Both methods use the same document text; the graph method additionally receives curated relations and approval flags. Fixtures and expected answers are builder-authored. Missing-source and conflicting-approval cases require abstention. The missing-owner and stale-plan cases also check those behaviours. No model calls are made.

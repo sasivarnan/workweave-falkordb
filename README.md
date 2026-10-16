@@ -127,3 +127,7 @@ Home leads with graph-backed supersession findings across all assignments for th
 ### Navigation motion
 
 Page, assignment, source-document, inspector, and walkthrough navigation use the native View Transition API with synchronous React commits. Only the main work area animates. Assignment data loads before the view changes. Rapid navigation skips the previous transition, and a pending task request does not redirect a later page choice. Unsupported browsers and reduced-motion preferences use instant updates. No UI library or custom component was added.
+
+## Judge review
+
+Open `/judge` for the two-minute review path, an executable graph walkthrough, and eight reproducible synthetic evidence checks. Run `python scripts/evaluate.py` before rebuilding to refresh the saved report. The walkthrough saves a plan before replacement so the stale-plan warning is visible. See DEMO-SCRIPT.md for the recording sequence and EVALUATION.md for method limits.

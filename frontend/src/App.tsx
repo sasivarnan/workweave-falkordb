@@ -93,7 +93,9 @@ export default function App(){
  async function act(name:string){stop();await request('/api/action',{name,note})}
  const steps=[
   {label:'Read your assignment and connected evidence',path:'/api/context',body:{}},
-  {label:'Replace the decision and see what changes',path:'/api/action',body:{name:'replace'}},
+  {label:'Save a plan based on the current decision',path:'/api/action',body:{name:'accept',note:'Check pending and failed status states with the approved provider.'}},
+  {label:'Replace the decision: the saved plan now needs review',path:'/api/action',body:{name:'replace'}},
+  {label:'Acknowledge the new approved guidance',path:'/api/action',body:{name:'review'}},
   {label:'Accept and save the updated plan',path:'/api/action',body:{name:'accept',note:'Read the approved provider decision before starting.'}},
   {label:'Complete the required training',path:'/api/action',body:{name:'complete'}},
   {label:'Start a new session and retrieve progress',path:'/api/context',body:{}},
