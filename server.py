@@ -29,8 +29,8 @@ class Handler(BaseHTTPRequestHandler):
     return self.respond(200,{'status':'ok','database':'reachable','agentConfigured':bool(os.getenv('OPENAI_API_KEY') if provider()=='openai' else os.getenv('GEMINI_API_KEY'))})
    except Exception:return self.respond(503,{'status':'unavailable','database':'unreachable'})
   urlpath=urlsplit(self.path).path
-  if urlpath!='/' and not urlpath.startswith('/assets/') and urlpath!='/catalog.json':return self.respond(404,{'error':'Not found'})
-  path=(ROOT/('index.html' if urlpath=='/' else urlpath.lstrip('/'))).resolve()
+  if urlpath not in ['/','/judge'] and not urlpath.startswith('/assets/') and urlpath!='/catalog.json':return self.respond(404,{'error':'Not found'})
+  path=(ROOT/('index.html' if urlpath in ['/','/judge'] else urlpath.lstrip('/'))).resolve()
   if ROOT.resolve() not in path.parents or not path.is_file():return self.respond(404,{'error':'Build the frontend with npm run build --prefix frontend'})
   self.send_response(200);self.send_header('Content-Type',mimetypes.guess_type(str(path))[0] or 'application/octet-stream')
   self.send_header('Content-Security-Policy',"default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; img-src 'self' data:; font-src 'self'; frame-ancestors 'none'")
@@ -57,7 +57,7 @@ class Handler(BaseHTTPRequestHandler):
     GLOBAL.append(now)
     LIMITS[token]=recent+[now];lock=LOCKS.setdefault(token,threading.Lock())
    with lock:
-    s=Store(token);s.seed();mode='Graph tools · no model call'
+    s=Store(token,body.get('assignment','checkout'));s.seed();mode='Graph tools · no model call'
     if self.path=='/api/reset':s.reset()
     elif self.path=='/api/action':s.action(body.get('name'),str(body.get('note','')))
     elif self.path not in ['/api/context','/api/agent']:return self.respond(404,{'error':'Not found'},cookie)

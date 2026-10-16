@@ -35,4 +35,14 @@ class GraphTests(unittest.TestCase):
   with self.assertRaises(ValueError):Store('../../invalid')
  def test_12_reset(self):
   self.s.action('replace');self.s.action('complete');self.s.reset();c=self.s.context();self.assertEqual(c['current'],'Use Provider B');self.assertFalse(c['training'][0][2])
+ def test_13_assignment_scope(self):
+  other=Store(self.s.name.removeprefix('firsttask_'),'refunds')
+  c=other.context();self.assertEqual(c['current'],'Use sandbox transactions only');self.assertEqual(c['people'][0][1],'Noah Williams');self.assertEqual(c['conflicts'],[])
+  other.action('complete');self.assertTrue(other.context()['training'][0][2]);self.assertFalse(self.s.context()['training'][0][2])
+ def test_14_separate_assignment_plans(self):
+  other=Store(self.s.name.removeprefix('firsttask_'),'refunds')
+  self.s.action('accept','Checkout note');other.action('accept','Refund note')
+  self.assertEqual(self.s.context()['plan'][0][2],'Checkout note');self.assertEqual(other.context()['plan'][0][2],'Refund note')
+ def test_15_unknown_assignment(self):
+  with self.assertRaises(ValueError):Store(self.s.name.removeprefix('firsttask_'),'unknown').context()
 if __name__=='__main__':unittest.main(verbosity=2)
