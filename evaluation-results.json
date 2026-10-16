@@ -18,7 +18,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 18.29,
+      "ms": 18.48,
       "detail": "Current assignment guidance resolved."
     },
     {
@@ -30,7 +30,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 18.28,
+      "ms": 18.86,
       "detail": "Current assignment guidance resolved."
     },
     {
@@ -42,7 +42,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 17.62,
+      "ms": 17.61,
       "detail": "Current assignment guidance resolved."
     },
     {
@@ -54,7 +54,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 18.01,
+      "ms": 18.02,
       "detail": "Abstained because evidence was incomplete or conflicting."
     },
     {
@@ -66,7 +66,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 18.0,
+      "ms": 15.34,
       "detail": "Abstained because evidence was incomplete or conflicting."
     },
     {
@@ -78,7 +78,7 @@
       "lexicalSource": "Refund test policy",
       "passed": true,
       "lexicalPassed": true,
-      "ms": 16.99,
+      "ms": 18.55,
       "detail": "Current assignment guidance resolved."
     },
     {
@@ -90,7 +90,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 23.06,
+      "ms": 17.2,
       "detail": "Reviewer absence detected; no substitute inferred."
     },
     {
@@ -102,8 +102,464 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 19.0,
+      "ms": 15.26,
       "detail": "Saved plan flagged for review."
     }
-  ]
+  ],
+  "modelDiagnostic": {
+    "model": "gpt-4.1-mini",
+    "method": "Eight builder-authored synthetic cases. Same model, same output schema, same question and full source corpus for each pair. Graph arm additionally receives curated current-decision, source-link, ambiguity, reviewer and stale-plan fields. No retrieval or tool-selection comparison; not vector RAG. One attempt per arm; 16 calls total. Citation existence does not prove citation support.",
+    "results": [
+      {
+        "case": "Outdated starter guide",
+        "expected": "Use Provider B",
+        "documents": {
+          "answer": {
+            "guidance": "Use Provider B",
+            "sources": [
+              "adr"
+            ]
+          },
+          "correct": true,
+          "citationsExist": true,
+          "ms": 1845.98,
+          "usage": {
+            "prompt_tokens": 525,
+            "completion_tokens": 13,
+            "total_tokens": 538,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "audio_tokens": 0
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 0,
+              "audio_tokens": 0,
+              "accepted_prediction_tokens": 0,
+              "rejected_prediction_tokens": 0
+            }
+          }
+        },
+        "graph": {
+          "answer": {
+            "guidance": "Use Provider B",
+            "sources": [
+              "ADR-042: Provider migration"
+            ]
+          },
+          "correct": true,
+          "citationsExist": false,
+          "ms": 1674.33,
+          "usage": {
+            "prompt_tokens": 645,
+            "completion_tokens": 18,
+            "total_tokens": 663,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "audio_tokens": 0
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 0,
+              "audio_tokens": 0,
+              "accepted_prediction_tokens": 0,
+              "rejected_prediction_tokens": 0
+            }
+          }
+        }
+      },
+      {
+        "case": "Decision replaced after onboarding",
+        "expected": "Use Provider C",
+        "documents": {
+          "answer": {
+            "guidance": "Use Provider B",
+            "sources": [
+              "adr"
+            ]
+          },
+          "correct": false,
+          "citationsExist": true,
+          "ms": 1105.46,
+          "usage": {
+            "prompt_tokens": 549,
+            "completion_tokens": 13,
+            "total_tokens": 562,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "audio_tokens": 0
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 0,
+              "audio_tokens": 0,
+              "accepted_prediction_tokens": 0,
+              "rejected_prediction_tokens": 0
+            }
+          }
+        },
+        "graph": {
+          "answer": {
+            "guidance": "Use Provider C",
+            "sources": [
+              "adr-c"
+            ]
+          },
+          "correct": true,
+          "citationsExist": true,
+          "ms": 1329.83,
+          "usage": {
+            "prompt_tokens": 654,
+            "completion_tokens": 14,
+            "total_tokens": 668,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "audio_tokens": 0
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 0,
+              "audio_tokens": 0,
+              "accepted_prediction_tokens": 0,
+              "rejected_prediction_tokens": 0
+            }
+          }
+        }
+      },
+      {
+        "case": "Unapproved replacement",
+        "expected": "Use Provider B",
+        "documents": {
+          "answer": {
+            "guidance": "Use Provider B",
+            "sources": [
+              "adr"
+            ]
+          },
+          "correct": true,
+          "citationsExist": true,
+          "ms": 1250.16,
+          "usage": {
+            "prompt_tokens": 549,
+            "completion_tokens": 13,
+            "total_tokens": 562,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "audio_tokens": 0
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 0,
+              "audio_tokens": 0,
+              "accepted_prediction_tokens": 0,
+              "rejected_prediction_tokens": 0
+            }
+          }
+        },
+        "graph": {
+          "answer": {
+            "guidance": "Use Provider B",
+            "sources": [
+              "ADR-042: Provider migration"
+            ]
+          },
+          "correct": true,
+          "citationsExist": false,
+          "ms": 750.99,
+          "usage": {
+            "prompt_tokens": 669,
+            "completion_tokens": 18,
+            "total_tokens": 687,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "audio_tokens": 0
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 0,
+              "audio_tokens": 0,
+              "accepted_prediction_tokens": 0,
+              "rejected_prediction_tokens": 0
+            }
+          }
+        }
+      },
+      {
+        "case": "Two approved current decisions",
+        "expected": null,
+        "documents": {
+          "answer": {
+            "guidance": "Use Provider B",
+            "sources": [
+              "adr"
+            ]
+          },
+          "correct": false,
+          "citationsExist": true,
+          "ms": 1010.62,
+          "usage": {
+            "prompt_tokens": 525,
+            "completion_tokens": 13,
+            "total_tokens": 538,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "audio_tokens": 0
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 0,
+              "audio_tokens": 0,
+              "accepted_prediction_tokens": 0,
+              "rejected_prediction_tokens": 0
+            }
+          }
+        },
+        "graph": {
+          "answer": {
+            "guidance": "Use Provider B",
+            "sources": [
+              "adr"
+            ]
+          },
+          "correct": false,
+          "citationsExist": true,
+          "ms": 1197.84,
+          "usage": {
+            "prompt_tokens": 658,
+            "completion_tokens": 13,
+            "total_tokens": 671,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "audio_tokens": 0
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 0,
+              "audio_tokens": 0,
+              "accepted_prediction_tokens": 0,
+              "rejected_prediction_tokens": 0
+            }
+          }
+        }
+      },
+      {
+        "case": "Current decision has no source",
+        "expected": null,
+        "documents": {
+          "answer": {
+            "guidance": "Use Provider B",
+            "sources": [
+              "adr"
+            ]
+          },
+          "correct": false,
+          "citationsExist": true,
+          "ms": 1265.64,
+          "usage": {
+            "prompt_tokens": 525,
+            "completion_tokens": 13,
+            "total_tokens": 538,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "audio_tokens": 0
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 0,
+              "audio_tokens": 0,
+              "accepted_prediction_tokens": 0,
+              "rejected_prediction_tokens": 0
+            }
+          }
+        },
+        "graph": {
+          "answer": {
+            "guidance": "Use Provider B",
+            "sources": [
+              "adr"
+            ]
+          },
+          "correct": false,
+          "citationsExist": true,
+          "ms": 1091.51,
+          "usage": {
+            "prompt_tokens": 611,
+            "completion_tokens": 13,
+            "total_tokens": 624,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "audio_tokens": 0
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 0,
+              "audio_tokens": 0,
+              "accepted_prediction_tokens": 0,
+              "rejected_prediction_tokens": 0
+            }
+          }
+        }
+      },
+      {
+        "case": "Separate refund assignment",
+        "expected": "Use sandbox transactions only",
+        "documents": {
+          "answer": {
+            "guidance": "Use sandbox transactions only",
+            "sources": [
+              "refund-source",
+              "testing",
+              "adr"
+            ]
+          },
+          "correct": true,
+          "citationsExist": true,
+          "ms": 935.68,
+          "usage": {
+            "prompt_tokens": 525,
+            "completion_tokens": 19,
+            "total_tokens": 544,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "audio_tokens": 0
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 0,
+              "audio_tokens": 0,
+              "accepted_prediction_tokens": 0,
+              "rejected_prediction_tokens": 0
+            }
+          }
+        },
+        "graph": {
+          "answer": {
+            "guidance": "Use sandbox transactions only",
+            "sources": [
+              "refund-source"
+            ]
+          },
+          "correct": true,
+          "citationsExist": true,
+          "ms": 849.68,
+          "usage": {
+            "prompt_tokens": 609,
+            "completion_tokens": 15,
+            "total_tokens": 624,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "audio_tokens": 0
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 0,
+              "audio_tokens": 0,
+              "accepted_prediction_tokens": 0,
+              "rejected_prediction_tokens": 0
+            }
+          }
+        }
+      },
+      {
+        "case": "Reviewer removed",
+        "expected": "Use Provider B",
+        "documents": {
+          "answer": {
+            "guidance": "Use Provider B",
+            "sources": [
+              "adr"
+            ]
+          },
+          "correct": true,
+          "citationsExist": true,
+          "ms": 802.02,
+          "usage": {
+            "prompt_tokens": 525,
+            "completion_tokens": 13,
+            "total_tokens": 538,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "audio_tokens": 0
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 0,
+              "audio_tokens": 0,
+              "accepted_prediction_tokens": 0,
+              "rejected_prediction_tokens": 0
+            }
+          }
+        },
+        "graph": {
+          "answer": {
+            "guidance": "Use Provider B",
+            "sources": [
+              "adr"
+            ]
+          },
+          "correct": true,
+          "citationsExist": true,
+          "ms": 867.22,
+          "usage": {
+            "prompt_tokens": 600,
+            "completion_tokens": 13,
+            "total_tokens": 613,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "audio_tokens": 0
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 0,
+              "audio_tokens": 0,
+              "accepted_prediction_tokens": 0,
+              "rejected_prediction_tokens": 0
+            }
+          }
+        }
+      },
+      {
+        "case": "Saved plan becomes stale",
+        "expected": "Use Provider C",
+        "documents": {
+          "answer": {
+            "guidance": "Use Provider B",
+            "sources": [
+              "adr"
+            ]
+          },
+          "correct": false,
+          "citationsExist": true,
+          "ms": 842.01,
+          "usage": {
+            "prompt_tokens": 549,
+            "completion_tokens": 13,
+            "total_tokens": 562,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "audio_tokens": 0
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 0,
+              "audio_tokens": 0,
+              "accepted_prediction_tokens": 0,
+              "rejected_prediction_tokens": 0
+            }
+          }
+        },
+        "graph": {
+          "answer": {
+            "guidance": "Use Provider C",
+            "sources": [
+              "adr-c"
+            ]
+          },
+          "correct": true,
+          "citationsExist": true,
+          "ms": 832.53,
+          "usage": {
+            "prompt_tokens": 654,
+            "completion_tokens": 14,
+            "total_tokens": 668,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "audio_tokens": 0
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 0,
+              "audio_tokens": 0,
+              "accepted_prediction_tokens": 0,
+              "rejected_prediction_tokens": 0
+            }
+          }
+        }
+      }
+    ]
+  }
 }

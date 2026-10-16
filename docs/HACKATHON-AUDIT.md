@@ -90,3 +90,5 @@ No gate is complete merely because a draft, deployment file or screenshot exists
 ## Implementation and verification after audit
 
 27 tests pass. Added exact-decision review gating and native document full-text search. A separate unique Compose database survived stop/start with AOF and named storage. Only that test container/network was removed; its volume was retained as firsttask-audit-a8e6605cc52b_graph-data. No existing application database was restarted. The query catalogue is generated from current code, not copied from examples.
+
+Paired live model diagnostic: documents 4/8 guidance correct; graph-context 6/8. Both required abstentions still failed in the model arm. Two graph-context citation lists had invalid IDs. Keep these failures visible; do not replace the published report with only successful examples. GitHub Actions run 38958268300 passed before this diagnostic-report update.
