@@ -67,6 +67,10 @@ The app implements a small custom renderer for an A2UI v0.9 subset: createSurfac
 
 Render Free can sleep. Its filesystem is temporary. All onboarding state is stored in FalkorDB. Free FalkorDB availability, secure connectivity, persistence, and quota must be verified in the provider account. This repository does not provision a public database or paid services.
 
+## Submission target
+
+Track: **Company Brain**. See [the full audit](docs/HACKATHON-AUDIT.md), [participant technical review](docs/PARTICIPANT-REVIEW.md), and [submission draft](docs/SUBMISSION.md).
+
 ## Tests
 
 ```sh
@@ -77,7 +81,7 @@ Graph tests use isolated disposable graphs and delete only their own test graphs
 
 ## Limits and release checks
 
-- One employee, assignment, and synthetic company. No production HR integration or authentication.
+- One sample employee, two assignments, and a synthetic company. No production HR integration or authentication.
 - The local access-request feature and arbitrary document upload are not implemented.
 - No email or real access grants are performed.
 - The portal is not a production HR system.
@@ -108,10 +112,6 @@ Build the frontend before starting Python. Docker builds it automatically. The l
 
 See RESOURCE-REVIEW.md for the resource audit. The execution view now includes GRAPH.EXPLAIN for the indexed assignment lookup. This is a query plan, not runtime profiling. /api/health checks database reachability.
 
-## Minimal task screen
-
-The main screen shows two cards: current guidance and next steps. People, saved progress, and relationship details are collapsed. Demo and judge controls are in the Demo tab. Evidence uses the official shadcn Trace component, with expandable queries and results. Trace rows are completed operations from the latest successful request; they are not live per-tool events. A request-level running indicator does not imply individual tools are streamed. The preset remains unchanged.
-
 ## Employee product workflow
 
 The default route opens an employee home with a graph-backed five-day suggested plan, assigned work, team reviewers, and starter documents. Schedule items open their linked assignment or source document. It does not book calendar events. Existing workspaces receive an idempotent migration that retains saved notes. The employee work view remains available from Home and My work. The official shadcn Sidebar keeps My work, Knowledge, People, and both assigned tasks visible. The selected task has one primary next action, a requirement list, editable working notes, and a separate reviewer/source panel. The primary action changes after reading and training. The model-selected A2UI order controls the action, checklist, and notes sections. Choose checkout or refund testing. Every assignment resolves its own service, approved guidance, training, reviewer, and accepted plan from FalkorDB. Reading acknowledgements are linked to the current decision. Replacing that decision makes the new guidance unread. Progress measures required reading and training only; it does not claim that code review or the assignment is complete.
@@ -131,3 +131,7 @@ Page, assignment, source-document, inspector, and walkthrough navigation use the
 ## Judge review
 
 Open `/judge` for the two-minute review path, an executable graph walkthrough, and eight reproducible synthetic evidence checks. Run `python scripts/evaluate.py` before rebuilding to refresh the saved report. The walkthrough saves a plan before replacement so the stale-plan warning is visible. See DEMO-SCRIPT.md for the recording sequence and EVALUATION.md for method limits.
+
+## Review requests
+
+A review request is stored in FalkorDB after current reading, required training, non-empty saved notes and a recorded reviewer are verified. It links the exact decision identity and reviewer. Decision changes invalidate the plan even when the replacement has the same title. Requests remain visible with their original evidence; no email or external notification is sent.

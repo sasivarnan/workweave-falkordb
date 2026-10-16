@@ -57,4 +57,16 @@ class GraphTests(unittest.TestCase):
   other=Store(self.s.name.removeprefix('firsttask_'),'refunds');rows=other.context()['findings'];self.assertEqual(rows[0][0],'checkout');self.assertEqual(rows[0][4:8],['Use Provider A','Use Provider B','adr','ADR-042: Provider migration'])
   self.s.action('replace');self.assertEqual(other.context()['findings'][0][5],'Use Provider C')
   self.s.q('unapprove','MATCH (d:Decision) SET d.approved=false',write=True);self.assertEqual(other.context()['findings'],[])
+ def test_19_review_gate_and_persistence(self):
+  with self.assertRaises(ValueError):self.s.action('request-review')
+  self.s.action('review');self.s.action('complete');self.s.action('accept','Check failed and pending states');self.s.action('request-review');self.s.action('request-review')
+  c=self.s.context();self.assertEqual(len(c['reviewRequest']),1);self.assertEqual(c['reviewRequest'][0][2],'Leo Martin');self.assertEqual(c['reviewRequest'][0][3],'provider-b')
+  self.s.action('replace')
+  with self.assertRaises(ValueError):self.s.action('request-review')
+  self.s.action('review');self.s.action('accept','Updated plan');self.s.action('request-review');self.assertEqual(self.s.context()['reviewRequest'][0][3],'provider-c')
+ def test_20_missing_reviewer_blocks_request(self):
+  self.s.action('review');self.s.action('complete');self.s.action('accept','Ready');self.s.action('remove-owner')
+  with self.assertRaises(ValueError):self.s.action('request-review')
+ def test_21_same_title_new_identity_requires_review(self):
+  self.s.action('accept','Initial plan');self.s.action('replace');self.s.q('fixture','MATCH (d:Decision {id:"provider-c"}) SET d.title="Use Provider B"',write=True);self.assertTrue(self.s.context()['needsReview'])
 if __name__=='__main__':unittest.main(verbosity=2)

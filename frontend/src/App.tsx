@@ -19,7 +19,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { Trace, TraceLine, TraceTitle, TraceDescription, TraceCollapsible, TraceCollapsibleTrigger, TraceCollapsibleContent } from '@/components/ui/trace'
 
 type Context = {
- findings:string[][]; week:[number,string,string,string,string][]; colleagues:string[][]; assignment:string; assignments:string[][]; guidanceRead:boolean; task: string[][]; people: string[][]; decisions: (string|null)[][];
+ reviewRequest:string[][]; findings:string[][]; week:[number,string,string,string,string][]; colleagues:string[][]; assignment:string; assignments:string[][]; guidanceRead:boolean; task: string[][]; people: string[][]; decisions: (string|null)[][];
  conflicts: [string,string,string,string,string,string[]][];
  training: [string,string,boolean][]; plan: string[][]; paths: string[][][];
  sources: string[][]; current: string|null; needsReview: boolean; ambiguous: boolean;
@@ -98,6 +98,7 @@ export default function App(){
   {label:'Acknowledge the new approved guidance',path:'/api/action',body:{name:'review'}},
   {label:'Accept and save the updated plan',path:'/api/action',body:{name:'accept',note:'Read the approved provider decision before starting.'}},
   {label:'Complete the required training',path:'/api/action',body:{name:'complete'}},
+  {label:'Create a review request with current evidence',path:'/api/action',body:{name:'request-review'}},
   {label:'Start a new session and retrieve progress',path:'/api/context',body:{}},
   {label:'Remove the owner and inspect the missing evidence',path:'/api/action',body:{name:'remove-owner'}},
  ]
@@ -153,7 +154,8 @@ export default function App(){
      {context?.ambiguous&&<Alert variant="destructive"><AlertTitle>Guidance needs clarification</AlertTitle><AlertDescription>Resolve approval and source evidence before accepting a plan.</AlertDescription></Alert>}
      {context&&!context.people.length&&<Alert><AlertTitle>Reviewer missing</AlertTitle><AlertDescription>Ask Payments to assign a reviewer. No owner was inferred.</AlertDescription></Alert>}
      {context?.needsReview&&<Alert variant="destructive"><AlertTitle>Your saved plan needs review</AlertTitle><AlertDescription>A decision changed. Review and accept the updated plan.</AlertDescription></Alert>}
-     {ready&&<Alert><AlertTitle>Ready for your first review</AlertTitle><AlertDescription>Your reading, training, and working notes are complete. Bring your plan to {context!.people[0][1]}. Reviewer approval is still required.</AlertDescription></Alert>}
+     {context&&context.reviewRequest.length>0&&<Alert><AlertTitle>{context!.reviewRequest[0][3]!==context!.decisions[0]?.[0]?'Review request needs updated guidance':'Review request saved'}</AlertTitle><AlertDescription>{context!.reviewRequest[0][1]} · {context!.reviewRequest[0][2]}. Saved in this sample workspace; no message was sent.</AlertDescription></Alert>}
+     {ready&&<Alert><AlertTitle>Ready for your first review</AlertTitle><AlertDescription>Your reading, training, and working notes are complete. Bring your plan to {context!.people[0][1]}. Reviewer approval is still required.<Button className="mt-3" disabled={busy} onClick={()=>void act('request-review')}>{context!.reviewRequest.length?'Update review request':'Create review request'}</Button></AlertDescription></Alert>}
      {context&&<div className="grid gap-10 xl:grid-cols-[minmax(0,1fr)_260px]">
       <section className="flex min-w-0 flex-col gap-8">
        <Card style={{order:decoded!.order.indexOf('EvidenceComparison')}} className="border-primary/15 bg-primary/[0.025] shadow-none"><CardHeader><div className="flex items-center justify-between gap-3"><p className="text-xs font-semibold uppercase tracking-widest text-primary">{context.guidanceRead?'Next step':'Start here'}</p><Badge variant="outline">{finished} / {required} complete</Badge></div><CardTitle className="pt-3 text-xl">{!context.guidanceRead?'Check the decision before you start':finished<required?'Finish the required training':'Save your working plan'}</CardTitle><CardDescription className="leading-6">{!context.guidanceRead?(context.conflicts.length?'Your starter guide refers to an old decision. Read the approved replacement before you begin.':'Read the approved guidance for this assignment.') :finished<required?'Complete the training below, then record it in your workspace.':'Keep the current guidance and your notes together for your next session.'}</CardDescription></CardHeader><CardFooter><Button disabled={busy||context.ambiguous} onClick={()=>{if(!context.guidanceRead&&context.decisions[0]?.[2])showSource(context.decisions[0][2]);else if(finished<required)document.getElementById('work-checklist')?.scrollIntoView({behavior:'smooth'});else void act('accept')}}>{!context.guidanceRead?'Read approved decision':finished<required?'View required training':context.plan.length?'Update working plan':'Save working plan'}</Button></CardFooter></Card>
