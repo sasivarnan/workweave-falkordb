@@ -1,0 +1,109 @@
+{
+  "title": "FirstTask evidence checks",
+  "dataset": "Eight authored synthetic cases. Not real employee data.",
+  "method": "Both methods receive the same document corpus. Baseline ranks documents by question-word overlap and extracts provider advice from its top result. FirstTask also uses curated assignment, approval, supersession, and source relationships. This is a narrow retrieval diagnostic, not a same-model RAG benchmark.",
+  "limitations": [
+    "Fixtures and expected answers were authored by the project builder.",
+    "Graph relationships are supplied as structured data; ingestion quality is not evaluated.",
+    "No general LLM, vector-search, or production accuracy claim.",
+    "Single local run; timings include all context queries, not model inference."
+  ],
+  "results": [
+    {
+      "case": "Outdated starter guide",
+      "question": "checkout provider integration starter guide",
+      "expected": "Use Provider B",
+      "graph": "Use Provider B",
+      "lexical": "Use Provider A",
+      "lexicalSource": "Checkout starter guide",
+      "passed": true,
+      "lexicalPassed": false,
+      "ms": 15.35,
+      "detail": "Current assignment guidance resolved."
+    },
+    {
+      "case": "Decision replaced after onboarding",
+      "question": "checkout provider integration starter guide",
+      "expected": "Use Provider C",
+      "graph": "Use Provider C",
+      "lexical": "Use Provider A",
+      "lexicalSource": "Checkout starter guide",
+      "passed": true,
+      "lexicalPassed": false,
+      "ms": 15.42,
+      "detail": "Current assignment guidance resolved."
+    },
+    {
+      "case": "Unapproved replacement",
+      "question": "checkout provider integration starter guide",
+      "expected": "Use Provider B",
+      "graph": "Use Provider B",
+      "lexical": "Use Provider A",
+      "lexicalSource": "Checkout starter guide",
+      "passed": true,
+      "lexicalPassed": false,
+      "ms": 16.53,
+      "detail": "Current assignment guidance resolved."
+    },
+    {
+      "case": "Two approved current decisions",
+      "question": "checkout provider integration starter guide",
+      "expected": null,
+      "graph": null,
+      "lexical": "Use Provider A",
+      "lexicalSource": "Checkout starter guide",
+      "passed": true,
+      "lexicalPassed": false,
+      "ms": 14.69,
+      "detail": "Abstained because evidence was incomplete or conflicting."
+    },
+    {
+      "case": "Current decision has no source",
+      "question": "checkout provider integration starter guide",
+      "expected": null,
+      "graph": null,
+      "lexical": "Use Provider A",
+      "lexicalSource": "Checkout starter guide",
+      "passed": true,
+      "lexicalPassed": false,
+      "ms": 19.07,
+      "detail": "Abstained because evidence was incomplete or conflicting."
+    },
+    {
+      "case": "Separate refund assignment",
+      "question": "refund sandbox test policy",
+      "expected": "Use sandbox transactions only",
+      "graph": "Use sandbox transactions only",
+      "lexical": "Use sandbox transactions only",
+      "lexicalSource": "Refund test policy",
+      "passed": true,
+      "lexicalPassed": true,
+      "ms": 20.42,
+      "detail": "Current assignment guidance resolved."
+    },
+    {
+      "case": "Reviewer removed",
+      "question": "checkout provider integration starter guide",
+      "expected": "Use Provider B",
+      "graph": "Use Provider B",
+      "lexical": "Use Provider A",
+      "lexicalSource": "Checkout starter guide",
+      "passed": true,
+      "lexicalPassed": false,
+      "ms": 38.61,
+      "detail": "Reviewer absence detected; no substitute inferred."
+    },
+    {
+      "case": "Saved plan becomes stale",
+      "question": "checkout provider integration starter guide",
+      "expected": "Use Provider C",
+      "graph": "Use Provider C",
+      "lexical": "Use Provider A",
+      "lexicalSource": "Checkout starter guide",
+      "passed": true,
+      "lexicalPassed": false,
+      "ms": 18.86,
+      "detail": "Saved plan flagged for review."
+    }
+  ]
+}

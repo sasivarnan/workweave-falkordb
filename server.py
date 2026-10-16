@@ -29,7 +29,7 @@ class Handler(BaseHTTPRequestHandler):
     return self.respond(200,{'status':'ok','database':'reachable','agentConfigured':bool(os.getenv('OPENAI_API_KEY') if provider()=='openai' else os.getenv('GEMINI_API_KEY'))})
    except Exception:return self.respond(503,{'status':'unavailable','database':'unreachable'})
   urlpath=urlsplit(self.path).path
-  if urlpath not in ['/','/judge'] and not urlpath.startswith('/assets/') and urlpath!='/catalog.json':return self.respond(404,{'error':'Not found'})
+  if urlpath not in ['/','/judge'] and not urlpath.startswith('/assets/') and urlpath not in ['/catalog.json','/evaluation.json']:return self.respond(404,{'error':'Not found'})
   path=(ROOT/('index.html' if urlpath in ['/','/judge'] else urlpath.lstrip('/'))).resolve()
   if ROOT.resolve() not in path.parents or not path.is_file():return self.respond(404,{'error':'Build the frontend with npm run build --prefix frontend'})
   self.send_response(200);self.send_header('Content-Type',mimetypes.guess_type(str(path))[0] or 'application/octet-stream')
