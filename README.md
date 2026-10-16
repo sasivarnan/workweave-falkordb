@@ -114,7 +114,7 @@ The main screen shows two cards: current guidance and next steps. People, saved 
 
 ## Employee product workflow
 
-The default route is the employee view: My onboarding, Company knowledge, and People. Choose checkout or refund testing. Every assignment resolves its own service, approved guidance, training, reviewer, and accepted plan from FalkorDB. Reading acknowledgements are linked to the current decision. Replacing that decision makes the new guidance unread. Progress measures required reading and training only; it does not claim that code review or the assignment is complete.
+The default route is an employee work view. The official shadcn Sidebar keeps My work, Knowledge, People, and both assigned tasks visible. The selected task has one primary next action, a requirement list, editable working notes, and a separate reviewer/source panel. The primary action changes after reading and training. The model-selected A2UI order controls the action, checklist, and notes sections. Choose checkout or refund testing. Every assignment resolves its own service, approved guidance, training, reviewer, and accepted plan from FalkorDB. Reading acknowledgements are linked to the current decision. Replacing that decision makes the new guidance unread. Progress measures required reading and training only; it does not claim that code review or the assignment is complete.
 
 Ask for help is secondary. The assistant organizes graph-backed guidance; it does not provide an unrestricted chat response. Tool names and model status are hidden from the main employee view. A technical inspector remains available through Company knowledge.
 
