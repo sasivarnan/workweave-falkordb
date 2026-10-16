@@ -48,7 +48,7 @@ graph LR
  LearningPlan -->|SUPPORTED_BY| CurrentDecision
 ```
 
-Sixteen synthetic source documents are bundled. `graph.py` contains all fixed queries. The stale-guide query follows document → old decision ← replacement decision → service ← assignment. Native `algo.SPpaths` explains the employee-to-service path. Range indexes support ID lookup. Separate FalkorDB graphs isolate visitor workspaces.
+Eighteen synthetic source documents are bundled. `graph.py` contains all fixed queries. The stale-guide query follows document → old decision ← replacement decision → service ← assignment. Native `algo.SPpaths` explains the employee-to-service path. Range indexes support ID lookup. Separate FalkorDB graphs isolate visitor workspaces.
 
 The graph-depth comparison shows direct assignment sources and sources reached through typed relationships. It is not a retrieval benchmark. The application does not infer undocumented owners, trust recency alone, or claim that missing data means no risk.
 
