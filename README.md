@@ -123,3 +123,7 @@ The judge route is /judge. It includes walkthrough controls, graph mutation cont
 ### Changes that affect your work
 
 Home leads with graph-backed supersession findings across all assignments for the current employee. Each finding links the outdated guide, current approved decision, and affected task. Findings update after decision replacement. The weekly plan uses compact rows. The review-ready state requires current unambiguous guidance, reading, completed training, saved non-empty working notes, a reviewer, and no stale plan. This state means preparation is complete; reviewer approval is still required.
+
+### Navigation motion
+
+Page, assignment, source-document, inspector, and walkthrough navigation use the native View Transition API with synchronous React commits. Only the main work area animates. Assignment data loads before the view changes. Rapid navigation skips the previous transition, and a pending task request does not redirect a later page choice. Unsupported browsers and reduced-motion preferences use instant updates. No UI library or custom component was added.

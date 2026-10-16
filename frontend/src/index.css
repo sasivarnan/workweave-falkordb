@@ -129,3 +129,16 @@
     @apply font-sans;
     }
 }
+/* Animate only the work area. The workspace navigation stays fixed. */
+.view-content { view-transition-name: work-area; }
+::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+::view-transition-group(work-area) { animation-duration: 180ms; }
+::view-transition-old(work-area) { animation: work-out 120ms ease-out both; }
+::view-transition-new(work-area) { animation: work-in 180ms ease-out both; }
+@keyframes work-out { to { opacity: 0; transform: translateY(-4px); } }
+@keyframes work-in { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
