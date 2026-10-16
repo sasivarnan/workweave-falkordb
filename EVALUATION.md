@@ -32,3 +32,7 @@ GPT-6 Luna completed the function-call and schema-constrained layout workflow ag
 The official preset decoded as base-rhea, violet, neutral, Public Sans and Geist headings. React and Vite production compilation passed. Browser testing verified the new portal and a live OpenAI request. The graph suite still has 17 passing checks after adding execution-plan evidence. Docker Compose and persistence are configured; restart persistence must be verified separately before public deployment.
 
 Browser inspection confirmed Node By Index Scan for the assignment lookup. The health endpoint reported the database reachable and the agent configured. Source navigation opened the selected original document.
+
+## Minimal layout verification
+
+The production build passed after the UI reduction. Browser checks confirmed saving a plan and opening the official Trace evidence view. No backend changes were made in this UI pass.

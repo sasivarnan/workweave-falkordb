@@ -107,3 +107,7 @@ The frontend uses the official shadcn base-rhea components and preset b3dlbUYd3w
 Build the frontend before starting Python. Docker builds it automatically. The local .env file is ignored and excluded from the build context. For both services with persistent graph storage, run docker compose up --build. The graph is private to the Compose network and uses a named /data volume with append-only persistence. The portal binds to localhost; a public host needs HTTPS ingress.
 
 See RESOURCE-REVIEW.md for the resource audit. The execution view now includes GRAPH.EXPLAIN for the indexed assignment lookup. This is a query plan, not runtime profiling. /api/health checks database reachability.
+
+## Minimal task screen
+
+The main screen shows two cards: current guidance and next steps. People, saved progress, and relationship details are collapsed. Demo and judge controls are in the Demo tab. Evidence uses the official shadcn Trace component, with expandable queries and results. Trace rows are completed operations from the latest successful request; they are not live per-tool events. A request-level running indicator does not imply individual tools are streamed. The preset remains unchanged.
