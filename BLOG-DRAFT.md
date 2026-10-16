@@ -56,6 +56,6 @@ Company knowledge uses FalkorDB full-text indexing over document titles and bodi
 
 ## The failure that made the design clearer
 
-I ran a paired diagnostic with the same GPT-6 Luna model, questions, output schema and full synthetic source corpus. Document-only inputs produced correct guidance in 4/8 cases; graph-context inputs produced 6/8. More context was not enough: the model still gave an answer in both cases that required abstention, and two otherwise correct graph-context answers supplied document titles instead of citation IDs. The run used 16 calls and 9,600 reported tokens.
+I ran a paired diagnostic with the same gpt-4.1-mini model, questions, output schema and full synthetic source corpus. Document-only inputs produced correct guidance in 4/8 cases; graph-context inputs produced 6/8. More context was not enough: the model still gave an answer in both cases that required abstention, and two otherwise correct graph-context answers supplied document titles instead of citation IDs. The run used 16 calls and 9,600 reported tokens.
 
 This is a small builder-authored diagnostic, not a vector-RAG benchmark. Its practical result is a product decision: the model may organize the interface, but graph checks determine current guidance and whether a review request can be stored. The eight deterministic graph cases passed, including those refusal cases. Raw results and the script are public.
