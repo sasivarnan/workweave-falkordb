@@ -63,6 +63,7 @@ class Store:
  def seed(self):
   if self.q('workspace_check','MATCH (m:Meta {id:$id}) RETURN m.id',{'id':'seed'},True):
    self.seed_assignments()
+   self.seed_week()
    self.g.execute_command('EXPIRE',self.name,86400)
    return
   for label,id,title,body in NODES:
@@ -73,6 +74,7 @@ class Store:
   for label in ('Employee','Assignment','Service','Decision','Document','Training','LearningPlan'):
    self.q('create_index',f'CREATE INDEX FOR (n:{label}) ON (n.id)',write=True)
   self.seed_assignments()
+  self.seed_week()
   self.q('seed_complete','CREATE (:Meta {id:$id})',{'id':'seed'},True)
   self.g.execute_command('EXPIRE',self.name,86400)
   self.trace=[]
@@ -84,6 +86,12 @@ class Store:
    self.q('seed_assignment_link',f'MATCH (a {{id:$a}}),(b {{id:$b}}) MERGE (a)-[:{r} {{weight:1}}]->(b)',{'a':a,'b':b},True)
   self.q('approve_refund_policy','MATCH (d:Decision {id:"refund-policy"}) SET d.approved=true',write=True)
   self.q('catalog_ready','CREATE (:Meta {id:"catalog-v2"})',write=True)
+ def seed_week(self):
+  if self.q('week_version','MATCH (:Meta {id:"week-v1"}) RETURN true'):return
+  steps=[('welcome',1,'Get to know Payments','Read the team welcome and charter.','welcome'),('guidance',2,'Prepare your first change','Review the approved decision and required training.','checkout'),('sandbox',3,'Explore refund testing','Read the sandbox policy before running refund tests.','refunds'),('review',4,'Prepare for a review','Write down questions for your assignment reviewer.','checkout'),('reflect',5,'Plan your next contribution','Review your notes and discuss the next step with Payments.','team-doc')]
+  for id,day,title,body,target in steps:
+   self.q('seed_week_step','MATCH (e:Employee {id:"maya"}),(target {id:$target}) MERGE (w:WeekStep {id:$id}) SET w.day=$day,w.title=$title,w.body=$body MERGE (e)-[:HAS_WEEK_STEP]->(w) MERGE (w)-[:OPENS]->(target)',{'id':id,'day':day,'title':title,'body':body,'target':target},True)
+  self.q('week_ready','CREATE (:Meta {id:"week-v1"})',write=True)
  def context(self):
   task=self.q('get_assignment_context','MATCH (e:Employee {id:$employee})-[:ASSIGNED_TO]->(a:Assignment {id:$assignment})-[:TOUCHES]->(s:Service) RETURN a.title,a.body,s.title,s.id',{'employee':'maya','assignment':self.assignment})
   if not task:raise ValueError('This assignment is not assigned to the current employee')
@@ -104,7 +112,9 @@ class Store:
   self.trace.append({'tool':'explain_assignment_lookup','query':lookup,'arguments':{'id':self.assignment},'rows':0,'ms':round((time.monotonic()-plan_start)*1000,2),'executionPlan':execution_plan})
   current=decisions[0][1] if len(decisions)==1 else None
   read=self.q('get_read_guidance','MATCH (:Employee {id:$employee})-[:READ_GUIDANCE]->(:Decision {id:$decision}) RETURN true',{'employee':'maya','decision':decisions[0][0] if len(decisions)==1 else ''})
-  return {'guidanceRead':bool(read),'assignment':self.assignment,'assignments':assignments,'task':task,'people':people,'decisions':decisions,'conflicts':conflicts,'training':training,'plan':plan,'paths':path,'sources':sources,'current':current,'needsReview':bool(plan and plan[0][1]!=current),'ambiguous':len(decisions)!=1 or not decisions[0][2],'direct':direct,'connected':connected}
+  week=self.q('get_first_week','MATCH (:Employee {id:$employee})-[:HAS_WEEK_STEP]->(w:WeekStep)-[:OPENS]->(target) RETURN w.day,w.title,w.body,target.id,labels(target)[0] ORDER BY w.day',{'employee':'maya'})
+  colleagues=self.q('get_team_reviewers','MATCH (:Employee {id:$employee})-[:ASSIGNED_TO]->(:Assignment)-[:TOUCHES]->(s:Service)<-[r:REVIEWER_FOR|BACKUP_REVIEWER_FOR]-(p:Employee) RETURN DISTINCT p.id,p.title,p.body,type(r) ORDER BY p.title',{'employee':'maya'})
+  return {'week':week,'colleagues':colleagues,'guidanceRead':bool(read),'assignment':self.assignment,'assignments':assignments,'task':task,'people':people,'decisions':decisions,'conflicts':conflicts,'training':training,'plan':plan,'paths':path,'sources':sources,'current':current,'needsReview':bool(plan and plan[0][1]!=current),'ambiguous':len(decisions)!=1 or not decisions[0][2],'direct':direct,'connected':connected}
  def action(self,name,note=''):
   if name in ('replace','remove-owner') and self.assignment!='checkout':raise ValueError('This sample change is available only for the checkout assignment')
   if name=='replace':

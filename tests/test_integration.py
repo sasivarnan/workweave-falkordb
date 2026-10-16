@@ -49,4 +49,8 @@ class GraphTests(unittest.TestCase):
   self.s.action('review');self.assertTrue(self.s.context()['guidanceRead'])
   other=Store(self.s.name.removeprefix('firsttask_'),'refunds');self.assertFalse(other.context()['guidanceRead'])
   self.s.action('replace');self.assertFalse(self.s.context()['guidanceRead'])
+ def test_17_employee_home(self):
+  c=self.s.context();self.assertEqual([r[0] for r in c['week']],[1,2,3,4,5]);self.assertEqual({r[0] for r in c['colleagues']},{'leo','imani','noah'})
+  self.s.action('accept','Retain my notes');self.s.seed();c=self.s.context();self.assertEqual(len(c['week']),5);self.assertEqual(c['plan'][0][2],'Retain my notes')
+  self.s.action('remove-owner');self.assertEqual([r[0] for r in self.s.context()['colleagues']],['noah'])
 if __name__=='__main__':unittest.main(verbosity=2)

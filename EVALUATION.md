@@ -40,3 +40,7 @@ The production build passed after the UI reduction. Browser checks confirmed sav
 ## Product workflow pass
 
 21 checks pass. New checks cover assignment-scoped guidance, reviewers, training, saved plans, unknown-assignment rejection, and reading acknowledgements. Browser checks verified refund policy navigation and progress rising to 50% after reading. The main view no longer shows judge controls or model labels.
+
+## Employee home validation
+
+22 automated checks passed after adding the employee home. The new graph check verifies five ordered week steps, reviewers across both assignments, idempotent migration, retained notes, and reviewer removal. Frontend production build passed. Browser checks verified Home, a first-day document link, and navigation to checkout with the correct guidance and reviewer.
