@@ -1,4 +1,5 @@
-import json,os,secrets,time,threading
+import json,os,secrets,time,threading,mimetypes
+from urllib.parse import urlsplit
 from http.server import ThreadingHTTPServer,BaseHTTPRequestHandler
 from http.cookies import SimpleCookie
 from pathlib import Path
@@ -7,7 +8,7 @@ from ui import compose
 from agent import run,provider
 from config import load
 load()
-ROOT=Path(__file__).parent/'static'
+ROOT=Path(__file__).parent/'frontend'/'dist'
 LOCKS={};LIMITS={};GUARD=threading.Lock()
 GLOBAL=[]; AI_CALLS=[];AGENT_SLOTS=threading.BoundedSemaphore(2)
 class Handler(BaseHTTPRequestHandler):
@@ -23,10 +24,12 @@ class Handler(BaseHTTPRequestHandler):
   return token,'firsttask='+token+'; Path=/; HttpOnly; SameSite=Strict'+('; Secure' if os.getenv('COOKIE_SECURE')=='true' else '')
  def do_GET(self):
   if self.path=='/api/health':return self.respond(200,{'status':'ok','agentConfigured':bool(os.getenv('OPENAI_API_KEY') if provider()=='openai' else os.getenv('GEMINI_API_KEY'))})
-  path=ROOT/({'/':'index.html','/app.js':'app.js','/style.css':'style.css','/catalog.json':'catalog.json'}.get(self.path,'__missing__'))
-  if not path.is_file():return self.respond(404,{'error':'Not found'})
-  self.send_response(200);self.send_header('Content-Type',{'html':'text/html','js':'text/javascript','css':'text/css','json':'application/json'}[path.suffix[1:]])
-  self.send_header('Content-Security-Policy',"default-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'")
+  urlpath=urlsplit(self.path).path
+  if urlpath!='/' and not urlpath.startswith('/assets/') and urlpath!='/catalog.json':return self.respond(404,{'error':'Not found'})
+  path=(ROOT/('index.html' if urlpath=='/' else urlpath.lstrip('/'))).resolve()
+  if ROOT.resolve() not in path.parents or not path.is_file():return self.respond(404,{'error':'Build the frontend with npm run build --prefix frontend'})
+  self.send_response(200);self.send_header('Content-Type',mimetypes.guess_type(str(path))[0] or 'application/octet-stream')
+  self.send_header('Content-Security-Policy',"default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; img-src 'self' data:; font-src 'self'; frame-ancestors 'none'")
   self.send_header('X-Content-Type-Options','nosniff');self.end_headers();self.wfile.write(path.read_bytes())
  def do_POST(self):
   # All writes require the same-origin UI header. No cross-origin CORS is enabled.

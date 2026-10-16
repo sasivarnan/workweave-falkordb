@@ -1,0 +1,214 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:firsttask:catalog:v1",
+  "catalogId": "urn:firsttask:catalog:v1",
+  "title": "FirstTask custom A2UI v0.9 subset",
+  "components": {
+    "SummaryCard": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "component": {
+          "const": "SummaryCard"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "const": "/context"
+            }
+          },
+          "required": [
+            "path"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id",
+        "component",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "EvidenceComparison": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "component": {
+          "const": "EvidenceComparison"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "const": "/context"
+            }
+          },
+          "required": [
+            "path"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id",
+        "component",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "PersonCard": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "component": {
+          "const": "PersonCard"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "const": "/context"
+            }
+          },
+          "required": [
+            "path"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id",
+        "component",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "Checklist": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "component": {
+          "const": "Checklist"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "const": "/context"
+            }
+          },
+          "required": [
+            "path"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id",
+        "component",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "ProgressCard": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "component": {
+          "const": "ProgressCard"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "const": "/context"
+            }
+          },
+          "required": [
+            "path"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id",
+        "component",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "QuestionForm": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "component": {
+          "const": "QuestionForm"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "const": "/context"
+            }
+          },
+          "required": [
+            "path"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id",
+        "component",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "Column": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "const": "root"
+        },
+        "component": {
+          "const": "Column"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "SummaryCard",
+              "EvidenceComparison",
+              "PersonCard",
+              "Checklist",
+              "ProgressCard",
+              "QuestionForm"
+            ]
+          },
+          "uniqueItems": true,
+          "maxItems": 6
+        }
+      },
+      "required": [
+        "id",
+        "component",
+        "children"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
