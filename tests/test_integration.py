@@ -53,4 +53,8 @@ class GraphTests(unittest.TestCase):
   c=self.s.context();self.assertEqual([r[0] for r in c['week']],[1,2,3,4,5]);self.assertEqual({r[0] for r in c['colleagues']},{'leo','imani','noah'})
   self.s.action('accept','Retain my notes');self.s.seed();c=self.s.context();self.assertEqual(len(c['week']),5);self.assertEqual(c['plan'][0][2],'Retain my notes')
   self.s.action('remove-owner');self.assertEqual([r[0] for r in self.s.context()['colleagues']],['noah'])
+ def test_18_home_findings_across_assignments(self):
+  other=Store(self.s.name.removeprefix('firsttask_'),'refunds');rows=other.context()['findings'];self.assertEqual(rows[0][0],'checkout');self.assertEqual(rows[0][4:8],['Use Provider A','Use Provider B','adr','ADR-042: Provider migration'])
+  self.s.action('replace');self.assertEqual(other.context()['findings'][0][5],'Use Provider C')
+  self.s.q('unapprove','MATCH (d:Decision) SET d.approved=false',write=True);self.assertEqual(other.context()['findings'],[])
 if __name__=='__main__':unittest.main(verbosity=2)

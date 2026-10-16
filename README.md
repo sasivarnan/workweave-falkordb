@@ -119,3 +119,7 @@ The default route opens an employee home with a graph-backed five-day suggested 
 Ask for help is secondary. The assistant organizes graph-backed guidance; it does not provide an unrestricted chat response. Tool names and model status are hidden from the main employee view. A technical inspector remains available through Company knowledge.
 
 The judge route is /judge. It includes walkthrough controls, graph mutation controls, and technical evidence. This route separation is a presentation choice, not an authorization boundary. All data is synthetic and scoped to the visitor workspace. The app still does not implement production employee authentication.
+
+### Changes that affect your work
+
+Home leads with graph-backed supersession findings across all assignments for the current employee. Each finding links the outdated guide, current approved decision, and affected task. Findings update after decision replacement. The weekly plan uses compact rows. The review-ready state requires current unambiguous guidance, reading, completed training, saved non-empty working notes, a reviewer, and no stale plan. This state means preparation is complete; reviewer approval is still required.

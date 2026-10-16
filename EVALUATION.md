@@ -44,3 +44,5 @@ The production build passed after the UI reduction. Browser checks confirmed sav
 ## Employee home validation
 
 22 automated checks passed after adding the employee home. The new graph check verifies five ordered week steps, reviewers across both assignments, idempotent migration, retained notes, and reviewer removal. Frontend production build passed. Browser checks verified Home, a first-day document link, and navigation to checkout with the correct guidance and reviewer.
+
+23 checks passed after adding cross-assignment home findings. The new test verifies that a refund context still surfaces the affected checkout task, follows the replacement decision, and hides unapproved decisions. Production build passed. Browser checks verified the affected-task action and approved-source document.
