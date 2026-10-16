@@ -111,3 +111,11 @@ See RESOURCE-REVIEW.md for the resource audit. The execution view now includes G
 ## Minimal task screen
 
 The main screen shows two cards: current guidance and next steps. People, saved progress, and relationship details are collapsed. Demo and judge controls are in the Demo tab. Evidence uses the official shadcn Trace component, with expandable queries and results. Trace rows are completed operations from the latest successful request; they are not live per-tool events. A request-level running indicator does not imply individual tools are streamed. The preset remains unchanged.
+
+## Employee product workflow
+
+The default route is the employee view: My onboarding, Company knowledge, and People. Choose checkout or refund testing. Every assignment resolves its own service, approved guidance, training, reviewer, and accepted plan from FalkorDB. Reading acknowledgements are linked to the current decision. Replacing that decision makes the new guidance unread. Progress measures required reading and training only; it does not claim that code review or the assignment is complete.
+
+Ask for help is secondary. The assistant organizes graph-backed guidance; it does not provide an unrestricted chat response. Tool names and model status are hidden from the main employee view. A technical inspector remains available through Company knowledge.
+
+The judge route is /judge. It includes walkthrough controls, graph mutation controls, and technical evidence. This route separation is a presentation choice, not an authorization boundary. All data is synthetic and scoped to the visitor workspace. The app still does not implement production employee authentication.

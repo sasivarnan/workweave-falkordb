@@ -36,3 +36,7 @@ Browser inspection confirmed Node By Index Scan for the assignment lookup. The h
 ## Minimal layout verification
 
 The production build passed after the UI reduction. Browser checks confirmed saving a plan and opening the official Trace evidence view. No backend changes were made in this UI pass.
+
+## Product workflow pass
+
+21 checks pass. New checks cover assignment-scoped guidance, reviewers, training, saved plans, unknown-assignment rejection, and reading acknowledgements. Browser checks verified refund policy navigation and progress rising to 50% after reading. The main view no longer shows judge controls or model labels.
