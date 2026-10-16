@@ -72,6 +72,10 @@ class Store:
   sources=self.q('get_sources','MATCH (d:Document) RETURN d.id,d.title,d.body ORDER BY d.title')
   direct=self.q('direct_context','MATCH (:Assignment {id:$id})-[:SUPPORTED_BY]->(d:Document) RETURN d.title',{'id':'checkout'})
   connected=self.q('connected_context','MATCH p=(:Assignment {id:$id})-[:TOUCHES|APPLIES_TO|SUPERSEDES|RECOMMENDS|SUPPORTED_BY*1..5]-(d:Document) RETURN DISTINCT d.title ORDER BY d.title LIMIT 30',{'id':'checkout'})
+  lookup='MATCH (a:Assignment {id:$id}) RETURN a.title'
+  plan_start=time.monotonic()
+  execution_plan=str(self.g.explain(lookup,{'id':'checkout'}))
+  self.trace.append({'tool':'explain_assignment_lookup','query':lookup,'arguments':{'id':'checkout'},'rows':0,'ms':round((time.monotonic()-plan_start)*1000,2),'executionPlan':execution_plan})
   current=decisions[0][1] if len(decisions)==1 else None
   return {'task':task,'people':people,'decisions':decisions,'conflicts':conflicts,'training':training,'plan':plan,'paths':path,'sources':sources,'current':current,'needsReview':bool(plan and plan[0][1]!=current),'ambiguous':len(decisions)!=1 or not decisions[0][2],'direct':direct,'connected':connected}
  def action(self,name,note=''):

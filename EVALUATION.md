@@ -26,3 +26,7 @@ The graph-depth comparison in the portal is a product demonstration. It is not a
 ## Live OpenAI verification
 
 GPT-6 Luna completed the function-call and schema-constrained layout workflow against real local FalkorDB. One successful measured run took 3.23 seconds. It returned Provider B and the component order SummaryCard, EvidenceComparison, Checklist, PersonCard, ProgressCard. This single run is a connectivity and contract check, not a quality benchmark. The initial function-call request required reasoning_effort=none; the adapter now supplies it for GPT-6 models. The key is excluded from Git, Docker build context, and source archives.
+
+## shadcn rewrite checks
+
+The official preset decoded as base-rhea, violet, neutral, Public Sans and Geist headings. React and Vite production compilation passed. Browser testing verified the new portal and a live OpenAI request. The graph suite still has 17 passing checks after adding execution-plan evidence. Docker Compose and persistence are configured; restart persistence must be verified separately before public deployment.

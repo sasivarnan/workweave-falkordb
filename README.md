@@ -6,10 +6,12 @@ A new employee portal that finds outdated guidance before a first contribution.
 
 ## Run locally
 
-Requires Python 3.9+ and Docker. The container below is bound to loopback, not the public network.
+Requires Node.js 22+, Python 3.9+, and Docker. The container below is bound to loopback, not the public network.
 
 ```sh
 docker run -d --name firsttask-falkordb -p 127.0.0.1:6381:6379 falkordb/falkordb:latest
+npm ci --prefix frontend
+npm run build --prefix frontend
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 .venv/bin/python server.py
@@ -97,3 +99,11 @@ Built with Codex assistance for implementation, sample data, tests, design, and 
 ## OpenAI configuration
 
 The OpenAI adapter uses function calling followed by schema-constrained layout selection. It sets store=false, caps completion tokens, and never displays the key. The current low-cost default is gpt-6-luna. Set AI_PROVIDER=openai and OPENAI_API_KEY in the ignored .env file or hosting secrets. Every agent operation makes two API calls and can incur API charges. .dockerignore excludes the local secret file from images.
+
+## shadcn UI rewrite
+
+The frontend uses the official shadcn base-rhea components and preset b3dlbUYd3w: violet theme, neutral base, Public Sans, and Geist headings. The final full stop in the supplied URL was punctuation and was removed after CLI validation. No custom UI widgets were added. App.tsx composes official components and maps existing A2UI domain descriptors to them. The descriptor names are not separate custom React components. Theme files and generated UI components come from the official CLI.
+
+Build the frontend before starting Python. Docker builds it automatically. The local .env file is ignored and excluded from the build context. For both services with persistent graph storage, run docker compose up --build. The graph is private to the Compose network and uses a named /data volume with append-only persistence. The portal binds to localhost; a public host needs HTTPS ingress.
+
+See RESOURCE-REVIEW.md for the resource audit. The execution view now includes GRAPH.EXPLAIN for the indexed assignment lookup. This is a query plan, not runtime profiling. /api/health checks database reachability.

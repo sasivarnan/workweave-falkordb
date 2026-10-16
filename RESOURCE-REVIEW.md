@@ -5,7 +5,7 @@ Reviewed October 16, 2026. Resource index: https://www.wemakedevs.org/hackathons
 ## Implement now
 
 - Persistent Docker Compose storage and health checks. The graph database remains private to the container network. The portal binds to loopback for local use. Public hosting needs an HTTPS reverse proxy or managed ingress.
-- Query plan evidence using GRAPH.EXPLAIN. Save actual plans in the evaluation report; do not claim index use without inspecting the plan.
+- Query plan evidence using GRAPH.EXPLAIN. The execution view now exposes the actual assignment lookup plan. Do not claim index use without inspecting the plan.
 - Keep source-backed graph paths, fixed parameterized tools, and isolated visitor graphs. These already support the organizer's agent guide.
 
 ## Optional after the hosted workflow works

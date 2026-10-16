@@ -3,7 +3,7 @@ from urllib.parse import urlsplit
 from http.server import ThreadingHTTPServer,BaseHTTPRequestHandler
 from http.cookies import SimpleCookie
 from pathlib import Path
-from graph import Store
+from graph import Store,database
 from ui import compose
 from agent import run,provider
 from config import load
@@ -23,7 +23,11 @@ class Handler(BaseHTTPRequestHandler):
   token=secrets.token_hex(16)
   return token,'firsttask='+token+'; Path=/; HttpOnly; SameSite=Strict'+('; Secure' if os.getenv('COOKIE_SECURE')=='true' else '')
  def do_GET(self):
-  if self.path=='/api/health':return self.respond(200,{'status':'ok','agentConfigured':bool(os.getenv('OPENAI_API_KEY') if provider()=='openai' else os.getenv('GEMINI_API_KEY'))})
+  if self.path=='/api/health':
+   try:
+    database().connection.ping()
+    return self.respond(200,{'status':'ok','database':'reachable','agentConfigured':bool(os.getenv('OPENAI_API_KEY') if provider()=='openai' else os.getenv('GEMINI_API_KEY'))})
+   except Exception:return self.respond(503,{'status':'unavailable','database':'unreachable'})
   urlpath=urlsplit(self.path).path
   if urlpath!='/' and not urlpath.startswith('/assets/') and urlpath!='/catalog.json':return self.respond(404,{'error':'Not found'})
   path=(ROOT/('index.html' if urlpath=='/' else urlpath.lstrip('/'))).resolve()
