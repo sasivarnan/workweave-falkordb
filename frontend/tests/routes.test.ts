@@ -10,6 +10,7 @@ test("record links restore the record type and ID", () => {
     "release-review"
   )
   assert.equal(readRoute("/knowledge/adr").sourceId, "adr")
+  assert.equal(readRoute("/knowledge/adr").view, "document")
   assert.equal(readRoute("/knowledge/adr", "?q=old").query, "")
 })
 test("section links round trip and search retains its query", () => {

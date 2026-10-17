@@ -231,7 +231,14 @@ export default function App() {
   }
   function goToURL(path: string, recordPanel = false) {
     if (path !== window.location.pathname + window.location.search)
-      window.history.pushState({ recordPanel }, "", path)
+      window.history.pushState(
+        {
+          recordPanel,
+          from: window.location.pathname + window.location.search,
+        },
+        "",
+        path
+      )
     restoreRoute()
   }
   function restoreRoute() {
@@ -385,12 +392,6 @@ export default function App() {
       }
     })
   }, [searchNavigation, busy, context])
-  useEffect(() => {
-    if (tab === "sources" && openSources[0])
-      document
-        .getElementById("source-" + openSources[0])
-        ?.scrollIntoView({ behavior: "instant", block: "center" })
-  }, [tab, openSources])
   function stop() {
     playRef.current++
     setPlaying(false)
@@ -664,6 +665,7 @@ export default function App() {
     (
       {
         assignment: "Task",
+        document: "Knowledge document",
         proof: "Technical proof",
         evidence: "Evidence & tools",
         demo: "Walkthrough",
@@ -720,11 +722,17 @@ export default function App() {
               data-tour={"nav-" + id}
               aria-label={label}
               title={sidebarOpen ? undefined : label}
-              aria-current={tab === id ? "page" : undefined}
+              aria-current={
+                tab === id || (id === "sources" && tab === "document")
+                  ? "page"
+                  : undefined
+              }
               onClick={() => navigate(id)}
               className={
                 "h-11 w-full justify-start gap-3 rounded-lg px-3 " +
-                (tab === id ? "bg-primary/10 text-primary" : "")
+                (tab === id || (id === "sources" && tab === "document")
+                  ? "bg-primary/10 text-primary"
+                  : "")
               }
             >
               <Icon className="size-4 shrink-0" />
@@ -960,6 +968,7 @@ export default function App() {
               <TabsTrigger value="home">Tasks</TabsTrigger>
               <TabsTrigger value="assignment">My task</TabsTrigger>
               <TabsTrigger value="sources">Documents</TabsTrigger>
+              <TabsTrigger value="document">Knowledge document</TabsTrigger>
               <TabsTrigger value="people">People</TabsTrigger>
               <TabsTrigger value="evidence">Evidence & tools</TabsTrigger>
               <TabsTrigger value="demo">Walkthrough</TabsTrigger>
@@ -2700,39 +2709,22 @@ export default function App() {
                   relevance does not establish approval.
                 </p>
               )}
-              <Accordion
-                value={openSources}
-                onValueChange={(v) => {
-                  const id = v
-                    .map(String)
-                    .find((id) => !openSources.includes(id))
-                  if (id) showSource(id)
-                  else if (!v.length) navigate("sources")
-                }}
-                multiple
-              >
+              <div className="divide-y rounded-xl border">
                 {(context?.searchResults || context?.sources)?.map((r) => (
-                  <AccordionItem id={"source-" + r[0]} key={r[0]} value={r[0]}>
-                    <AccordionTrigger>{r[1]}</AccordionTrigger>
-                    <AccordionContent>
-                      <p>{r[2]}</p>
-                      {context.decisions.some((d) => d[2] === r[0]) && (
-                        <Button
-                          variant="outline"
-                          disabled={
-                            busy || context.ambiguous || context.guidanceRead
-                          }
-                          onClick={() => void act("review")}
-                        >
-                          {context.guidanceRead
-                            ? "Marked as read"
-                            : "Mark current guidance as read"}
-                        </Button>
-                      )}
-                    </AccordionContent>
-                  </AccordionItem>
+                  <Button
+                    key={r[0]}
+                    variant="ghost"
+                    className="h-auto w-full justify-between gap-4 rounded-none px-5 py-4 text-left whitespace-normal"
+                    onClick={() => showSource(r[0])}
+                  >
+                    <span className="flex items-center gap-3">
+                      <RiFileTextLine className="size-4 shrink-0 text-muted-foreground" />
+                      <span>{r[1]}</span>
+                    </span>
+                    <RiArrowRightSLine className="size-4 shrink-0 text-muted-foreground" />
+                  </Button>
                 ))}
-              </Accordion>
+              </div>
               {judgeMode && (
                 <Button
                   variant="ghost"
@@ -2742,6 +2734,75 @@ export default function App() {
                   Technical inspector
                 </Button>
               )}
+            </TabsContent>
+            <TabsContent
+              value="document"
+              className="mx-auto max-w-3xl space-y-8"
+            >
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  if (window.history.state?.from?.startsWith("/knowledge"))
+                    window.history.back()
+                  else navigate("sources")
+                }}
+              >
+                ← Back to knowledge
+              </Button>
+              {(() => {
+                const document = context?.sources.find(
+                  (row) => row[0] === openSources[0]
+                )
+                if (!document)
+                  return busy ? (
+                    <Skeleton className="h-64 w-full" />
+                  ) : (
+                    <Alert>
+                      <AlertTitle>Document unavailable</AlertTitle>
+                      <AlertDescription>
+                        Open Knowledge to select a document from this workspace.
+                      </AlertDescription>
+                    </Alert>
+                  )
+                return (
+                  <>
+                    <section className="space-y-3">
+                      <p className="text-sm text-muted-foreground">Knowledge</p>
+                      <h1 className="font-heading text-3xl font-semibold tracking-tight">
+                        {document[1]}
+                      </h1>
+                    </section>
+                    <Separator />
+                    <article className="text-base leading-8 whitespace-pre-wrap">
+                      {document[2]}
+                    </article>
+                    {context?.decisions.some((d) => d[2] === document[0]) && (
+                      <Card className="shadow-none">
+                        <CardHeader>
+                          <CardTitle>Current assignment guidance</CardTitle>
+                          <CardDescription>
+                            This source supports the guidance for your selected
+                            assignment.
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <Button
+                            variant="outline"
+                            disabled={
+                              busy || context.ambiguous || context.guidanceRead
+                            }
+                            onClick={() => void act("review")}
+                          >
+                            {context.guidanceRead
+                              ? "Marked as read"
+                              : "Mark current guidance as read"}
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </>
+                )
+              })()}
             </TabsContent>
             <TabsContent value="people" className="space-y-6">
               <h1 className="font-heading text-3xl font-semibold tracking-tight">

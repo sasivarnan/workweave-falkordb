@@ -25,7 +25,7 @@ export function readRoute(pathname = "/", search = "") {
           ? "assignment"
           : match[1] === "calendar"
             ? "calendar"
-            : "sources",
+            : "document",
       query: "",
       assignment: match[1] === "tasks" ? match[2] : "",
       meetingId: match[1] === "calendar" ? match[2] : "",
