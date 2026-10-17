@@ -1,4 +1,16 @@
 export type Context = {
+  workspace: {
+    appName: string
+    company: { id: string; name: string }
+    employee: { id: string; name: string }
+    team: { id: string; name: string; department: string }
+    timezone: string
+    synthetic: boolean
+    demo: {
+      assignment: string
+      steps: { label: string; path: string; body: Record<string, unknown> }[]
+    }
+  }
   meetings: string[][]
   notes: string[][]
   impact: string[][]
@@ -112,6 +124,11 @@ export function decode(result: Result) {
     components[0]?.component !== "Column"
   )
     throw Error("Invalid A2UI surface")
+  const profile=context.workspace
+  if(!profile || !profile.company || !profile.employee || !profile.team ||
+     ![profile.appName,profile.company.name,profile.employee.name,profile.team.name,profile.timezone].every(value=>typeof value==='string'&&value.length>0) ||
+     !profile.demo || !Array.isArray(profile.demo.steps))throw Error('Invalid workspace identity')
+  try { new Intl.DateTimeFormat('en',{timeZone:profile.timezone}) } catch { throw Error('Invalid workspace time zone') }
   const order = components[0].children
   if (
     !order ||

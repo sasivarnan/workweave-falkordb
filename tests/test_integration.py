@@ -79,4 +79,17 @@ class GraphTests(unittest.TestCase):
   self.s.action('replace');c=self.s.context();self.assertEqual(c['impact'][0],['Use Provider C','Checkout release review','Checkout planning notes','Ship checkout status change'])
  def test_24_workspace_note_persistence(self):
   self.s.action('save-note','Check with Payments about release readiness');self.s.seed();c=self.s.context();self.assertTrue(any(r[2]=='Check with Payments about release readiness' for r in c['notes']))
+ def test_25_workspace_identity_tracks_graph_changes(self):
+  before=self.s.context()['workspace']
+  self.assertEqual(before['company']['name'],'Northstar Labs')
+  self.s.q('test_identity_change','MATCH (o:Organization),(e:Employee {id:"maya"}),(t:Team {id:"payments"}) SET o.title="Acme Labs",o.timezone="Europe/London",e.title="Alex Rivera",t.title="Platform",t.department="Product"',write=True)
+  self.s.seed()
+  after=self.s.context()['workspace']
+  self.assertEqual(after['company']['name'],'Acme Labs')
+  self.assertEqual(after['employee']['name'],'Alex Rivera')
+  self.assertEqual(after['team']['name'],'Platform')
+  self.assertEqual(after['timezone'],'Europe/London')
+ def test_26_missing_identity_fails_closed(self):
+  self.s.q('test_missing_identity','MATCH (e:Employee)-[r:WORKS_AT]->() DELETE r',write=True)
+  with self.assertRaises(ValueError):self.s.context()
 if __name__=='__main__':unittest.main(verbosity=2)

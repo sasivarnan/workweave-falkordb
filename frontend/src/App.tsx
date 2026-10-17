@@ -1,4 +1,6 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useRef } from "react"
+import { useSelector } from "@xstate/store-react"
+import { appStore, updateField } from "@/lib/app-store"
 import { flushSync } from "react-dom"
 import {
   RiHome5Line,
@@ -14,6 +16,8 @@ import {
   RiArrowRightSLine,
   RiBuildingLine,
   RiInformationLine,
+  RiSideBarLine,
+  RiMenuLine,
 } from "@remixicon/react"
 import {
   Collapsible,
@@ -53,20 +57,6 @@ import {
   AccordionContent,
 } from "@/components/ui/accordion"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import {
-  Sidebar,
-  SidebarProvider,
-  SidebarHeader,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarInset,
-  SidebarTrigger,
-} from "@/components/ui/sidebar"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
@@ -89,53 +79,121 @@ import {
   TraceCollapsibleContent,
 } from "@/components/ui/trace"
 
-import { decode, type Evaluation, type Result } from "@/lib/workspace"
+import { decode } from "@/lib/workspace"
 
 export default function App() {
   const judgeMode = window.location.pathname === "/judge"
-  const [theme, setTheme] = useState(
-    () =>
-      localStorage.getItem("workweave-theme") ||
-      (window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light")
-  )
-  const [meeting, setMeeting] = useState<string[] | null>(null)
-  const [workspaceNote, setWorkspaceNote] = useState("")
+  const state = useSelector(appStore, (snapshot) => snapshot.context)
+  const {
+    theme,
+    meeting,
+    workspaceNote,
+    assignment,
+    sidebarOpen,
+    mobileSidebarOpen,
+    result,
+    error,
+    busy,
+    readingOpen,
+    editingNotes,
+    aiCode,
+    searchQuery,
+    evaluation,
+    evaluationError,
+    tab,
+    prompt,
+    note,
+    demoStep,
+    demoLabel,
+    playing,
+    openSources,
+  } = state
+  const setTheme = (value: Parameters<typeof updateField<"theme">>[1]) =>
+    updateField("theme", value)
+  const setMeeting = (value: Parameters<typeof updateField<"meeting">>[1]) =>
+    updateField("meeting", value)
+  const setWorkspaceNote = (
+    value: Parameters<typeof updateField<"workspaceNote">>[1]
+  ) => updateField("workspaceNote", value)
+  const setAssignment = (
+    value: Parameters<typeof updateField<"assignment">>[1]
+  ) => updateField("assignment", value)
+  const setSidebarOpen = (
+    value: Parameters<typeof updateField<"sidebarOpen">>[1]
+  ) => updateField("sidebarOpen", value)
+  const setMobileSidebarOpen = (
+    value: Parameters<typeof updateField<"mobileSidebarOpen">>[1]
+  ) => updateField("mobileSidebarOpen", value)
+  const setResult = (value: Parameters<typeof updateField<"result">>[1]) =>
+    updateField("result", value)
+  const setError = (value: Parameters<typeof updateField<"error">>[1]) =>
+    updateField("error", value)
+  const setBusy = (value: Parameters<typeof updateField<"busy">>[1]) =>
+    updateField("busy", value)
+  const setReadingOpen = (
+    value: Parameters<typeof updateField<"readingOpen">>[1]
+  ) => updateField("readingOpen", value)
+  const setEditingNotes = (
+    value: Parameters<typeof updateField<"editingNotes">>[1]
+  ) => updateField("editingNotes", value)
+  const setAiCode = (value: Parameters<typeof updateField<"aiCode">>[1]) =>
+    updateField("aiCode", value)
+  const setSearchQuery = (
+    value: Parameters<typeof updateField<"searchQuery">>[1]
+  ) => updateField("searchQuery", value)
+  const setEvaluation = (
+    value: Parameters<typeof updateField<"evaluation">>[1]
+  ) => updateField("evaluation", value)
+  const setEvaluationError = (
+    value: Parameters<typeof updateField<"evaluationError">>[1]
+  ) => updateField("evaluationError", value)
+  const setTab = (value: Parameters<typeof updateField<"tab">>[1]) =>
+    updateField("tab", value)
+  const setPrompt = (value: Parameters<typeof updateField<"prompt">>[1]) =>
+    updateField("prompt", value)
+  const setNote = (value: Parameters<typeof updateField<"note">>[1]) =>
+    updateField("note", value)
+  const setDemoStep = (value: Parameters<typeof updateField<"demoStep">>[1]) =>
+    updateField("demoStep", value)
+  const setDemoLabel = (
+    value: Parameters<typeof updateField<"demoLabel">>[1]
+  ) => updateField("demoLabel", value)
+  const setPlaying = (value: Parameters<typeof updateField<"playing">>[1]) =>
+    updateField("playing", value)
+  const setOpenSources = (
+    value: Parameters<typeof updateField<"openSources">>[1]
+  ) => updateField("openSources", value)
   useLayoutEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark")
     document.documentElement.classList.toggle("scheme-dark", theme === "dark")
     document.documentElement.classList.toggle("scheme-light", theme !== "dark")
     localStorage.setItem("workweave-theme", theme)
   }, [theme])
-  const [assignment, setAssignment] = useState(() =>
-    judgeMode
-      ? "checkout"
-      : localStorage.getItem("workweave-assignment") || "checkout"
-  )
-  const [result, setResult] = useState<Result | null>(null),
-    [error, setError] = useState(""),
-    [busy, setBusy] = useState(false)
-  const [readingOpen, setReadingOpen] = useState(false),
-    [editingNotes, setEditingNotes] = useState(false)
-  const [aiCode, setAiCode] = useState("")
-  const [searchQuery, setSearchQuery] = useState("")
-  const [evaluation, setEvaluation] = useState<Evaluation | null>(null)
-  const [evaluationError, setEvaluationError] = useState(false)
-  const [tab, setTab] = useState(judgeMode ? "proof" : "workspace"),
-    [prompt, setPrompt] = useState(""),
-    [note, setNote] = useState("")
-  const [demoStep, setDemoStep] = useState(0),
-    [demoLabel, setDemoLabel] = useState(
-      "Follow one assignment from old guidance to a saved plan."
-    ),
-    [playing, setPlaying] = useState(false)
-  const [openSources, setOpenSources] = useState<string[]>([])
+  useEffect(() => {
+    localStorage.setItem(
+      "workweave-sidebar",
+      sidebarOpen ? "expanded" : "collapsed"
+    )
+  }, [sidebarOpen])
   const busyRef = useRef(false),
     playRef = useRef(0),
     stepRef = useRef(0)
   const decoded = result ? decode(result) : null,
     context = decoded?.context
+  const workspace = context?.workspace
+  const initials = (name?: string) =>
+    name
+      ?.split(/\s+/)
+      .filter(Boolean)
+      .map((part) => part[0])
+      .slice(0, 2)
+      .join("") || ""
+  const timezone =
+    workspace?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone
+  const timezoneLabel =
+    new Intl.DateTimeFormat("en", { timeZone: timezone, timeZoneName: "short" })
+      .formatToParts()
+      .find((part) => part.type === "timeZoneName")?.value || timezone
   const navigationRef = useRef(0),
     activeTransition = useRef<ViewTransition | null>(null)
   function transition(update: () => void) {
@@ -199,6 +257,7 @@ export default function App() {
       if (navigationRef.current !== navigationVersion) destination = undefined
       const commit = () => {
         setResult(data)
+        document.title=decoded.context.workspace.appName+" · Company workspace"
         setAssignment(decoded.context.assignment)
         setNote(decoded.context.plan[0]?.[2] || "")
         if (destination) {
@@ -230,7 +289,21 @@ export default function App() {
         .catch(() => setEvaluationError(true))
   }, [])
   useEffect(() => {
-    void request("/api/context")
+    void fetch("/api/workspace")
+      .then(async (response) => {
+        if (!response.ok) throw Error("Workspace settings are unavailable")
+        const settings = await response.json()
+        if (typeof settings.defaultAssignment !== "string")
+          throw Error("Invalid workspace settings")
+        await request("/api/context", {
+          assignment: assignment || settings.defaultAssignment,
+        })
+      })
+      .catch((error) =>
+        setError(
+          error instanceof Error ? error.message : "Workspace could not load"
+        )
+      )
     return () => {
       playRef.current++
       activeTransition.current?.skipTransition()
@@ -264,60 +337,14 @@ export default function App() {
     stop()
     return await request("/api/action", { name, note })
   }
-  const steps = [
-    {
-      label: "Read your assignment and connected evidence",
-      path: "/api/context",
-      body: {},
-    },
-    {
-      label: "Save a plan based on the current decision",
-      path: "/api/action",
-      body: {
-        name: "accept",
-        note: "Check pending and failed status states with the approved provider.",
-      },
-    },
-    {
-      label: "Replace the decision: the saved plan now needs review",
-      path: "/api/action",
-      body: { name: "replace" },
-    },
-    {
-      label: "Acknowledge the new approved guidance",
-      path: "/api/action",
-      body: { name: "review" },
-    },
-    {
-      label: "Accept and save the updated plan",
-      path: "/api/action",
-      body: {
-        name: "accept",
-        note: "Read the approved provider decision before starting.",
-      },
-    },
-    {
-      label: "Complete the required training",
-      path: "/api/action",
-      body: { name: "complete" },
-    },
-    {
-      label: "Create a review request with current evidence",
-      path: "/api/action",
-      body: { name: "request-review" },
-    },
-    {
-      label: "Start a new session and retrieve progress",
-      path: "/api/context",
-      body: {},
-    },
-    {
-      label: "Remove the owner and inspect the missing evidence",
-      path: "/api/action",
-      body: { name: "remove-owner" },
-    },
-  ]
+  useEffect(()=>{
+    const onKey=(event:KeyboardEvent)=>{if(event.key==='b'&&(event.ctrlKey||event.metaKey)){event.preventDefault();setSidebarOpen(open=>!open)}}
+    window.addEventListener('keydown',onKey)
+    return ()=>window.removeEventListener('keydown',onKey)
+  },[])
+  const steps = workspace?.demo.steps || []
   async function next() {
+    if (!workspace || !steps.length)return false
     if (stepRef.current >= steps.length) {
       stop()
       setDemoLabel("Walkthrough complete. Change a fact to explore.")
@@ -328,7 +355,7 @@ export default function App() {
     if (
       !(await request(
         s.path,
-        { ...s.body, assignment: "checkout" },
+        { ...s.body, assignment: workspace?.demo.assignment },
         "assignment"
       ))
     ) {
@@ -340,9 +367,13 @@ export default function App() {
     return true
   }
   async function play() {
-    setAssignment("checkout")
+    if (!workspace) return
+    setAssignment(workspace.demo.assignment)
     stop()
-    if (!(await request("/api/reset", { assignment: "checkout" }))) return
+    if (
+      !(await request("/api/reset", { assignment: workspace?.demo.assignment }))
+    )
+      return
     stepRef.current = 0
     setDemoStep(0)
     setPlaying(true)
@@ -389,7 +420,7 @@ export default function App() {
                   : "review"
   const stageTitle =
     stage === "blocked"
-      ? "Ask Payments for clarification"
+      ? `Ask ${workspace?.team.name || "your team"} for clarification`
       : stage === "reading"
         ? "Before you start"
         : stage === "training"
@@ -418,7 +449,7 @@ export default function App() {
               ? "Write down the checks and questions you want to discuss."
               : stage === "done"
                 ? "Your notes and current evidence are saved together. Reviewer approval is still required."
-                : "Workweave has checked your reading, training, notes, and recorded reviewer."
+                : "The workspace has checked your reading, training, notes, and recorded reviewer."
   async function primaryAction() {
     if (stage === "reading") {
       if (!readingOpen) {
@@ -437,13 +468,13 @@ export default function App() {
       weekday: "long",
       day: "numeric",
       month: "long",
-      timeZone: "Asia/Kolkata",
+      timeZone: timezone,
     })
   const meetingTime = (value: string) =>
     new Date(value).toLocaleTimeString("en-GB", {
       hour: "2-digit",
       minute: "2-digit",
-      timeZone: "Asia/Kolkata",
+      timeZone: timezone,
     })
   const firstMeeting = context?.meetings[0]
   const navItems = [
@@ -466,75 +497,100 @@ export default function App() {
     )[tab]
   return (
     <TooltipProvider>
-      <SidebarProvider defaultOpen className="[--sidebar-width:15rem]">
-        <Sidebar className="border-r" collapsible="offcanvas">
-          <SidebarHeader className="gap-6 px-5 py-7">
+      <div className="flex min-h-svh w-full">
+        <aside
+          aria-label="Workspace navigation"
+          className={
+            "sticky top-0 hidden h-svh shrink-0 flex-col border-r bg-sidebar transition-[width] duration-200 motion-reduce:transition-none md:flex " +
+            (sidebarOpen ? "w-60" : "w-16")
+          }
+        >
+          <div
+            className={
+              sidebarOpen ? "space-y-6 px-5 py-7" : "space-y-6 px-3 py-7"
+            }
+          >
             <div className="flex items-center gap-2.5">
-              <RiBuildingLine className="size-6 text-primary" />
-              <span className="font-heading text-xl font-semibold tracking-tight">
-                Workweave
-              </span>
+              <RiBuildingLine className="size-6 shrink-0 text-primary" />
+              {sidebarOpen && (
+                <span className="font-heading text-xl font-semibold tracking-tight">
+                  {workspace?.appName}
+                </span>
+              )}
             </div>
-            <div className="flex items-center gap-2 rounded-lg border bg-background px-3 py-2.5 text-sm">
-              <Avatar className="size-6 rounded-md">
-                <AvatarFallback className="rounded-md text-xs">
-                  N
-                </AvatarFallback>
-              </Avatar>
-              Northstar Labs
-            </div>
-          </SidebarHeader>
-          <SidebarContent>
-            <SidebarGroup className="px-4">
-              <SidebarMenu className="gap-1">
-                {navItems.map(([id, label, Icon]) => (
-                  <SidebarMenuItem key={id}>
-                    <SidebarMenuButton
-                      isActive={tab === id}
-                      onClick={() => navigate(id)}
-                      className="h-11 gap-3 rounded-lg px-3 text-sm data-active:bg-primary/10 data-active:text-primary"
-                    >
-                      <Icon className="size-4" />
-                      <span>{label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroup>
-            {judgeMode && (
-              <SidebarGroup className="px-4">
-                <SidebarGroupLabel>REVIEW</SidebarGroupLabel>
-                <SidebarMenu>
-                  {[
-                    ["proof", "Proof & evaluation"],
-                    ["evidence", "Evidence & tools"],
-                    ["demo", "Walkthrough"],
-                  ].map(([id, label]) => (
-                    <SidebarMenuItem key={id}>
-                      <SidebarMenuButton
-                        isActive={tab === id}
-                        onClick={() => navigate(id)}
-                      >
-                        {label}
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroup>
+            {sidebarOpen && (
+              <div className="flex items-center gap-2 rounded-lg border bg-background px-3 py-2.5 text-sm">
+                <Avatar className="size-6 rounded-md">
+                  <AvatarFallback className="rounded-md text-xs">
+                    {initials(workspace?.company.name)}
+                  </AvatarFallback>
+                </Avatar>
+                {workspace?.company.name}
+              </div>
             )}
-          </SidebarContent>
-          <SidebarFooter className="gap-4 p-5">
+          </div>
+          <nav className="flex-1 space-y-1 overflow-y-auto px-2">
+            {navItems.map(([id, label, Icon]) => (
+              <Button
+                key={id}
+                variant="ghost"
+                aria-label={label}
+                title={sidebarOpen ? undefined : label}
+                aria-current={tab === id ? "page" : undefined}
+                onClick={() => navigate(id)}
+                className={
+                  "h-11 w-full justify-start gap-3 rounded-lg px-3 " +
+                  (tab === id ? "bg-primary/10 text-primary" : "")
+                }
+              >
+                <Icon className="size-4 shrink-0" />
+                {sidebarOpen && <span>{label}</span>}
+              </Button>
+            ))}
+            {judgeMode && (
+              <>
+                <Separator className="my-5" />
+                {[
+                  ["proof", "Proof & evaluation"],
+                  ["evidence", "Evidence & tools"],
+                  ["demo", "Walkthrough"],
+                ].map(([id, label]) => (
+                  <Button
+                    key={id}
+                    variant="ghost"
+                    aria-label={label}
+                    title={label}
+                    onClick={() => navigate(id)}
+                    className="w-full justify-start overflow-hidden"
+                  >
+                    {sidebarOpen ? label : label[0]}
+                  </Button>
+                ))}
+              </>
+            )}
+          </nav>
+          <div className={"space-y-4 " + (sidebarOpen ? "p-5" : "p-3")}>
             <Separator />
-            <div className="flex items-center gap-3">
+            <div
+              className={
+                "flex items-center gap-3 " + (!sidebarOpen ? "flex-col" : "")
+              }
+            >
               <Avatar className="size-9">
                 <AvatarFallback className="bg-primary/10 text-xs text-primary">
-                  MC
+                  {initials(workspace?.employee.name)}
                 </AvatarFallback>
               </Avatar>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium">Maya Chen</p>
-                <p className="text-xs text-muted-foreground">Payments</p>
-              </div>
+              {sidebarOpen && (
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">
+                    {workspace?.employee.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {workspace?.team.name}
+                  </p>
+                </div>
+              )}
               <Button
                 variant="ghost"
                 size="icon-sm"
@@ -548,12 +604,75 @@ export default function App() {
                 {theme === "dark" ? <RiSunLine /> : <RiMoonLine />}
               </Button>
             </div>
-          </SidebarFooter>
-        </Sidebar>
-        <SidebarInset className="min-w-0">
+          </div>
+        </aside>
+        <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
+          <SheetContent side="left" className="w-72">
+            <SheetHeader>
+              <SheetTitle>{workspace?.appName || "Workspace"}</SheetTitle>
+              <SheetDescription>{workspace?.company.name}</SheetDescription>
+            </SheetHeader>
+            <nav
+              aria-label="Mobile workspace navigation"
+              className="space-y-1 px-4"
+            >
+              {navItems.map(([id, label, Icon]) => (
+                <Button
+                  key={id}
+                  variant="ghost"
+                  className="w-full justify-start gap-3"
+                  onClick={() => {
+                    navigate(id)
+                    setMobileSidebarOpen(false)
+                  }}
+                >
+                  <Icon />
+                  {label}
+                </Button>
+              ))}
+              {judgeMode &&
+                [
+                  ["proof", "Proof & evaluation"],
+                  ["evidence", "Evidence & tools"],
+                  ["demo", "Walkthrough"],
+                ].map(([id, label]) => (
+                  <Button
+                    key={id}
+                    variant="ghost"
+                    className="w-full justify-start"
+                    onClick={() => {
+                      navigate(id)
+                      setMobileSidebarOpen(false)
+                    }}
+                  >
+                    {label}
+                  </Button>
+                ))}
+            </nav>
+          </SheetContent>
+        </Sheet>
+        <div className="min-w-0 flex-1">
           <header className="flex min-h-16 flex-wrap items-center justify-between gap-3 border-b px-5 py-3 lg:px-10">
             <div className="flex items-center gap-3">
-              <SidebarTrigger className="md:hidden" />
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="hidden md:inline-flex"
+                aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+                aria-expanded={sidebarOpen}
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+              >
+                <RiSideBarLine />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="md:hidden"
+                aria-label="Open navigation"
+                onClick={() => setMobileSidebarOpen(true)}
+              >
+                <RiMenuLine />
+              </Button>
               <span className="text-sm text-muted-foreground">Workspace</span>
               <span className="text-muted-foreground">/</span>
               <span className="text-sm font-medium">{pageTitle}</span>
@@ -635,10 +754,13 @@ export default function App() {
               <TabsContent value="workspace" className="space-y-9">
                 <section className="space-y-2">
                   <p className="text-xs text-muted-foreground">
-                    Northstar Labs · Sample workspace
+                    {workspace?.company.name}
+                    {workspace?.synthetic && " · Sample workspace"}
                   </p>
                   <h1 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
-                    Good morning, Maya
+                    {workspace
+                      ? `Hello, ${workspace.employee.name.split(" ")[0]}`
+                      : "Loading workspace…"}
                   </h1>
                   <p className="text-sm text-muted-foreground sm:text-base">
                     Your work and the context behind it.
@@ -649,7 +771,7 @@ export default function App() {
                     My day
                   </span>
                   <span className="pb-3 text-xs text-muted-foreground">
-                    Payments · Engineering
+                    {workspace?.team.name} · {workspace?.team.department}
                   </span>
                 </div>
                 {!context ? (
@@ -676,11 +798,12 @@ export default function App() {
                                     variant="secondary"
                                     className="bg-primary/5 text-primary"
                                   >
-                                    Payments
+                                    {workspace?.team.name}
                                   </Badge>
                                   <p className="text-xs text-muted-foreground">
                                     {meetingDate(firstMeeting[3])} ·{" "}
-                                    {meetingTime(firstMeeting[3])} IST
+                                    {meetingTime(firstMeeting[3])}{" "}
+                                    {timezoneLabel}
                                   </p>
                                 </div>
                                 <Button
@@ -694,7 +817,7 @@ export default function App() {
                                 <div className="flex items-center gap-3 rounded-lg bg-primary/5 px-3 py-2">
                                   <RiInformationLine className="size-4 shrink-0 text-primary" />
                                   <p className="flex-1 text-xs">
-                                    Payment guidance changed
+                                    Company guidance changed
                                   </p>
                                   <Button
                                     variant="link"
@@ -702,7 +825,10 @@ export default function App() {
                                     className="h-auto px-0 text-xs"
                                     disabled={busy}
                                     onClick={() =>
-                                      void openAssignment("checkout")
+                                      void openAssignment(
+                                        context.findings[0]?.[0] ||
+                                          context.assignment
+                                      )
                                     }
                                   >
                                     Review update <RiArrowRightLine />
@@ -825,7 +951,7 @@ export default function App() {
                                   {r[1]}
                                 </span>
                                 <span className="block text-xs font-normal text-muted-foreground">
-                                  {meetingDate(r[3])} · IST
+                                  {meetingDate(r[3])} · {timezoneLabel}
                                 </span>
                               </span>
                             </Button>
@@ -848,7 +974,7 @@ export default function App() {
                         </div>
                         <div className="divide-y border-t">
                           {context.notes
-                            .filter((r) => r[0] !== "personal-note")
+                            .filter((r) => context.meetings.some(meeting => meeting[5] === r[0]))
                             .slice(0, 3)
                             .map((r) => (
                               <Button
@@ -879,7 +1005,7 @@ export default function App() {
                   </h1>
                   <p className="text-sm text-muted-foreground">
                     Meetings, with the work and notes you need. All times are
-                    IST.
+                    {timezoneLabel}.
                   </p>
                 </section>
                 <div className="divide-y border-y">
@@ -895,7 +1021,8 @@ export default function App() {
                       </span>
                       <span className="min-w-0 flex-1 space-y-2 whitespace-normal">
                         <span className="block text-xs font-normal text-muted-foreground">
-                          {meetingDate(r[3])} · {meetingTime(r[3])} IST
+                          {meetingDate(r[3])} · {meetingTime(r[3])}{" "}
+                          {timezoneLabel}
                         </span>
                         <span className="block text-base font-medium">
                           {r[1]}
@@ -968,15 +1095,15 @@ export default function App() {
               {judgeMode && (
                 <TabsContent value="proof" className="space-y-8">
                   <section className="max-w-3xl space-y-4">
-                    <Badge>Workweave / Review in two minutes</Badge>
+                    <Badge>{workspace?.appName} / Review in two minutes</Badge>
                     <h1 className="font-heading text-3xl font-semibold tracking-tight lg:text-4xl">
                       Keep company work connected to current decisions.
                     </h1>
                     <p className="text-base leading-7 text-muted-foreground">
-                      The starter guide says Provider A. An approved decision
-                      replaced it with Provider B. Workweave connects the
-                      assignment to both sources, explains the conflict, and
-                      flags the saved plan when the decision changes again.
+                      An approved decision can replace advice in an older guide.
+                      This workspace connects the assignment to both sources,
+                      explains the conflict, and flags the saved plan when the
+                      decision changes again.
                     </p>
                     <div className="flex flex-wrap gap-3">
                       <Button
@@ -1136,7 +1263,7 @@ export default function App() {
                                 citation IDs.
                               </p>
                               <p>
-                                Workweave does not let generated factual answers
+                                The workspace does not let generated factual answers
                                 control review requests. The tested graph gates
                                 decide whether an action is allowed.
                               </p>
@@ -1158,7 +1285,7 @@ export default function App() {
                             <TableRow>
                               <TableHead>Case</TableHead>
                               <TableHead>Expected</TableHead>
-                              <TableHead>Workweave</TableHead>
+                              <TableHead>{workspace?.appName}</TableHead>
                               <TableHead>Keyword top result</TableHead>
                               <TableHead>Check</TableHead>
                             </TableRow>
@@ -1270,7 +1397,7 @@ export default function App() {
               >
                 <section className="space-y-3">
                   <p className="text-sm text-muted-foreground">
-                    Maya / Payments
+                    {workspace?.employee.name} / {workspace?.team.name}
                   </p>
                   <h1 className="font-heading text-3xl leading-tight font-semibold tracking-tight">
                     {context?.task[0]?.[1] || "Loading your task…"}
@@ -1400,7 +1527,7 @@ export default function App() {
                                 <>
                                   <p className="text-sm">
                                     {context.conflicts.length
-                                      ? "Your starter guide points to a superseded decision. Workweave checked the replacement and its original source for this task."
+                                      ? "Your starter guide points to a superseded decision. The workspace checked the replacement and its original source for this task."
                                       : "This step follows the current guidance and prerequisites recorded for your task."}
                                   </p>
                                   <p className="text-sm font-medium">
@@ -1574,7 +1701,10 @@ export default function App() {
                       </div>
                     ))}
                     {context && !context.people.length && (
-                      <p>Ask Payments to assign a reviewer.</p>
+                      <p>
+                        Ask {workspace?.team.name || "your team"} to assign a
+                        reviewer.
+                      </p>
                     )}
                   </CardContent>
                 </Card>
@@ -1700,14 +1830,18 @@ export default function App() {
                     <CardContent className="flex flex-wrap gap-2">
                       <Button
                         variant="outline"
-                        disabled={busy || assignment !== "checkout"}
+                        disabled={
+                          busy || assignment !== workspace?.demo.assignment
+                        }
                         onClick={() => void act("replace")}
                       >
                         Replace decision
                       </Button>
                       <Button
                         variant="outline"
-                        disabled={busy || assignment !== "checkout"}
+                        disabled={
+                          busy || assignment !== workspace?.demo.assignment
+                        }
                         onClick={() => void act("remove-owner")}
                       >
                         Remove owner
@@ -1778,11 +1912,11 @@ export default function App() {
                           required
                         />
                         <Button type="submit" disabled={busy}>
-                          {busy ? "Working…" : "Ask Workweave"}
+                          {busy ? "Working…" : "Ask about this task"}
                         </Button>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Workweave uses your assignment and company sources to
+                        The workspace uses your assignment and company sources to
                         organize the guidance above.
                       </p>
                     </form>
@@ -1792,8 +1926,11 @@ export default function App() {
             )}
             <Separator />
             <footer className="text-xs text-muted-foreground">
-              Northstar Labs · Synthetic company records · No calendar
-              invitations are sent
+              {workspace?.company.name} ·{" "}
+              {workspace?.synthetic
+                ? "Synthetic company records"
+                : "Company records"}{" "}
+              · No calendar invitations are sent
             </footer>
           </main>
           <Sheet
@@ -1810,7 +1947,8 @@ export default function App() {
                     ? meetingDate(meeting[3]) +
                       " · " +
                       meetingTime(meeting[3]) +
-                      " IST"
+                      " " +
+                      timezoneLabel
                     : ""}
                 </SheetDescription>
               </SheetHeader>
@@ -1855,8 +1993,8 @@ export default function App() {
               </div>
             </SheetContent>
           </Sheet>
-        </SidebarInset>
-      </SidebarProvider>
+        </div>
+      </div>
     </TooltipProvider>
   )
 }

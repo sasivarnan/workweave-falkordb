@@ -8,6 +8,7 @@ from ui import compose
 from agent import run,provider
 from access import authorized,reserve,BudgetExceeded
 from config import load
+from workspace import APP_NAME,DEMO_ASSIGNMENT,DEMO_STEPS
 ROOT=Path(__file__).parent/'frontend'/'dist'
 LOCKS={};LIMITS={};GUARD=threading.Lock()
 GLOBAL=[];AGENT_SLOTS=threading.BoundedSemaphore(2)
@@ -23,6 +24,7 @@ class Handler(BaseHTTPRequestHandler):
   token=secrets.token_hex(16)
   return token,'workweave='+token+'; Path=/; HttpOnly; SameSite=Strict'+('; Secure' if os.getenv('COOKIE_SECURE')=='true' else '')
  def do_GET(self):
+  if self.path=='/api/workspace':return self.respond(200,{'appName':APP_NAME,'defaultAssignment':DEMO_ASSIGNMENT,'demo':{'assignment':DEMO_ASSIGNMENT,'steps':DEMO_STEPS}})
   if self.path=='/api/access':return self.respond(200,{'aiEnabled':len(os.getenv('AI_ACCESS_CODE',''))>=16})
   if self.path=='/api/health':
    try:
@@ -56,7 +58,7 @@ class Handler(BaseHTTPRequestHandler):
     GLOBAL.append(now)
     LIMITS[token]=recent+[now];lock=LOCKS.setdefault(token,threading.Lock())
    with lock:
-    s=Store(token,body.get('assignment','checkout'));s.seed();mode='Graph tools · no model call'
+    s=Store(token,body.get('assignment') or 'checkout');s.seed();mode='Graph tools · no model call'
     if self.path=='/api/reset':s.reset()
     elif self.path=='/api/action':s.action(body.get('name'),str(body.get('note','')))
     elif self.path not in ['/api/context','/api/agent','/api/search']:return self.respond(404,{'error':'Not found'},cookie)

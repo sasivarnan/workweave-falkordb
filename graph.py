@@ -2,6 +2,7 @@
 import os, re, time
 from functools import lru_cache
 from falkordb import FalkorDB
+from workspace import APP_NAME,DEMO_ASSIGNMENT,DEMO_STEPS
 
 @lru_cache(maxsize=1)
 def database():
@@ -65,6 +66,7 @@ class Store:
    self.seed_assignments()
    self.seed_week()
    self.seed_search()
+   self.seed_identity()
    self.seed_company()
    self.g.execute_command('EXPIRE',self.name,86400)
    return
@@ -78,10 +80,14 @@ class Store:
   self.seed_assignments()
   self.seed_week()
   self.seed_search()
+  self.seed_identity()
   self.seed_company()
   self.q('seed_complete','CREATE (:Meta {id:$id})',{'id':'seed'},True)
   self.g.execute_command('EXPIRE',self.name,86400)
   self.trace=[]
+ def seed_identity(self):
+  if self.q('identity_version','MATCH (:Meta {id:"identity-v1"}) RETURN true'):return
+  self.q('seed_workspace_identity','MATCH (e:Employee {id:"maya"}),(t:Team {id:"payments"}) MERGE (o:Organization {id:"northstar"}) SET o.title="Northstar Labs",o.timezone="Asia/Kolkata" SET t.department="Engineering" MERGE (e)-[:WORKS_AT]->(o) MERGE (:Meta {id:"identity-v1"})',write=True)
  def seed_assignments(self):
   if self.q('catalog_version','MATCH (m:Meta {id:"catalog-v2"}) RETURN m.id'):return
   for label,id,title,body in EXTRA_NODES:
@@ -139,7 +145,11 @@ class Store:
   meetings=self.q('company_calendar','MATCH (:Employee {id:$employee})-[:ATTENDS]->(m:Meeting) OPTIONAL MATCH (m)-[:DISCUSSES]->(a:Assignment) OPTIONAL MATCH (n:Document)-[:NOTES_FOR]->(m) RETURN m.id,m.title,m.body,m.starts,a.id,n.id ORDER BY m.starts',{'employee':'maya'})
   notes=self.q('company_notes','MATCH (n:Document) WHERE (n)-[:NOTES_FOR]->(:Meeting) OR (:Employee {id:$employee})-[:CREATED]->(n) RETURN n.id,n.title,n.body ORDER BY n.title',{'employee':'maya'})
   impact=self.q('company_change_impact','MATCH (old:Decision)<-[:SUPERSEDES*1..4]-(current:Decision) WHERE current.approved=true AND NOT (:Decision {approved:true})-[:SUPERSEDES]->(current) MATCH (m:Meeting)-[:CONSIDERS]->(old) MATCH (n:Document)-[:NOTES_FOR]->(m) MATCH (m)-[:DISCUSSES]->(a:Assignment)-[:TOUCHES]->(s:Service)<-[:APPLIES_TO]-(current) RETURN DISTINCT current.title,m.title,n.title,a.title ORDER BY m.title')
-  return_extra={'meetings':meetings,'notes':notes,'impact':impact}
+  identity=self.q('workspace_identity','MATCH (e:Employee {id:$employee})-[:WORKS_AT]->(o:Organization),(e)-[:MEMBER_OF]->(t:Team) RETURN o.id,o.title,o.timezone,e.id,e.title,t.id,t.title,t.department',{'employee':'maya'})
+  if len(identity)!=1:raise ValueError('Workspace identity is unavailable')
+  row=identity[0]
+  workspace={'appName':APP_NAME,'company':{'id':row[0],'name':row[1]},'timezone':row[2],'employee':{'id':row[3],'name':row[4]},'team':{'id':row[5],'name':row[6],'department':row[7]},'synthetic':True,'demo':{'assignment':DEMO_ASSIGNMENT,'steps':DEMO_STEPS}}
+  return_extra={'workspace':workspace,'meetings':meetings,'notes':notes,'impact':impact}
   return {**return_extra,'reviewRequest':review_request,'findings':findings,'week':week,'colleagues':colleagues,'guidanceRead':bool(read),'assignment':self.assignment,'assignments':assignments,'task':task,'people':people,'decisions':decisions,'conflicts':conflicts,'training':training,'plan':plan,'paths':path,'sources':sources,'current':current,'needsReview':bool(plan and (len(decisions)!=1 or plan[0][3]!=decisions[0][0])),'ambiguous':len(decisions)!=1 or not decisions[0][2],'direct':direct,'connected':connected}
  def action(self,name,note=''):
   if name in ('replace','remove-owner') and self.assignment!='checkout':raise ValueError('This sample change is available only for the checkout assignment')
