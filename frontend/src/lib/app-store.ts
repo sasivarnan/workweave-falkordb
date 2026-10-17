@@ -5,7 +5,6 @@ import type { Evaluation, Result } from "./workspace"
 export type AppState = {
   tourReady: number
   employeeGuide: 0 | 1 | 2 | 3
-  guideDismissed: boolean
   proofStage: "off" | "inspect" | "removed" | "restored"
   proofBaseline: ImpactAnalysis | null
   impactExpanded: string[]
@@ -37,7 +36,6 @@ const judgeMode = window.location.pathname === "/judge"
 const initial: AppState = {
   tourReady: 0,
   employeeGuide: 0,
-  guideDismissed: localStorage.getItem("workweave-guide-dismissed") === "yes",
   proofStage: "off",
   proofBaseline: null,
   impactExpanded: [],

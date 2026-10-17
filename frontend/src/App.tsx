@@ -98,7 +98,6 @@ export default function App() {
   const {
     tourReady,
     employeeGuide,
-    guideDismissed,
     impact,
     proofStage,
     proofBaseline,
@@ -426,9 +425,8 @@ export default function App() {
     "relative z-40 ring-2 ring-primary shadow-[0_0_0_9999px_rgb(0_0_0/0.65)]"
   function finishEmployeeGuide() {
     appStore.trigger.updated({
-      patch: { employeeGuide: 0, guideDismissed: true },
+      patch: { employeeGuide: 0 },
     })
-    localStorage.setItem("workweave-guide-dismissed", "yes")
   }
   async function moveEmployeeGuide(step: 1 | 2 | 3) {
     if (step === 2) {
@@ -1024,29 +1022,15 @@ export default function App() {
                 <p className="text-sm text-muted-foreground sm:text-base">
                   Your work and the context behind it.
                 </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={busy || !context}
+                  onClick={() => void moveEmployeeGuide(1)}
+                >
+                  Start tour <RiArrowRightLine />
+                </Button>
               </section>
-              {context && !guideDismissed && employeeGuide === 0 && (
-                <Card className="shadow-none">
-                  <CardHeader>
-                    <CardTitle>See what changed across your team</CardTitle>
-                    <CardDescription>
-                      Follow a decision to the tasks and people it affects.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardFooter className="gap-2">
-                    <Button
-                      disabled={busy}
-                      onClick={() => void moveEmployeeGuide(1)}
-                    >
-                      Start guide
-                      <RiArrowRightLine />
-                    </Button>
-                    <Button variant="ghost" onClick={finishEmployeeGuide}>
-                      Dismiss
-                    </Button>
-                  </CardFooter>
-                </Card>
-              )}
               <div className="flex items-center gap-6 border-b">
                 <span className="border-b-2 border-primary pb-3 text-sm font-medium text-primary">
                   My day

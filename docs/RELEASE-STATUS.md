@@ -31,3 +31,5 @@ No award or acceptance is guaranteed. No claim that this problem is impossible w
 ## Tour overlay update
 
 The employee guide uses the official shadcn Popover, with a dimmed page and a highlighted existing Card. XState controls each step. Tailwind classes control the layout. The browser check covered three steps, Back and Escape with focus returned to Help. Skip and finish keep the existing local dismissal behaviour. The guide does not approve decisions or update saved plans.
+
+The home page now has a permanent Start tour button. The dismissible welcome card and its obsolete dismissal flag were removed. Start → Skip → Today was checked in the browser; Start tour remains available.
