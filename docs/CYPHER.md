@@ -146,7 +146,7 @@ MERGE (:Meta {id:"decision-review-v1"})
 Source: graph.py:129
 
 ```cypher
-MATCH (d:Decision)-[:APPLIES_TO]->(s:Service {id:$service}) OPTIONAL MATCH (d)-[:SUPERSEDES]->(old:Decision) OPTIONAL MATCH (d)-[:APPROVED_BY]->(owner:Employee) OPTIONAL MATCH (m:Meeting)-[:APPROVED|PROPOSED]->(d) OPTIONAL MATCH (d)-[:SUPPORTED_BY]->(src:Document) RETURN d.id,d.title,d.approved,old.title,owner.title,d.approvedAt,d.effectiveAt,m.id,m.title,src.id,src.title ORDER BY d.approvedAt DESC,d.id
+MATCH (d:Decision)-[:APPLIES_TO]->(s:Service {id:$service}) OPTIONAL MATCH (d)-[:SUPERSEDES]->(old:Decision) OPTIONAL MATCH (d)-[:APPROVED_BY]->(owner:Employee) OPTIONAL MATCH (m:Meeting)-[:APPROVED|PROPOSED]->(d) OPTIONAL MATCH (d)-[:SUPPORTED_BY]->(src:Document) RETURN d.id,d.title,d.approved,old.title,owner.title,d.approvedAt,d.effectiveAt,m.id,m.title,src.id,src.title,d.proposedAt ORDER BY coalesce(d.proposedAt,d.approvedAt,0) DESC,d.id
 ```
 
 ## decision_affected_assignments
@@ -377,7 +377,7 @@ MERGE (d:Decision {id:"provider-c"}) SET d.title="Use Provider C",d.approved=tru
 Source: graph.py:186
 
 ```cypher
-MATCH (d:Decision {id:"provider-c"}),(owner:Employee {id:"leo"}) SET d.approvedAt=coalesce(d.approvedAt,$now),d.effectiveAt=coalesce(d.effectiveAt,$now) MERGE (d)-[:APPROVED_BY]->(owner) MERGE (m:Meeting {id:"replacement-approval"}) SET m.title="Checkout decision review",m.starts=$starts,m.body="Approve the replacement provider decision." MERGE (m)-[:APPROVED]->(d)
+MATCH (d:Decision {id:"provider-c"}),(owner:Employee {id:"leo"}) SET d.approvedAt=coalesce(d.approvedAt,$now),d.effectiveAt=coalesce(d.effectiveAt,$now) MERGE (d)-[:APPROVED_BY]->(owner) MERGE (m:Meeting {id:"replacement-approval"}) SET m.title="Checkout decision review",m.starts=coalesce(m.starts,$starts),m.body="Approve the replacement provider decision." MERGE (m)-[:APPROVED]->(d)
 ```
 
 ## record_newer_proposal

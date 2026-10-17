@@ -12,13 +12,23 @@ export type Context = {
     }
   }
   changeReview: {
-    currentId:string|null
-    history:(string|number|boolean|null)[][]
-    affected:{id:string;title:string;owner:string;path:string[];savedDecision:string|null;savedNote:string|null;stale:boolean;acknowledged:boolean;acknowledgedAt:number|null}[]
-    meetings:[string,string,string|null,string|null,string[]][]
-    unaffected:string[][]
-    issues:string[]
-    canAcknowledge:boolean
+    currentId: string | null
+    history: (string | number | boolean | null)[][]
+    affected: {
+      id: string
+      title: string
+      owner: string
+      path: string[]
+      savedDecision: string | null
+      savedNote: string | null
+      stale: boolean
+      acknowledged: boolean
+      acknowledgedAt: number | null
+    }[]
+    meetings: [string, string, string | null, string | null, string[]][]
+    unaffected: string[][]
+    issues: string[]
+    canAcknowledge: boolean
   }
   meetings: string[][]
   notes: string[][]
@@ -155,6 +165,16 @@ export function decode(result: Result) {
   } catch {
     throw Error("Invalid workspace time zone")
   }
+  const review = context.changeReview
+  if (
+    !review ||
+    !Array.isArray(review.affected) ||
+    !Array.isArray(review.history) ||
+    !Array.isArray(review.meetings) ||
+    !Array.isArray(review.unaffected) ||
+    !Array.isArray(review.issues)
+  )
+    throw Error("Invalid decision review data")
   const order = components[0].children
   if (
     !order ||

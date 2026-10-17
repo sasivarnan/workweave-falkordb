@@ -56,3 +56,18 @@ class DecisionReviewTests(unittest.TestCase):
   self.assertEqual(before['sources'],after['sources'])
   self.assertFalse(after['changeReview']['canAcknowledge'])
   self.assertTrue(after['needsReview'])
+
+ def test_missing_source_blocks_every_write_gate(self):
+  self.store.q('remove_source','MATCH (:Decision {id:"provider-b"})-[r:SUPPORTED_BY]->() DELETE r',write=True)
+  for action in ['acknowledge-change','review','accept','request-review']:
+   with self.subTest(action=action),self.assertRaises(ValueError):self.store.action(action,'Do not accept missing evidence')
+ def test_future_decision_blocks_task_writes(self):
+  self.store.q('future','MATCH (d:Decision {id:"provider-b"}) SET d.effectiveAt=9999999999999',write=True)
+  self.assertTrue(self.store.context()['ambiguous'])
+  with self.assertRaises(ValueError):self.store.action('accept','Do not use future guidance')
+ def test_multiple_meetings_link_to_the_same_replaced_decision(self):
+  self.store.q('another_meeting','MATCH (e:Employee {id:"maya"}),(d:Decision {id:"provider-b"}) CREATE (m:Meeting {id:"second-review",title:"Release readiness"})-[:CONSIDERS]->(d) CREATE (e)-[:ATTENDS]->(m) CREATE (:Document {id:"second-notes",title:"Readiness notes",body:"Discuss the approved provider"})-[:NOTES_FOR]->(m)',write=True)
+  self.store.action('replace')
+  meetings=self.store.context()['changeReview']['meetings']
+  self.assertEqual({row[0] for row in meetings},{'checkout-review','second-review'})
+  self.assertEqual({row[2] for row in meetings},{'meeting-checkout','second-notes'})

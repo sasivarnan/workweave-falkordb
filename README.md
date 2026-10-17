@@ -80,7 +80,7 @@ npm run build --prefix frontend
 .venv/bin/python scripts/check_secrets.py
 ```
 
-The Python suite contains 36 tests. Two frontend store tests check state preservation and in-memory invite handling. Integration tests create isolated disposable graphs and delete only those test graphs. Agent contract tests use mocked responses. The saved eight-case retrieval diagnostic and paired model evaluation are small authored checks, not production accuracy or general RAG benchmarks. See [evaluation details](EVALUATION.md).
+The Python suite contains 46 tests. Two frontend store tests check state preservation and in-memory invite handling. Integration tests create isolated disposable graphs and delete only those test graphs. Agent contract tests use mocked responses. The saved eight-case retrieval diagnostic and paired model evaluation are small authored checks, not production accuracy or general RAG benchmarks. See [evaluation details](EVALUATION.md).
 
 ## Local safety and deployment
 
@@ -122,3 +122,7 @@ Codex assisted with implementation, synthetic data, tests, design, and documenta
 `GET /api/workspace` supplies public startup settings and the server-owned walkthrough definition. `POST /api/context` supplies the graph-backed company profile, employee, team, time zone, tasks, meetings, notes, people, and guidance through validated A2UI messages. See [API contracts](docs/API.md).
 
 `@xstate/store` holds local application state; its official React adapter subscribes to it. No application React Context provider, `useState`, or other state manager is used. The desktop sidebar collapses to an icon rail and saves that preference. The mobile menu uses the official shadcn Sheet. Standard component internals remain owned by their UI libraries.
+
+## Decision change review
+
+Open **Decision review** to inspect a decision's source, recorded approval, service scope, and affected work. Saved plans retain their original version and notes. Version-specific acknowledgements are stored separately. A newer proposal does not replace approved guidance. The sample controls let a judge exercise both cases. See [workflow, proof, and limits](docs/DECISION-REVIEW.md).
