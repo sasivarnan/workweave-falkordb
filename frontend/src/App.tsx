@@ -1,15 +1,8 @@
-import { workspaceTour } from "@/lib/tour"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-  PopoverTitle,
-  PopoverDescription,
-} from "@/components/ui/popover"
+import { startWorkspaceTour } from "@/lib/onboarding"
 import { useEffect, useLayoutEffect, useRef } from "react"
 import { useSelector } from "@xstate/store-react"
 import { appStore, updateField } from "@/lib/app-store"
-import { flushSync, createPortal } from "react-dom"
+import { flushSync } from "react-dom"
 import {
   RiHome5Line,
   RiCheckboxCircleLine,
@@ -91,11 +84,9 @@ import type { ImpactResult } from "@/lib/impact"
 import { decode } from "@/lib/workspace"
 
 export default function App() {
-  const tourTarget = useRef<HTMLElement | null>(null)
   const judgeMode = window.location.pathname === "/judge"
   const state = useSelector(appStore, (snapshot) => snapshot.context)
   const {
-    tourReady,
     employeeGuide,
     impact,
     proofStage,
@@ -406,37 +397,41 @@ export default function App() {
       appStore.trigger.requestFinished()
     }
   }
-  const tourSteps = workspaceTour
-  const activeTour = tourSteps[employeeGuide - 1]
-  function tourAnchor(target: string) {
-    return activeTour?.target === target
-      ? (node: HTMLElement | null) => {
-          tourTarget.current = node
-        }
-      : undefined
-  }
+  const tourRunning = employeeGuide > 0
   useEffect(() => {
-    if (employeeGuide)
-      tourTarget.current?.scrollIntoView({
-        block: "center",
-        behavior: "instant",
-      })
-    updateField("tourReady", employeeGuide)
-  }, [employeeGuide, tab])
-  const tourHighlight =
-    "relative z-40 ring-2 ring-primary shadow-[0_0_0_9999px_rgb(0_0_0/0.65)]"
-  function finishEmployeeGuide() {
-    appStore.trigger.updated({
-      patch: { employeeGuide: 0 },
-    })
-  }
-  async function moveEmployeeGuide(step: number) {
-    const next = tourSteps[step - 1]
-    if (!next) return
+    if (!tourRunning) return
+    const tour = startWorkspaceTour(
+      (step) => updateField("employeeGuide", step),
+      () => {
+        const current = appStore.getSnapshot().context
+        appStore.trigger.updated({
+          patch: {
+            employeeGuide: 0,
+            sidebarOpen: current.tourSidebarBefore ?? current.sidebarOpen,
+            tourSidebarBefore: null,
+          },
+        })
+        document
+          .querySelector<HTMLButtonElement>('[data-tour="start-tour"]')
+          ?.focus()
+      }
+    )
+    return () => {
+      tour?.destroy()
+    }
+  }, [tourRunning])
+  function startEmployeeTour() {
     stop()
-    updateField("tourReady", 0)
-    updateField("employeeGuide", step)
-    navigate(next.tab)
+    const current = appStore.getSnapshot().context
+    appStore.trigger.updated({
+      patch: {
+        employeeGuide: 1,
+        tourSidebarBefore: current.sidebarOpen,
+        sidebarOpen: true,
+        mobileSidebarOpen: false,
+      },
+    })
+    navigate("workspace")
   }
   async function startImpactProof() {
     const navigationVersion = navigationRef.current
@@ -655,6 +650,7 @@ export default function App() {
   return (
     <div className="flex min-h-svh w-full">
       <aside
+        data-tour="sidebar"
         aria-label="Workspace navigation"
         className={
           "sticky top-0 hidden h-svh shrink-0 flex-col border-r bg-sidebar transition-[width] duration-200 motion-reduce:transition-none md:flex " +
@@ -685,11 +681,15 @@ export default function App() {
             </div>
           )}
         </div>
-        <nav className="flex-1 space-y-1 overflow-y-auto px-2">
+        <nav
+          data-tour="left-nav"
+          className="flex-1 space-y-1 overflow-y-auto px-2"
+        >
           {navItems.map(([id, label, Icon]) => (
             <Button
               key={id}
               variant="ghost"
+              data-tour={"nav-" + id}
               aria-label={label}
               title={sidebarOpen ? undefined : label}
               aria-current={tab === id ? "page" : undefined}
@@ -750,6 +750,7 @@ export default function App() {
             <Button
               variant="ghost"
               size="icon-sm"
+              data-tour="theme"
               aria-label={
                 theme === "dark"
                   ? "Switch to light mode"
@@ -809,15 +810,7 @@ export default function App() {
       </Sheet>
       <div className="min-w-0 flex-1">
         <header className="flex min-h-16 flex-wrap items-center justify-between gap-3 border-b px-5 py-3 lg:px-10">
-          <div
-            ref={tourAnchor("navigation")}
-            className={
-              "flex items-center gap-3 " +
-              (activeTour?.target === "navigation"
-                ? tourHighlight + " rounded-lg bg-background"
-                : "")
-            }
-          >
+          <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               size="icon-sm"
@@ -832,6 +825,7 @@ export default function App() {
               variant="ghost"
               size="icon-sm"
               className="md:hidden"
+              data-tour="navigation-menu"
               aria-label="Open navigation"
               onClick={() => setMobileSidebarOpen(true)}
             >
@@ -843,13 +837,8 @@ export default function App() {
           </div>
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
             <form
-              ref={tourAnchor("search")}
-              className={
-                "flex w-full items-center gap-2 sm:w-72 " +
-                (activeTour?.target === "search"
-                  ? tourHighlight + " rounded-lg bg-background"
-                  : "")
-              }
+              data-tour="search"
+              className="flex w-full items-center gap-2 sm:w-72"
               onSubmit={(e) => {
                 e.preventDefault()
                 stop()
@@ -882,10 +871,11 @@ export default function App() {
               </Button>
             </form>
             <Button
+              data-tour="start-tour"
               variant="outline"
               size="sm"
               disabled={busy || !context}
-              onClick={() => void moveEmployeeGuide(1)}
+              onClick={startEmployeeTour}
             >
               Start tour
               <RiArrowRightLine />
@@ -919,78 +909,6 @@ export default function App() {
               </AlertDescription>
             </Alert>
           )}
-          {employeeGuide > 0 && tourReady === employeeGuide && context && (
-            <Popover
-              key={employeeGuide}
-              triggerId="employee-tour-anchor"
-              open
-              modal
-              onOpenChange={(open) => {
-                if (!open) finishEmployeeGuide()
-              }}
-            >
-              {tourTarget.current &&
-                createPortal(
-                  <PopoverTrigger
-                    id="employee-tour-anchor"
-                    nativeButton={false}
-                    render={<span className="pointer-events-none sr-only" />}
-                    tabIndex={-1}
-                    aria-hidden
-                  />,
-                  tourTarget.current
-                )}
-              <PopoverContent
-                anchor={tourTarget}
-                side="top"
-                align="start"
-                sideOffset={24}
-                className="w-[min(22rem,calc(100vw-2rem))] rounded-xl p-5"
-              >
-                <div className="space-y-2">
-                  <PopoverDescription>
-                    Application tour · Step {employeeGuide} of{" "}
-                    {tourSteps.length}
-                  </PopoverDescription>
-                  <PopoverTitle>{activeTour?.title}</PopoverTitle>
-                  <PopoverDescription>
-                    {activeTour?.description}
-                  </PopoverDescription>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {employeeGuide > 1 && (
-                    <Button
-                      variant="outline"
-                      disabled={busy}
-                      onClick={() => void moveEmployeeGuide(employeeGuide - 1)}
-                    >
-                      Back
-                    </Button>
-                  )}
-                  <Button
-                    disabled={busy}
-                    onClick={() =>
-                      employeeGuide === tourSteps.length
-                        ? finishEmployeeGuide()
-                        : void moveEmployeeGuide(employeeGuide + 1)
-                    }
-                  >
-                    {employeeGuide === tourSteps.length
-                      ? "Finish tour"
-                      : "Next"}
-                    <RiArrowRightLine />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    disabled={busy}
-                    onClick={finishEmployeeGuide}
-                  >
-                    Skip tour
-                  </Button>
-                </div>
-              </PopoverContent>
-            </Popover>
-          )}
           <Tabs value={tab} onValueChange={(v) => navigate(String(v))}>
             <TabsList className="hidden">
               <TabsTrigger value="workspace">Today</TabsTrigger>
@@ -1007,14 +925,7 @@ export default function App() {
               <TabsTrigger value="demo">Walkthrough</TabsTrigger>
             </TabsList>
             <TabsContent value="workspace" className="space-y-9">
-              <section
-                ref={tourAnchor("today")}
-                className={
-                  activeTour?.target === "today"
-                    ? tourHighlight + " rounded-xl bg-background p-4"
-                    : "space-y-2"
-                }
-              >
+              <section className="space-y-2">
                 <p className="text-xs text-muted-foreground">
                   {workspace?.company.name}
                   {workspace?.synthetic && " · Sample workspace"}
@@ -1041,7 +952,7 @@ export default function App() {
               ) : (
                 <div className="grid gap-10 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
                   <div className="space-y-9">
-                    <section className="space-y-4">
+                    <section data-tour="home-up-next" className="space-y-4">
                       <h2 className="font-heading text-lg font-semibold">
                         Up next
                       </h2>
@@ -1135,7 +1046,7 @@ export default function App() {
                         </p>
                       )}
                     </section>
-                    <section className="space-y-3">
+                    <section data-tour="home-tasks" className="space-y-3">
                       <div className="flex items-center justify-between">
                         <h2 className="font-heading text-lg font-semibold">
                           Your tasks
@@ -1174,7 +1085,7 @@ export default function App() {
                     </section>
                   </div>
                   <aside className="space-y-10">
-                    <section className="space-y-4">
+                    <section data-tour="home-schedule" className="space-y-4">
                       <div className="flex items-center justify-between">
                         <h2 className="font-heading text-lg font-semibold">
                           Schedule
@@ -1212,7 +1123,7 @@ export default function App() {
                         ))}
                       </div>
                     </section>
-                    <section className="space-y-3">
+                    <section data-tour="home-notes" className="space-y-3">
                       <div className="flex items-center justify-between">
                         <h2 className="font-heading text-lg font-semibold">
                           Meeting notes
@@ -1288,14 +1199,7 @@ export default function App() {
                       </Button>
                     ))}
                   </div>
-                  <Card
-                    ref={tourAnchor("decision")}
-                    className={
-                      activeTour?.target === "decision"
-                        ? tourHighlight
-                        : "shadow-none"
-                    }
-                  >
+                  <Card className="shadow-none">
                     <CardHeader>
                       <div className="flex items-center justify-between gap-3">
                         <CardTitle>
@@ -1629,14 +1533,7 @@ export default function App() {
               )}
             </TabsContent>
             <TabsContent value="impact" className="space-y-8">
-              <section
-                ref={tourAnchor("impact")}
-                className={
-                  activeTour?.target === "impact"
-                    ? tourHighlight + " rounded-xl bg-background p-4"
-                    : "space-y-3"
-                }
-              >
+              <section className="space-y-3">
                 <p className="text-xs text-muted-foreground">
                   Company work · Connected across tools
                 </p>
@@ -1772,9 +1669,7 @@ export default function App() {
               )}
               {impact?.analysis.ready && !impact.analysis.blocked && (
                 <>
-                  <Card
-                    className="shadow-none"
-                  >
+                  <Card className="shadow-none">
                     <CardHeader>
                       <CardTitle>{impact.analysis.decision?.title}</CardTitle>
                       <CardDescription>
@@ -2119,14 +2014,7 @@ export default function App() {
               )}
             </TabsContent>
             <TabsContent value="calendar" className="space-y-8">
-              <section
-                ref={tourAnchor("calendar")}
-                className={
-                  activeTour?.target === "calendar"
-                    ? tourHighlight + " rounded-xl bg-background p-4"
-                    : "space-y-2"
-                }
-              >
+              <section className="space-y-2">
                 <h1 className="font-heading text-3xl font-semibold tracking-tight">
                   Calendar
                 </h1>
@@ -2164,14 +2052,7 @@ export default function App() {
               </div>
             </TabsContent>
             <TabsContent value="notes" className="space-y-8">
-              <section
-                ref={tourAnchor("notes")}
-                className={
-                  activeTour?.target === "notes"
-                    ? tourHighlight + " rounded-xl bg-background p-4"
-                    : "space-y-2"
-                }
-              >
+              <section className="space-y-2">
                 <h1 className="font-heading text-3xl font-semibold tracking-tight">
                   Notes
                 </h1>
@@ -2527,14 +2408,7 @@ export default function App() {
               </TabsContent>
             )}
             <TabsContent value="home" className="space-y-6">
-              <h1
-                ref={tourAnchor("tasks")}
-                className={
-                  activeTour?.target === "tasks"
-                    ? tourHighlight + " rounded-xl bg-background p-4"
-                    : "font-heading text-2xl font-semibold"
-                }
-              >
+              <h1 className="font-heading text-2xl font-semibold">
                 Your tasks
               </h1>
               <div className="divide-y border-y">
@@ -2574,14 +2448,7 @@ export default function App() {
                 <Skeleton className="h-64 w-full" />
               ) : (
                 <>
-                  <Card
-                    ref={tourAnchor("task")}
-                    className={
-                      activeTour?.target === "task"
-                        ? tourHighlight
-                        : "shadow-none"
-                    }
-                  >
+                  <Card className="shadow-none">
                     <CardHeader>
                       <p className="text-xs font-medium text-primary">
                         {stage === "done"
@@ -2749,14 +2616,7 @@ export default function App() {
               )}
             </TabsContent>
             <TabsContent value="sources" className="space-y-6">
-              <h1
-                ref={tourAnchor("knowledge")}
-                className={
-                  activeTour?.target === "knowledge"
-                    ? tourHighlight + " rounded-xl bg-background p-4"
-                    : "font-heading text-3xl font-semibold tracking-tight"
-                }
-              >
+              <h1 className="font-heading text-3xl font-semibold tracking-tight">
                 Knowledge
               </h1>
               <p className="text-sm text-muted-foreground">
@@ -2840,14 +2700,7 @@ export default function App() {
               )}
             </TabsContent>
             <TabsContent value="people" className="space-y-6">
-              <h1
-                ref={tourAnchor("people")}
-                className={
-                  activeTour?.target === "people"
-                    ? tourHighlight + " rounded-xl bg-background p-4"
-                    : "font-heading text-3xl font-semibold tracking-tight"
-                }
-              >
+              <h1 className="font-heading text-3xl font-semibold tracking-tight">
                 People
               </h1>
               <p className="text-sm text-muted-foreground">

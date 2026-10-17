@@ -10,7 +10,7 @@ These checks use small, builder-authored synthetic fixtures. They are not produc
 | Relationship changes with identical source text | 4 cases passed | `uv run --locked python scripts/evaluate_relationships.py` |
 | Graph retrieval diagnostic | 8 cases passed | `uv run --locked python scripts/evaluate.py` |
 
-Integration tests create isolated disposable graphs and delete only those graphs. Provider contract tests mock model responses. Browser checks covered the dependency removal/restoration proof and all 11 employee tour stops; independent user feedback is pending.
+Integration tests create isolated disposable graphs and delete only those graphs. Provider contract tests mock model responses. Browser checks covered the dependency removal/restoration proof and the nine-stop Home and navigation tour; independent user feedback is pending.
 
 ## Saved reports
 
@@ -30,3 +30,5 @@ Public HTTPS deployment, hosted storage after restart, full mobile/keyboard revi
 Python code is installed from src/workweave with a committed uv.lock. The 63 backend tests include package fixture loading, configuration priority and the module entry point from another directory. A second clean, non-editable uv environment passed fixture and CLI checks. Source and wheel builds passed.
 
 The Docker image was built and tested as UID 10001: frontend, database health, context API, packaged fixture, writable usage directory and SIGTERM shutdown passed. No local secrets or internal notes were copied into the runtime. This does not establish hosted persistence, production authentication or a full security audit.
+
+Tour update: the Driver.js browser check covered all nine desktop stops without leaving Home, starting from Calendar, temporary sidebar expansion, completion, Escape and restoration of the original sidebar preference. Mobile layout was not included in this pass.

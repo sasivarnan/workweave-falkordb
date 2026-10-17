@@ -1,80 +1,57 @@
-// Instructions describe controls. Company records always come from the server.
+// Instructions describe controls; company records always come from the server.
 export const workspaceTour = [
   {
-    target: "today",
-    tab: "workspace",
-    title: "Your employee workspace",
+    target: "home-up-next",
+    title: "Prepare for your next meeting",
     description:
-      "Today brings together your next meeting, assigned tasks and recent meeting notes. Use it to decide where to start.",
+      "Open the meeting brief for its purpose. Connected context links the meeting to its note and related task.",
   },
   {
-    target: "navigation",
-    tab: "workspace",
-    title: "Move around the workspace",
+    target: "home-tasks",
+    title: "Start with your assigned work",
     description:
-      "Use navigation to open each area. The header control collapses the sidebar or opens navigation on a small screen. The sun or moon control switches the display theme.",
+      "Open a task to see its next action, current guidance, saved notes and reviewer. View all tasks opens your assignment list.",
+  },
+  {
+    target: "home-schedule",
+    title: "Plan your day",
+    description:
+      "Select a meeting to open its brief. Times use your workspace time zone. View calendar opens the full meeting list.",
+  },
+  {
+    target: "home-notes",
+    title: "Find meeting context",
+    description:
+      "Open a linked note to read the record behind a meeting. The Notes area also lets you keep a workspace note.",
   },
   {
     target: "search",
-    tab: "workspace",
     title: "Search company knowledge",
     description:
-      "Enter a question or term here to find company documents. Open a result to read the original record. Search does not require paid AI access.",
+      "Search documents from any page, then open the original source. Search does not use paid AI credits.",
   },
   {
-    target: "tasks",
-    tab: "home",
-    title: "Find your assigned work",
+    target: "left-nav",
+    title: "Your workspace navigation",
     description:
-      "Tasks lists your assignments and their purpose. Open task shows the requirements, current guidance and saved progress for that assignment.",
+      "Today brings you back here. Tasks opens assigned work; Calendar, Notes and Knowledge hold meeting records and sources. People shows contacts for your current assignment.",
   },
   {
-    target: "task",
-    tab: "assignment",
-    title: "Work on an assignment",
+    target: "nav-changes",
+    title: "Review changed decisions",
     description:
-      "This card shows your next required action. Reading, training, plan updates and review requests have separate checks. Saved notes and optional AI help are below. The tour does not complete any action.",
+      "Decision review shows approval, original sources and saved plans that need review. Reading a change and updating a plan are separate actions.",
   },
   {
-    target: "calendar",
-    tab: "calendar",
-    title: "Prepare for meetings",
+    target: "nav-impact",
+    title: "Follow work across teams",
     description:
-      "Calendar shows meeting times in your workspace time zone. Open a meeting for its brief and linked notes. These sample records do not send calendar invitations.",
+      "Cross-team impact follows service dependencies to affected tasks and owners. Why affected shows the paths. Sample exports are labelled and load only when requested.",
   },
   {
-    target: "notes",
-    tab: "notes",
-    title: "Read and keep notes",
+    target: "theme",
+    title: "Make the workspace comfortable",
     description:
-      "Expand saved meeting notes to read the record. Use the workspace note area for your own note. Saving is an explicit action; the tour does not write a note.",
-  },
-  {
-    target: "knowledge",
-    tab: "sources",
-    title: "Read company sources",
-    description:
-      "Knowledge contains documents and decision sources. Search or expand a record to read it. Source links elsewhere in the app bring you here so you can check the original evidence.",
-  },
-  {
-    target: "people",
-    tab: "people",
-    title: "Find the right person",
-    description:
-      "People shows contacts linked to your current assignment, including their recorded role. It is assignment context, not a full company directory.",
-  },
-  {
-    target: "decision",
-    tab: "changes",
-    title: "Check current guidance",
-    description:
-      "Decision review shows approval, source, history and affected assignments. Acknowledge records that you read the change. Updating a saved plan is a separate action.",
-  },
-  {
-    target: "impact",
-    tab: "impact",
-    title: "Explore cross-team dependencies",
-    description:
-      "Find affected work follows recorded service links to tasks, owners, meetings and notes. Why affected explains each path. Missing links can hide impact. The labelled sample import is optional; this tour does not run it.",
+      "Switch light and dark mode here. Your choice is saved in this browser. You can restart this tour from the header at any time.",
   },
 ] as const

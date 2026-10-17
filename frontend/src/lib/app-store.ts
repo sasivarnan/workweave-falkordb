@@ -3,7 +3,7 @@ import type { ImpactAnalysis, ImpactResult } from "./impact"
 import type { Evaluation, Result } from "./workspace"
 
 export type AppState = {
-  tourReady: number
+  tourSidebarBefore: boolean | null
   employeeGuide: number
   proofStage: "off" | "inspect" | "removed" | "restored"
   proofBaseline: ImpactAnalysis | null
@@ -34,7 +34,7 @@ export type AppState = {
 }
 const judgeMode = window.location.pathname === "/judge"
 const initial: AppState = {
-  tourReady: 0,
+  tourSidebarBefore: null,
   employeeGuide: 0,
   proofStage: "off",
   proofBaseline: null,
