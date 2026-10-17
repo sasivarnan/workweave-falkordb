@@ -86,6 +86,8 @@ export default function App() {
   const judgeMode = window.location.pathname === "/judge"
   const state = useSelector(appStore, (snapshot) => snapshot.context)
   const {
+    employeeGuide,
+    guideDismissed,
     impact,
     proofStage,
     proofBaseline,
@@ -395,10 +397,29 @@ export default function App() {
       appStore.trigger.requestFinished()
     }
   }
+  function finishEmployeeGuide() {
+    appStore.trigger.updated({
+      patch: { employeeGuide: 0, guideDismissed: true },
+    })
+    localStorage.setItem("workweave-guide-dismissed", "yes")
+  }
+  async function moveEmployeeGuide(step: 1 | 2 | 3) {
+    if (step === 2) {
+      appStore.trigger.updated({
+        patch: { proofStage: "off", proofBaseline: null },
+      })
+      const data = await analyzeImpact(
+        workspace?.synthetic ? "import" : "analyze"
+      )
+      if (!data) return
+    }
+    updateField("employeeGuide", step)
+    navigate(step === 1 ? "changes" : step === 2 ? "impact" : "assignment")
+  }
   async function startImpactProof() {
     const navigationVersion = navigationRef.current
     appStore.trigger.updated({
-      patch: { proofStage: "off", proofBaseline: null, impactExpanded: [] },
+      patch: { employeeGuide: 0, proofStage: "off", proofBaseline: null, impactExpanded: [] },
     })
     let data = await analyzeImpact("import")
     if (!data?.analysis.ready || data.analysis.blocked) {
@@ -655,6 +676,16 @@ export default function App() {
               {sidebarOpen && <span>{label}</span>}
             </Button>
           ))}
+          <Button
+            variant="ghost"
+            aria-label="Help: restart workspace guide"
+            title="Help: restart workspace guide"
+            disabled={busy || !context}
+            className="w-full justify-start overflow-hidden"
+            onClick={() => void moveEmployeeGuide(1)}
+          >
+            {sidebarOpen ? "Help · Restart guide" : "?"}
+          </Button>
           {judgeMode && (
             <>
               <Separator className="my-5" />
@@ -846,6 +877,60 @@ export default function App() {
               </AlertDescription>
             </Alert>
           )}
+          {employeeGuide > 0 && context && (
+            <Card className="border-primary/20 bg-primary/5 shadow-none">
+              <CardHeader>
+                <CardDescription>
+                  Workspace guide · Step {employeeGuide} of 3
+                </CardDescription>
+                <CardTitle>
+                  {employeeGuide === 1
+                    ? "Start with the current decision"
+                    : employeeGuide === 2
+                      ? "See which work depends on it"
+                      : "Choose your next action"}
+                </CardTitle>
+                <CardDescription>
+                  {employeeGuide === 1
+                    ? `Current guidance: ${context.current || "Needs clarification"}. Open the original source below to check its approval.`
+                    : employeeGuide === 2
+                      ? "Affected tasks are grouped by team. Open “Why affected?” to follow the recorded paths and linked meeting notes."
+                      : "Review your assigned task and its requirements. The guide does not accept a plan or change your work."}
+                </CardDescription>
+              </CardHeader>
+              <CardFooter className="flex flex-wrap gap-2">
+                {employeeGuide > 1 && (
+                  <Button
+                    variant="outline"
+                    disabled={busy}
+                    onClick={() =>
+                      void moveEmployeeGuide(employeeGuide === 3 ? 2 : 1)
+                    }
+                  >
+                    Back
+                  </Button>
+                )}
+                <Button
+                  disabled={busy}
+                  onClick={() =>
+                    employeeGuide === 3
+                      ? finishEmployeeGuide()
+                      : void moveEmployeeGuide(employeeGuide === 1 ? 2 : 3)
+                  }
+                >
+                  {employeeGuide === 3 ? "Finish guide" : "Next"}
+                  <RiArrowRightLine />
+                </Button>
+                <Button
+                  variant="ghost"
+                  disabled={busy}
+                  onClick={finishEmployeeGuide}
+                >
+                  Skip guide
+                </Button>
+              </CardFooter>
+            </Card>
+          )}
           <Tabs value={tab} onValueChange={(v) => navigate(String(v))}>
             <TabsList className="hidden">
               <TabsTrigger value="workspace">Today</TabsTrigger>
@@ -875,18 +960,29 @@ export default function App() {
                 <p className="text-sm text-muted-foreground sm:text-base">
                   Your work and the context behind it.
                 </p>
-                {workspace?.synthetic && (
-                  <Button
-                    variant="link"
-                    className="h-auto px-0 text-xs"
-                    disabled={busy}
-                    onClick={() => void startImpactProof()}
-                  >
-                    See how one decision affects several teams{" "}
-                    <RiArrowRightLine />
-                  </Button>
-                )}
               </section>
+              {context && !guideDismissed && employeeGuide === 0 && (
+                <Card className="shadow-none">
+                  <CardHeader>
+                    <CardTitle>See what changed across your team</CardTitle>
+                    <CardDescription>
+                      Follow a decision to the tasks and people it affects.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardFooter className="gap-2">
+                    <Button
+                      disabled={busy}
+                      onClick={() => void moveEmployeeGuide(1)}
+                    >
+                      Start guide
+                      <RiArrowRightLine />
+                    </Button>
+                    <Button variant="ghost" onClick={finishEmployeeGuide}>
+                      Dismiss
+                    </Button>
+                  </CardFooter>
+                </Card>
+              )}
               <div className="flex items-center gap-6 border-b">
                 <span className="border-b-2 border-primary pb-3 text-sm font-medium text-primary">
                   My day

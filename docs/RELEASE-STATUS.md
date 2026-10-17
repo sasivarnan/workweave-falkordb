@@ -9,6 +9,8 @@
 - Previous backend validation: 60 tests, seven impact cases, four relationship cases and eight graph retrieval cases passed. These were not repeated for this UI-only change.
 - Changes committed locally. A local commit is not proof of public CI or deployment.
 
+- Optional home guide added: current decision → cross-team impact → assigned task. Skip/finish saves dismissal locally; Help restarts it. Local browser check covered all three steps, finish and restart. This is not independent human feedback.
+
 ## Submission blockers
 
 - Registration confirmation: pending participant confirmation.
