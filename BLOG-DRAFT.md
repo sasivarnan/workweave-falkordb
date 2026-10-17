@@ -59,3 +59,9 @@ Company knowledge uses FalkorDB full-text indexing over document titles and bodi
 I ran a paired diagnostic with the same gpt-4.1-mini model, questions, output schema and full synthetic source corpus. Document-only inputs produced correct guidance in 4/8 cases; graph-context inputs produced 6/8. More context was not enough: the model still gave an answer in both cases that required abstention, and two otherwise correct graph-context answers supplied document titles instead of citation IDs. The run used 16 calls and 9,600 reported tokens.
 
 This is a small builder-authored diagnostic, not a vector-RAG benchmark. Its practical result is a product decision: the model may organize the interface, but graph checks determine current guidance and whether a review request can be stored. The eight deterministic graph cases passed, including those refusal cases. Raw results and the script are public.
+
+## A stronger test than a graph screenshot
+
+I kept all source document IDs, titles and bodies byte-identical, then changed only relationships in four isolated fixtures. Removing the replacement link made approval ambiguous. Removing the current source link blocked plan acceptance. Changing the reviewer relationship changed the correct reviewer to Noah even while the old review-policy document still named Leo. Removing the task-service link made task context unavailable. All four checks passed.
+
+A text-only system receives identical input in each pair and cannot distinguish the changed company state without another source of relationship information. FalkorDB supplies that operational structure in FirstTask. SQL with an equivalent relationship model could also solve it; I do not claim otherwise. The product benefit is a source-backed next action with explicit authority checks, not a database exclusivity claim.

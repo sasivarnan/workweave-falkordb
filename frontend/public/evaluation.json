@@ -18,7 +18,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 18.48,
+      "ms": 18.07,
       "detail": "Current assignment guidance resolved."
     },
     {
@@ -30,7 +30,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 18.86,
+      "ms": 19.56,
       "detail": "Current assignment guidance resolved."
     },
     {
@@ -42,7 +42,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 17.61,
+      "ms": 21.26,
       "detail": "Current assignment guidance resolved."
     },
     {
@@ -54,7 +54,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 18.02,
+      "ms": 38.92,
       "detail": "Abstained because evidence was incomplete or conflicting."
     },
     {
@@ -66,7 +66,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 15.34,
+      "ms": 33.47,
       "detail": "Abstained because evidence was incomplete or conflicting."
     },
     {
@@ -78,7 +78,7 @@
       "lexicalSource": "Refund test policy",
       "passed": true,
       "lexicalPassed": true,
-      "ms": 18.55,
+      "ms": 41.97,
       "detail": "Current assignment guidance resolved."
     },
     {
@@ -90,7 +90,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 17.2,
+      "ms": 30.37,
       "detail": "Reviewer absence detected; no substitute inferred."
     },
     {
@@ -102,7 +102,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 15.26,
+      "ms": 24.0,
       "detail": "Saved plan flagged for review."
     }
   ],
@@ -559,6 +559,52 @@
             }
           }
         }
+      }
+    ]
+  },
+  "relationshipDiagnostic": {
+    "method": "Four isolated synthetic graph mutations. Source document IDs, titles and bodies remain byte-for-byte identical. Only relationships change. Expected outcomes are builder-authored. Missing authority must also reject plan acceptance. No model calls.",
+    "claim": "Document text alone cannot distinguish these paired states. FalkorDB relationships supply the missing authority and ownership information in this implementation. A relational database with an equivalent relationship model could also solve this; the test does not prove graph-database exclusivity.",
+    "results": [
+      {
+        "case": "Remove the replacement link",
+        "before": "Use Provider B",
+        "after": "Clarification required",
+        "documentsUnchanged": true,
+        "documentHash": "124c8a08a98dfc5fa3135efce529cd80df0400c04d12835f6b226106a253f638",
+        "acceptanceBlocked": true,
+        "passed": true,
+        "query": "MATCH (:Decision {id:\"provider-b\"})-[r:SUPERSEDES]->() DELETE r"
+      },
+      {
+        "case": "Remove the current source link",
+        "before": "Use Provider B",
+        "after": "Clarification required",
+        "documentsUnchanged": true,
+        "documentHash": "124c8a08a98dfc5fa3135efce529cd80df0400c04d12835f6b226106a253f638",
+        "acceptanceBlocked": true,
+        "passed": true,
+        "query": "MATCH (:Decision {id:\"provider-b\"})-[r:SUPPORTED_BY]->() DELETE r"
+      },
+      {
+        "case": "Change the recorded reviewer",
+        "before": "Leo Martin",
+        "after": "Noah Williams",
+        "documentsUnchanged": true,
+        "documentHash": "124c8a08a98dfc5fa3135efce529cd80df0400c04d12835f6b226106a253f638",
+        "acceptanceBlocked": null,
+        "passed": true,
+        "query": "MATCH (:Employee {id:\"leo\"})-[r:REVIEWER_FOR]->(:Service {id:\"checkout-service\"}) DELETE r WITH count(*) AS removed MATCH (n:Employee {id:\"noah\"}),(s:Service {id:\"checkout-service\"}) MERGE (n)-[:REVIEWER_FOR]->(s)"
+      },
+      {
+        "case": "Disconnect the task from its service",
+        "before": "Use Provider B",
+        "after": "Task context unavailable",
+        "documentsUnchanged": true,
+        "documentHash": "124c8a08a98dfc5fa3135efce529cd80df0400c04d12835f6b226106a253f638",
+        "acceptanceBlocked": null,
+        "passed": true,
+        "query": "MATCH (:Assignment {id:\"checkout\"})-[r:TOUCHES]->() DELETE r"
       }
     ]
   }

@@ -120,11 +120,9 @@ See RESOURCE-REVIEW.md for the resource audit. The execution view now includes G
 
 ## Employee product workflow
 
-The default route opens an employee home with a graph-backed five-day suggested plan, assigned work, team reviewers, and starter documents. Schedule items open their linked assignment or source document. It does not book calendar events. Existing workspaces receive an idempotent migration that retains saved notes. The employee work view remains available from Home and My work. The official shadcn Sidebar keeps My work, Knowledge, People, and both assigned tasks visible. The selected task has one primary next action, a requirement list, editable working notes, and a separate reviewer/source panel. The primary action changes after reading and training. The model-selected A2UI order controls the action, checklist, and notes sections. Choose checkout or refund testing. Every assignment resolves its own service, approved guidance, training, reviewer, and accepted plan from FalkorDB. Reading acknowledgements are linked to the current decision. Replacing that decision makes the new guidance unread. Progress measures required reading and training only; it does not claim that code review or the assignment is complete.
+The default route opens one task and one next action. The sequence is current reading → required training → review notes → stored review request. Source details and saved notes are collapsed. The navigation menu holds other assignments and document search. The dashboard, weekly plan and progress percentage are removed from the employee flow. `/judge` retains evaluation, walkthrough and query evidence.
 
-Ask for help is secondary. The assistant organizes graph-backed guidance; it does not provide an unrestricted chat response. Tool names and model status are hidden from the main employee view. A technical inspector remains available through Company knowledge.
-
-The judge route is /judge. It includes walkthrough controls, graph mutation controls, and technical evidence. This route separation is a presentation choice, not an authorization boundary. All data is synthetic and scoped to the visitor workspace. The app still does not implement production employee authentication.
+Facts and action gates come from FalkorDB. A2UI descriptors control the order of optional evidence and saved-note disclosures, while the next required action follows deterministic graph state. The model cannot reorder prerequisites or bypass an action gate.
 
 ### Changes that affect your work
 
@@ -155,3 +153,7 @@ AI operations are reserved before provider access in a SQLite ledger using an im
 Compose mounts a separate usage-data volume. On another host, set AI_USAGE_DB to a persistent path and use one app instance. If the ledger cannot be written, AI fails closed. Ephemeral hosting storage does not preserve limits across replacement. Do not publish live AI until persistent storage and HTTPS are verified. Resetting the sample graph does not reset the AI ledger. The invite code is shared access, not production employee identity or role management.
 
 Local code is stored in the ignored .env file with restricted file permissions. Never put it in README, the public video, or frontend environment variables. Reproduce secret checks with `python scripts/check_secrets.py` after building.
+
+## Relationship evidence
+
+Run `python scripts/evaluate_relationships.py`. Four isolated checks retain byte-identical source document IDs, titles and bodies while changing only relationships. Removing approval lineage creates ambiguity; removing source support blocks plan acceptance; changing the recorded reviewer changes the correct owner; disconnecting a task from its service removes its valid context. Full results: relationship-evaluation-results.json and `/judge`. This proves the need for relationship information and its central role here, not that SQL or other databases cannot represent the same model.

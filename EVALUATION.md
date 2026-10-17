@@ -62,3 +62,7 @@ Run `python scripts/evaluate.py` with local FalkorDB. Output: `evaluation-result
 ## Pre-deployment AI protection
 
 31 tests pass. Added missing-code refusal before provider/graph access, valid-code route verification with a mocked provider, rolling and lifetime budget persistence, and concurrent reservation limits. No model calls were used in these checks. A configured-secret scan passed against tracked files and the built frontend. AI reservations use a persistent SQLite ledger; Compose mounts it separately from graph data. Live deployment remains intentionally pending.
+
+## First-principles employee flow and relationship ablation
+
+The employee route now shows a single required action, its explanation, and the reviewer. Prerequisites appear in sequence. Dashboard, week plan, duplicate guidance panels and progress percentage were removed. All 31 existing tests and production build pass. Four additional reproducible ablation checks pass: source documents remain byte-identical while changes to supersession, source support, reviewer assignment or task-service links change the correct result. Missing authority rejects plan acceptance. This is evidence of relationship dependence, not graph-database exclusivity.

@@ -47,6 +47,8 @@ def main():
  root=Path(__file__).resolve().parents[1]
  model_report=root/'model-evaluation-results.json'
  if model_report.exists():report['modelDiagnostic']=json.loads(model_report.read_text())
+ relationship_report=root/'relationship-evaluation-results.json'
+ if relationship_report.exists():report['relationshipDiagnostic']=json.loads(relationship_report.read_text())
  for target in [root/'frontend/public/evaluation.json',root/'evaluation-results.json']:target.write_text(json.dumps(report,indent=2)+'\n')
  print(f"Graph checks: {sum(r['passed'] for r in results)}/8; lexical diagnostic: {sum(r['lexicalPassed'] for r in results)}/8")
  if not all(r['passed'] for r in results):raise SystemExit(1)
