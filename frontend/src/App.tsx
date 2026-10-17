@@ -492,7 +492,7 @@ export default function App() {
                     <SidebarMenuButton
                       isActive={tab === id}
                       onClick={() => navigate(id)}
-                      className="h-11 gap-3 rounded-lg px-3 text-sm data-[active=true]:bg-primary/10 data-[active=true]:text-primary"
+                      className="h-11 gap-3 rounded-lg px-3 text-sm data-active:bg-primary/10 data-active:text-primary"
                     >
                       <Icon className="size-4" />
                       <span>{label}</span>
