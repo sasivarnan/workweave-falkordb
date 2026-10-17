@@ -22,3 +22,12 @@ test("section links round trip and search retains its query", () => {
   )
   assert.equal(readRoute("/tasks/not/a/record").assignment, "")
 })
+
+test("task people links keep the task behind the panel", () => {
+  const route = readRoute("/tasks/checkout/people")
+  assert.equal(route.view, "assignment")
+  assert.equal(route.assignment, "checkout")
+  assert.equal(route.peopleTask, "checkout")
+  assert.equal(readRoute("/tasks/refunds/people").peopleTask, "refunds")
+  assert.equal(readRoute("/people").peopleTask, "")
+})

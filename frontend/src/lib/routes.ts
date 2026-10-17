@@ -14,6 +14,16 @@ export const viewPaths: Record<string, string> = {
 }
 export function readRoute(pathname = "/", search = "") {
   const query = readSearchQuery(search)
+  const people = /^\/tasks\/([a-zA-Z0-9_-]{1,100})\/people$/.exec(pathname)
+  if (people)
+    return {
+      view: "assignment",
+      query: "",
+      assignment: people[1],
+      peopleTask: people[1],
+      meetingId: "",
+      sourceId: "",
+    }
   const match = /^\/(tasks|calendar|knowledge)\/([a-zA-Z0-9_-]{1,100})$/.exec(
     pathname
   )
@@ -25,6 +35,7 @@ export function readRoute(pathname = "/", search = "") {
           : match[1] === "calendar"
             ? "calendar"
             : "document",
+      peopleTask: "",
       query: "",
       assignment: match[1] === "tasks" ? match[2] : "",
       meetingId: match[1] === "calendar" ? match[2] : "",
@@ -36,6 +47,7 @@ export function readRoute(pathname = "/", search = "") {
       : Object.keys(viewPaths).find((k) => viewPaths[k] === pathname) ||
         "workspace",
     query,
+    peopleTask: "",
     assignment: "",
     meetingId: "",
     sourceId: "",

@@ -92,6 +92,7 @@ export default function App() {
     impactExpanded,
     theme,
     meeting,
+    peopleTask,
     workspaceNote,
     assignment,
     sidebarOpen,
@@ -232,6 +233,7 @@ export default function App() {
         searchQuery: route.query,
         searchNavigation: { ...route, revision },
         meeting: null,
+        peopleTask: route.peopleTask || null,
         openSources: [],
         readingOpen: false,
         editingNotes: false,
@@ -2625,9 +2627,16 @@ export default function App() {
                     <Button
                       variant="link"
                       size="sm"
-                      onClick={() => navigate("people")}
+                      onClick={() =>
+                        goToURL(
+                          "/tasks/" +
+                            encodeURIComponent(assignment) +
+                            "/people",
+                          true
+                        )
+                      }
                     >
-                      People who can help
+                      People on this task
                     </Button>
                   </div>
                   <Accordion multiple>
@@ -2864,54 +2873,35 @@ export default function App() {
                 Find the assigned team members and reviewers connected to your
                 work.
               </p>
-              <div className="space-y-5">
-                {context?.assignments.map((task) => (
-                  <Card key={task[0]} className="shadow-none">
-                    <CardHeader>
-                      <CardTitle>{task[1]}</CardTitle>
-                      <CardDescription>
-                        People linked to this assignment and its service.
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {context.projectContacts
-                        ?.filter((row) => row[4] === task[0])
-                        .map((row) => (
-                          <div
-                            key={row[0] + row[3]}
-                            className="flex items-start gap-3"
-                          >
-                            <Avatar>
-                              <AvatarFallback>
-                                {initials(row[1])}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="text-sm font-medium">{row[1]}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {row[3] === "REVIEWER_FOR"
-                                  ? "Service reviewer"
-                                  : row[3] === "BACKUP_REVIEWER_FOR"
-                                    ? "Alternate reviewer"
-                                    : "Assigned team member"}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                {row[2]}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => void openAssignment(task[0])}
-                      >
-                        Open assignment
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+              <Card className="shadow-none">
+                <CardContent className="divide-y px-5">
+                  {Array.from(
+                    new Map(
+                      (context?.projectContacts || []).map((row) => [
+                        row[0],
+                        row,
+                      ])
+                    ).values()
+                  ).map((row) => (
+                    <div key={row[0]} className="flex items-start gap-3 py-5">
+                      <Avatar>
+                        <AvatarFallback>{initials(row[1])}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="text-sm font-medium">{row[1]}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {row[2]}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  {context && !context.projectContacts?.length && (
+                    <p className="py-5 text-sm text-muted-foreground">
+                      No people are linked to your work yet.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
             {judgeMode && (
               <TabsContent value="evidence" className="space-y-5 pt-5">
@@ -3082,6 +3072,65 @@ export default function App() {
             </Accordion>
           )}
         </main>
+        <Sheet
+          open={!!peopleTask}
+          onOpenChange={(open) => {
+            if (open || !peopleTask) return
+            if (window.history.state?.recordPanel) window.history.back()
+            else void openAssignment(peopleTask)
+          }}
+        >
+          <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
+            <SheetHeader className="pr-12">
+              <SheetTitle>People on this task</SheetTitle>
+              <SheetDescription>
+                {context?.assignments.find(
+                  (row) => row[0] === peopleTask
+                )?.[1] || "Loading task contacts…"}
+              </SheetDescription>
+            </SheetHeader>
+            <div className="space-y-5 px-6 pb-6">
+              {busy ? (
+                <Skeleton className="h-40 w-full" />
+              ) : (
+                <>
+                  {(context?.projectContacts || [])
+                    .filter((row) => row[4] === peopleTask)
+                    .map((row) => (
+                      <div
+                        key={row[0] + row[3]}
+                        className="flex items-start gap-3 rounded-lg border p-4"
+                      >
+                        <Avatar>
+                          <AvatarFallback>{initials(row[1])}</AvatarFallback>
+                        </Avatar>
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium">{row[1]}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {row[2]}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {row[3] === "REVIEWER_FOR"
+                              ? "Reviews this task’s service"
+                              : row[3] === "BACKUP_REVIEWER_FOR"
+                                ? "Alternate reviewer for this task’s service"
+                                : "Assigned to this task"}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  {!context?.projectContacts?.some(
+                    (row) => row[4] === peopleTask
+                  ) && (
+                    <p className="text-sm text-muted-foreground">
+                      No contacts are recorded for this task.
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
         <Sheet
           open={!!meeting}
           onOpenChange={(open) => {

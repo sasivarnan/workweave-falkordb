@@ -15,6 +15,7 @@ export type AppState = {
   theme: string
   sidebarOpen: boolean
   mobileSidebarOpen: boolean
+  peopleTask: string | null
   meeting: string[] | null
   workspaceNote: string
   assignment: string
@@ -58,6 +59,7 @@ const initial: AppState = {
       : "light"),
   sidebarOpen: localStorage.getItem("workweave-sidebar") !== "collapsed",
   mobileSidebarOpen: false,
+  peopleTask: initialRoute.peopleTask || null,
   meeting: null,
   workspaceNote: "",
   assignment:

@@ -142,6 +142,7 @@ class AccessTests(unittest.TestCase):
                 try:
                     for path in [
                         "/tasks/checkout",
+                        "/tasks/checkout/people",
                         "/calendar/release-review",
                         "/knowledge/adr",
                         "/demo-controls/evidence",
