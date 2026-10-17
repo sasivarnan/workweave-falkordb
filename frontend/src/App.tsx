@@ -649,7 +649,7 @@ export default function App() {
     })
   const firstMeeting = context?.meetings[0]
   const navItems = [
-    ["workspace", "Today", RiHome5Line],
+    ["workspace", "Home", RiHome5Line],
     ["home", "Tasks", RiCheckboxCircleLine],
     ["changes", "Decision review", RiInformationLine],
     ["impact", "Cross-team impact", RiTeamLine],
@@ -683,14 +683,20 @@ export default function App() {
             sidebarOpen ? "space-y-6 px-5 py-7" : "space-y-6 px-3 py-7"
           }
         >
-          <div className="flex items-center gap-2.5">
+          <Button
+            variant="ghost"
+            aria-label="Go to Home"
+            title="Home"
+            onClick={() => navigate("workspace")}
+            className="h-auto justify-start gap-2.5 p-0 hover:bg-transparent"
+          >
             <RiBuildingLine className="size-6 shrink-0 text-primary" />
             {sidebarOpen && (
               <span className="font-heading text-xl font-semibold tracking-tight">
                 {workspace?.appName}
               </span>
             )}
-          </div>
+          </Button>
           {sidebarOpen && (
             <div className="flex items-center gap-2 rounded-lg border bg-background px-3 py-2.5 text-sm">
               <Avatar className="size-6 rounded-md">
@@ -852,9 +858,21 @@ export default function App() {
             >
               <RiMenuLine />
             </Button>
-            <span className="text-sm text-muted-foreground">Workspace</span>
-            <span className="text-muted-foreground">/</span>
-            <span className="text-sm font-medium">{pageTitle}</span>
+            <Button
+              variant="link"
+              className="h-auto gap-1.5 p-0 text-sm text-muted-foreground"
+              onClick={() => navigate("workspace")}
+              aria-label="Go to Home"
+            >
+              <RiHome5Line className="size-4" />
+              Home
+            </Button>
+            {tab !== "workspace" && (
+              <>
+                <span className="text-muted-foreground">/</span>
+                <span className="text-sm font-medium">{pageTitle}</span>
+              </>
+            )}
           </div>
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
             <form
@@ -932,7 +950,7 @@ export default function App() {
           )}
           <Tabs value={tab} onValueChange={(v) => navigate(String(v))}>
             <TabsList className="hidden">
-              <TabsTrigger value="workspace">Today</TabsTrigger>
+              <TabsTrigger value="workspace">Home</TabsTrigger>
               <TabsTrigger value="impact">Cross-team impact</TabsTrigger>
               <TabsTrigger value="changes">Decision review</TabsTrigger>
               <TabsTrigger value="calendar">Calendar</TabsTrigger>
@@ -2974,7 +2992,7 @@ export default function App() {
           <footer className="text-xs text-muted-foreground">
             {workspace?.company.name} ·{" "}
             {workspace?.synthetic
-              ? "Synthetic company records"
+              ? "Fictional company scenario · Real provider names are illustrative"
               : "Company records"}{" "}
             · No calendar invitations are sent
           </footer>

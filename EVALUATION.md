@@ -4,7 +4,7 @@ These checks use small, builder-authored synthetic fixtures. They are not produc
 
 | Check | Last recorded result | Reproduce |
 | --- | --- | --- |
-| Backend, graph and provider contracts | 64 tests passed | `uv run --locked python -m unittest discover -s tests -v` |
+| Backend, graph and provider contracts | 65 tests passed | `uv run --locked python -m unittest discover -s tests -v` |
 | Frontend state, search URLs and graph-proof validation | 6 tests passed | `npm test --prefix frontend` |
 | Cross-team impact | 7 cases passed | `uv run --locked python scripts/evaluate_impact.py` |
 | Relationship changes with identical source text | 4 cases passed | `uv run --locked python scripts/evaluate_relationships.py` |
@@ -32,3 +32,5 @@ Python code is installed from src/workweave with a committed uv.lock. The 64 bac
 The Docker image was built and tested as UID 10001: frontend, database health, context API, packaged fixture, writable usage directory and SIGTERM shutdown passed. No local secrets or internal notes were copied into the runtime. This does not establish hosted persistence, production authentication or a full security audit.
 
 Tour update: the Driver.js browser check covered all nine desktop stops without leaving Home, starting from Calendar, temporary sidebar expansion, completion, Escape and restoration of the original sidebar preference. Mobile layout was not included in this pass.
+
+The historical paid-model report retains the earlier Provider A/B/C labels. Graph-only reports use the current fictional Stripe/Adyen/Razorpay scenario; no paid model evaluation was rerun for this label change.

@@ -16,13 +16,11 @@ def lexical(documents, question):
     )
     doc = ranked[0]
     text = doc[2]
-    answer = next(
-        ("Use Provider " + p for p in ("A", "B", "C") if "Use Provider " + p in text), None
-    )
-    if "Provider B replaces Provider A" in text:
-        answer = "Use Provider B"
-    if "Provider C replaces Provider B" in text:
-        answer = "Use Provider C"
+    answer = next(("Use " + p for p in ("Stripe", "Adyen", "Razorpay") if "Use " + p in text), None)
+    if "Adyen replaces Stripe" in text:
+        answer = "Use Adyen"
+    if "Razorpay replaces Adyen" in text:
+        answer = "Use Razorpay"
     if "Run refund tests only" in text:
         answer = "Use sandbox transactions only"
     return answer, doc[1]
@@ -30,14 +28,14 @@ def lexical(documents, question):
 
 def main():
     cases = [
-        ("Outdated starter guide", "checkout", "Use Provider B", ""),
-        ("Decision replaced after plan acceptance", "checkout", "Use Provider C", "replace"),
-        ("Unapproved replacement", "checkout", "Use Provider B", "unapprove"),
+        ("Outdated starter guide", "checkout", "Use Adyen", ""),
+        ("Decision replaced after plan acceptance", "checkout", "Use Razorpay", "replace"),
+        ("Unapproved replacement", "checkout", "Use Adyen", "unapprove"),
         ("Two approved current decisions", "checkout", None, "conflict"),
         ("Current decision has no source", "checkout", None, "source"),
         ("Separate refund assignment", "refunds", "Use sandbox transactions only", ""),
-        ("Reviewer removed", "checkout", "Use Provider B", "remove-owner"),
-        ("Saved plan becomes stale", "checkout", "Use Provider C", "stale"),
+        ("Reviewer removed", "checkout", "Use Adyen", "remove-owner"),
+        ("Saved plan becomes stale", "checkout", "Use Razorpay", "stale"),
     ]
     results = []
     for title, assignment, expected, change in cases:
@@ -56,7 +54,7 @@ def main():
             if change == "conflict":
                 s.q(
                     "fixture",
-                    'MATCH (s:Service {id:"checkout-service"}) CREATE (:Decision {id:"parallel",title:"Use Provider C",approved:true})-[:APPLIES_TO]->(s)',
+                    'MATCH (s:Service {id:"checkout-service"}) CREATE (:Decision {id:"parallel",title:"Use Razorpay",approved:true})-[:APPLIES_TO]->(s)',
                     write=True,
                 )
             if change == "source":

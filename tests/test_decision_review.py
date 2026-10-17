@@ -26,7 +26,7 @@ class DecisionReviewTests(unittest.TestCase):
         self.store.action("replace")
         self.store.action("propose")
         context = self.store.context()
-        self.assertEqual(context["current"], "Use Provider C")
+        self.assertEqual(context["current"], "Use Razorpay")
         proposal = next(
             row for row in context["changeReview"]["history"] if row[0] == "provider-proposal"
         )

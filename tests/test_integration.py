@@ -14,7 +14,7 @@ class GraphTests(unittest.TestCase):
 
     def test_01_guidance(self):
         c = self.s.context()
-        self.assertEqual(c["current"], "Use Provider B")
+        self.assertEqual(c["current"], "Use Adyen")
         self.assertEqual(c["conflicts"][0][0], "guide")
         self.assertEqual(len(c["conflicts"][0][5]), 5)
 
@@ -28,9 +28,9 @@ class GraphTests(unittest.TestCase):
         self.s.action("accept", "Mentor review")
         self.s.action("replace")
         c = self.s.context()
-        self.assertEqual(c["current"], "Use Provider C")
+        self.assertEqual(c["current"], "Use Razorpay")
         self.assertTrue(c["needsReview"])
-        self.assertEqual(c["plan"][0][1], "Use Provider B")
+        self.assertEqual(c["plan"][0][1], "Use Adyen")
 
     def test_04_missing_owner(self):
         self.s.action("remove-owner")
@@ -91,7 +91,7 @@ class GraphTests(unittest.TestCase):
         self.s.action("complete")
         self.s.reset()
         c = self.s.context()
-        self.assertEqual(c["current"], "Use Provider B")
+        self.assertEqual(c["current"], "Use Adyen")
         self.assertFalse(c["training"][0][2])
 
     def test_13_assignment_scope(self):
@@ -140,10 +140,10 @@ class GraphTests(unittest.TestCase):
         rows = other.context()["findings"]
         self.assertEqual(rows[0][0], "checkout")
         self.assertEqual(
-            rows[0][4:8], ["Use Provider A", "Use Provider B", "adr", "ADR-042: Provider migration"]
+            rows[0][4:8], ["Use Stripe", "Use Adyen", "adr", "ADR-042: Provider migration"]
         )
         self.s.action("replace")
-        self.assertEqual(other.context()["findings"][0][5], "Use Provider C")
+        self.assertEqual(other.context()["findings"][0][5], "Use Razorpay")
         self.s.q("unapprove", "MATCH (d:Decision) SET d.approved=false", write=True)
         self.assertEqual(other.context()["findings"], [])
 
@@ -180,7 +180,7 @@ class GraphTests(unittest.TestCase):
         self.s.action("replace")
         self.s.q(
             "fixture",
-            'MATCH (d:Decision {id:"provider-c"}) SET d.title="Use Provider B"',
+            'MATCH (d:Decision {id:"provider-c"}) SET d.title="Use Adyen"',
             write=True,
         )
         self.assertTrue(self.s.context()["needsReview"])
@@ -205,7 +205,7 @@ class GraphTests(unittest.TestCase):
         self.assertEqual(
             c["impact"][0],
             [
-                "Use Provider C",
+                "Use Razorpay",
                 "Checkout release review",
                 "Checkout planning notes",
                 "Ship checkout status change",
@@ -241,6 +241,21 @@ class GraphTests(unittest.TestCase):
         )
         with self.assertRaises(ValueError):
             self.s.context()
+
+    def test_legacy_provider_labels_migrate_without_losing_notes(self):
+        self.s.action("accept", "My original review notes")
+        self.s.q(
+            "legacy_labels",
+            'MATCH (d:Decision {id:"provider-b"}) SET d.title="Use Provider B" WITH d MATCH (p:LearningPlan) SET p.guidance="Use Provider B" WITH p MATCH (m:Meta {id:"provider-names-v1"}) DELETE m',
+            write=True,
+        )
+        self.s.seed()
+        c = self.s.context()
+        self.assertEqual(c["current"], "Use Adyen")
+        self.assertEqual(c["plan"][0][1], "Use Adyen")
+        self.assertEqual(c["plan"][0][2], "My original review notes")
+        self.s.seed()
+        self.assertEqual(self.s.context()["plan"][0][2], "My original review notes")
 
 
 if __name__ == "__main__":

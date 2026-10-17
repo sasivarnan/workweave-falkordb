@@ -4,7 +4,7 @@ An employee workspace that connects tasks, meetings, notes, people and approved 
 
 **Live demo:** [Open Workweave](https://workweave-falkordb.onrender.com/) · [Technical proof](https://workweave-falkordb.onrender.com/judge)
 
-Hosted on Render with FalkorDB Cloud. Synthetic data only. Final demo video is pending.
+Hosted on Render with FalkorDB Cloud. Synthetic data only. Stripe, Adyen, Razorpay and PayPal appear in a fictional payment-provider scenario; no real company decisions or integrations are implied. Final demo video is pending.
 
 ## Run
 

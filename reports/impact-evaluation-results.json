@@ -39,7 +39,7 @@
         "Verify invoice reconciliation",
         "Billing API",
         "Checkout service",
-        "Use Provider B"
+        "Use Adyen"
       ]
     },
     {
@@ -49,7 +49,7 @@
       "path": [
         "Release checkout status update",
         "Checkout service",
-        "Use Provider B"
+        "Use Adyen"
       ]
     },
     {
@@ -60,7 +60,7 @@
         "Update support payment guidance",
         "Support console",
         "Checkout service",
-        "Use Provider B"
+        "Use Adyen"
       ]
     },
     {
@@ -71,7 +71,7 @@
         "Review escalated payment cases",
         "Support console",
         "Checkout service",
-        "Use Provider B"
+        "Use Adyen"
       ]
     }
   ],
@@ -87,8 +87,8 @@
       "SUP-311"
     ],
     "documentsUnchanged": true,
-    "beforeHash": "89535a9ea932af47301c73a516edcecad5d3497c59ea60605a6f12b1afe35d6d",
-    "afterHash": "89535a9ea932af47301c73a516edcecad5d3497c59ea60605a6f12b1afe35d6d",
+    "beforeHash": "0e2b41cdd897561f2606339e28c85cb71be7d27e11ae6941d25d021ca0084165",
+    "afterHash": "0e2b41cdd897561f2606339e28c85cb71be7d27e11ae6941d25d021ca0084165",
     "beforeRoutes": {
       "BILL-204": 1,
       "PAY-108": 1,
@@ -113,8 +113,8 @@
       "SUP-311"
     ],
     "documentsUnchanged": true,
-    "beforeHash": "89535a9ea932af47301c73a516edcecad5d3497c59ea60605a6f12b1afe35d6d",
-    "afterHash": "89535a9ea932af47301c73a516edcecad5d3497c59ea60605a6f12b1afe35d6d",
+    "beforeHash": "0e2b41cdd897561f2606339e28c85cb71be7d27e11ae6941d25d021ca0084165",
+    "afterHash": "0e2b41cdd897561f2606339e28c85cb71be7d27e11ae6941d25d021ca0084165",
     "beforeRoutes": {
       "PAY-108": 1,
       "SUP-310": 1,

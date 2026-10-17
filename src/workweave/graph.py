@@ -28,19 +28,19 @@ NODES = [
     ("Team", "payments", "Payments", "Checkout and transaction platform"),
     ("Assignment", "checkout", "Ship checkout status change", "Add a payment status indicator"),
     ("Service", "checkout-service", "Checkout service", "Customer-facing checkout"),
-    ("Decision", "provider-a", "Use Provider A", "Approved historical decision"),
-    ("Decision", "provider-b", "Use Provider B", "Approved replacement decision"),
+    ("Decision", "provider-a", "Use Stripe", "Approved historical decision"),
+    ("Decision", "provider-b", "Use Adyen", "Approved replacement decision"),
     (
         "Document",
         "guide",
         "Checkout starter guide",
-        "Use Provider A for checkout integration. Updated 2026-08-01.",
+        "Use Stripe for checkout integration. Updated 2026-08-01.",
     ),
     (
         "Document",
         "adr",
         "ADR-042: Provider migration",
-        "Provider B replaces Provider A. Approved 2026-10-14. Provider A is no longer used for new checkout changes.",
+        "Adyen replaces Stripe. Approved 2026-10-14. Stripe is no longer used for new checkout changes.",
     ),
     (
         "Document",
@@ -192,6 +192,7 @@ class Store:
             self.seed_identity()
             self.seed_company()
             self.seed_decision_review()
+            self.seed_provider_names()
             self.g.execute_command("EXPIRE", self.name, 86400)
             return
         for label, id, title, body in NODES:
@@ -225,9 +226,28 @@ class Store:
         self.seed_identity()
         self.seed_company()
         self.seed_decision_review()
+        self.seed_provider_names()
         self.q("seed_complete", "CREATE (:Meta {id:$id})", {"id": "seed"}, True)
         self.g.execute_command("EXPIRE", self.name, 86400)
         self.trace = []
+
+    def seed_provider_names(self):
+        """Rename legacy sample labels without resetting progress or user notes."""
+        if self.q("provider_names_version", 'MATCH (:Meta {id:"provider-names-v1"}) RETURN true'):
+            return
+        for old, new in [
+            ("Provider A", "Stripe"),
+            ("Provider B", "Adyen"),
+            ("Provider C", "Razorpay"),
+            ("Provider D", "PayPal"),
+        ]:
+            self.q(
+                "rename_sample_provider",
+                "MATCH (n) WHERE n:Decision OR n:Document OR n:LearningPlan SET n.title=replace(n.title,$old,$new),n.body=replace(n.body,$old,$new),n.guidance=replace(n.guidance,$old,$new)",
+                {"old": old, "new": new},
+                True,
+            )
+        self.q("provider_names_complete", 'MERGE (:Meta {id:"provider-names-v1"})', write=True)
 
     def seed_identity(self):
         if self.q("identity_version", 'MATCH (:Meta {id:"identity-v1"}) RETURN true'):
@@ -652,7 +672,7 @@ class Store:
         if name == "replace":
             self.q(
                 "replace_decision",
-                'MERGE (d:Decision {id:"provider-c"}) SET d.title="Use Provider C",d.approved=true MERGE (src:Document {id:"adr-c"}) SET src.title="ADR-043: Provider C",src.body="Approved demo change: Provider C replaces Provider B." WITH d,src MATCH (old:Decision {id:"provider-b"}),(s:Service {id:"checkout-service"}) MERGE (d)-[:SUPERSEDES {weight:1}]->(old) MERGE (d)-[:SUPPORTED_BY {weight:1}]->(src) MERGE (d)-[:APPLIES_TO {weight:1}]->(s)',
+                'MERGE (d:Decision {id:"provider-c"}) SET d.title="Use Razorpay",d.approved=true MERGE (src:Document {id:"adr-c"}) SET src.title="ADR-043: Razorpay",src.body="Approved demo change: Razorpay replaces Adyen." WITH d,src MATCH (old:Decision {id:"provider-b"}),(s:Service {id:"checkout-service"}) MERGE (d)-[:SUPERSEDES {weight:1}]->(old) MERGE (d)-[:SUPPORTED_BY {weight:1}]->(src) MERGE (d)-[:APPLIES_TO {weight:1}]->(s)',
                 write=True,
             )
             self.q(
@@ -667,7 +687,7 @@ class Store:
         elif name == "propose":
             self.q(
                 "record_newer_proposal",
-                'MATCH (e:Employee {id:"maya"}),(s:Service {id:"checkout-service"}) MERGE (d:Decision {id:"provider-proposal"}) SET d.title="Consider Provider D",d.approved=false,d.proposedAt=$now MERGE (m:Meeting {id:"proposal-review"}) SET m.title="Explore another provider",m.starts=$starts,m.body="Discuss an alternative. No replacement has been approved." MERGE (src:Document {id:"proposal-notes"}) SET src.title="Provider exploration notes",src.body="Provider D was proposed for investigation. No approval was given." MERGE (d)-[:APPLIES_TO]->(s) MERGE (d)-[:SUPPORTED_BY]->(src) MERGE (m)-[:PROPOSED]->(d) MERGE (src)-[:NOTES_FOR]->(m) MERGE (e)-[:ATTENDS]->(m)',
+                'MATCH (e:Employee {id:"maya"}),(s:Service {id:"checkout-service"}) MERGE (d:Decision {id:"provider-proposal"}) SET d.title="Consider PayPal",d.approved=false,d.proposedAt=$now MERGE (m:Meeting {id:"proposal-review"}) SET m.title="Explore another provider",m.starts=$starts,m.body="Discuss an alternative. No replacement has been approved." MERGE (src:Document {id:"proposal-notes"}) SET src.title="Provider exploration notes",src.body="PayPal was proposed for investigation. No approval was given." MERGE (d)-[:APPLIES_TO]->(s) MERGE (d)-[:SUPPORTED_BY]->(src) MERGE (m)-[:PROPOSED]->(d) MERGE (src)-[:NOTES_FOR]->(m) MERGE (e)-[:ATTENDS]->(m)',
                 {
                     "now": int(time.time() * 1000) + 60000,
                     "starts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() + 60000)),

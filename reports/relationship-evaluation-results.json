@@ -4,20 +4,20 @@
   "results": [
     {
       "case": "Remove the replacement link",
-      "before": "Use Provider B",
+      "before": "Use Adyen",
       "after": "Clarification required",
       "documentsUnchanged": true,
-      "documentHash": "9a9b171c3f9b29d9d2b14b8f8f7671a9c18771b4634105715425222de35532ee",
+      "documentHash": "02378f0a3b1b96fef6ddef589bb828c9dfb782bf29c5700ef15150526c4fcae5",
       "acceptanceBlocked": true,
       "passed": true,
       "query": "MATCH (:Decision {id:\"provider-b\"})-[r:SUPERSEDES]->() DELETE r"
     },
     {
       "case": "Remove the current source link",
-      "before": "Use Provider B",
+      "before": "Use Adyen",
       "after": "Clarification required",
       "documentsUnchanged": true,
-      "documentHash": "9a9b171c3f9b29d9d2b14b8f8f7671a9c18771b4634105715425222de35532ee",
+      "documentHash": "02378f0a3b1b96fef6ddef589bb828c9dfb782bf29c5700ef15150526c4fcae5",
       "acceptanceBlocked": true,
       "passed": true,
       "query": "MATCH (:Decision {id:\"provider-b\"})-[r:SUPPORTED_BY]->() DELETE r"
@@ -27,17 +27,17 @@
       "before": "Leo Martin",
       "after": "Noah Williams",
       "documentsUnchanged": true,
-      "documentHash": "9a9b171c3f9b29d9d2b14b8f8f7671a9c18771b4634105715425222de35532ee",
+      "documentHash": "02378f0a3b1b96fef6ddef589bb828c9dfb782bf29c5700ef15150526c4fcae5",
       "acceptanceBlocked": null,
       "passed": true,
       "query": "MATCH (:Employee {id:\"leo\"})-[r:REVIEWER_FOR]->(:Service {id:\"checkout-service\"}) DELETE r WITH count(*) AS removed MATCH (n:Employee {id:\"noah\"}),(s:Service {id:\"checkout-service\"}) MERGE (n)-[:REVIEWER_FOR]->(s)"
     },
     {
       "case": "Disconnect the task from its service",
-      "before": "Use Provider B",
+      "before": "Use Adyen",
       "after": "Task context unavailable",
       "documentsUnchanged": true,
-      "documentHash": "9a9b171c3f9b29d9d2b14b8f8f7671a9c18771b4634105715425222de35532ee",
+      "documentHash": "02378f0a3b1b96fef6ddef589bb828c9dfb782bf29c5700ef15150526c4fcae5",
       "acceptanceBlocked": null,
       "passed": true,
       "query": "MATCH (:Assignment {id:\"checkout\"})-[r:TOUCHES]->() DELETE r"

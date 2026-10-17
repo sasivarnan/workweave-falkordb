@@ -33,7 +33,7 @@ class ImpactTests(unittest.TestCase):
         self.assertEqual([item["id"] for item in result["excluded"]], ["HR-12"])
         self.assertEqual(
             items["BILL-204"]["explanation"],
-            ["Verify invoice reconciliation", "Billing API", "Checkout service", "Use Provider B"],
+            ["Verify invoice reconciliation", "Billing API", "Checkout service", "Use Adyen"],
         )
         self.assertTrue(
             any(row["tool"] == "native_dependency_explanation" for row in self.store.trace)
