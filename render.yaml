@@ -1,27 +1,38 @@
+# Paid service and disk. Review charges before creating the Blueprint.
 services:
   - type: web
     name: workweave
     runtime: docker
-    plan: free
+    plan: 0.5c-512mb
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    autoDeployTrigger: "off"
     healthCheckPath: /api/health
+    disk:
+      name: ai-usage
+      mountPath: /app/.data
+      sizeGB: 1
     envVars:
+      - key: WORKWEAVE_HOST
+        value: 0.0.0.0
+      - key: COOKIE_SECURE
+        value: "true"
       - key: FALKORDB_HOST
         sync: false
       - key: FALKORDB_PORT
         sync: false
-      - key: FALKORDB_PASSWORD
-        sync: false
       - key: FALKORDB_USERNAME
         sync: false
+      - key: FALKORDB_PASSWORD
+        sync: false
       - key: FALKORDB_SSL
-        sync: false
-      - key: GEMINI_API_KEY
-        sync: false
-      - key: GEMINI_MODEL
-        sync: false
-      - key: AI_PROVIDER
-        value: openai
-      - key: OPENAI_API_KEY
-        sync: false
-      - key: OPENAI_MODEL
-        value: gpt-6-luna
+        value: "true"
+      - key: AI_USAGE_DB
+        value: /app/.data/ai-usage.sqlite3
+      - key: AI_HOURLY_LIMIT
+        value: "5"
+      - key: AI_DAILY_LIMIT
+        value: "10"
+      - key: AI_TOTAL_LIMIT
+        value: "30"
