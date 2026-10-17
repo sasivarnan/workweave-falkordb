@@ -18,7 +18,7 @@ def lexical(documents,question):
 def main():
  cases=[
  ('Outdated starter guide','checkout','Use Provider B',''),
- ('Decision replaced after onboarding','checkout','Use Provider C','replace'),
+ ('Decision replaced after plan acceptance','checkout','Use Provider C','replace'),
  ('Unapproved replacement','checkout','Use Provider B','unapprove'),
  ('Two approved current decisions','checkout',None,'conflict'),
  ('Current decision has no source','checkout',None,'source'),
@@ -43,7 +43,7 @@ def main():
    behavior=(not c['people'] if change=='remove-owner' else c['needsReview'] if change=='stale' else True)
    results.append(dict(case=title,question=question,expected=expected,graph=graph,lexical=baseline,lexicalSource=source,passed=graph==expected and behavior,lexicalPassed=baseline==expected,ms=elapsed,detail='Reviewer absence detected; no substitute inferred.' if change=='remove-owner' else 'Saved plan flagged for review.' if change=='stale' else 'Abstained because evidence was incomplete or conflicting.' if expected is None else 'Current assignment guidance resolved.'))
   finally:s.g.delete()
- report=dict(title='FirstTask evidence checks',dataset='Eight authored synthetic cases. Not real employee data.',method='Both methods receive the same document corpus. Baseline ranks documents by question-word overlap and extracts provider advice from its top result. FirstTask also uses curated assignment, approval, supersession, and source relationships. This is a narrow retrieval diagnostic, not a same-model RAG benchmark.',limitations=['Fixtures and expected answers were authored by the project builder.','Graph relationships are supplied as structured data; ingestion quality is not evaluated.','No general LLM, vector-search, or production accuracy claim.','Single local run; timings include all context queries, not model inference.'],results=results)
+ report=dict(title='Workweave evidence checks',dataset='Eight authored synthetic cases. Not real employee data.',method='Both methods receive the same document corpus. Baseline ranks documents by question-word overlap and extracts provider advice from its top result. Workweave also uses curated assignment, approval, supersession, and source relationships. This is a narrow retrieval diagnostic, not a same-model RAG benchmark.',limitations=['Fixtures and expected answers were authored by the project builder.','Graph relationships are supplied as structured data; ingestion quality is not evaluated.','No general LLM, vector-search, or production accuracy claim.','Single local run; timings include all context queries, not model inference.'],results=results)
  root=Path(__file__).resolve().parents[1]
  model_report=root/'model-evaluation-results.json'
  if model_report.exists():report['modelDiagnostic']=json.loads(model_report.read_text())

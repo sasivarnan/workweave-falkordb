@@ -7,7 +7,7 @@ class OpenAITests(unittest.TestCase):
  def test_function_and_layout(self):
   context={'people':[['owner']],'ambiguous':False};s=MagicMock();s.context.return_value=context
   order=['Checklist','SummaryCard','EvidenceComparison','PersonCard','ProgressCard']
-  replies=[{'choices':[{'message':{'role':'assistant','content':None,'tool_calls':[{'id':'call_test','type':'function','function':{'name':'get_onboarding_context','arguments':'{}'}}]}}]}, {'choices':[{'message':{'content':json.dumps({'components':order})}}]}]
+  replies=[{'choices':[{'message':{'role':'assistant','content':None,'tool_calls':[{'id':'call_test','type':'function','function':{'name':'get_workspace_context','arguments':'{}'}}]}}]}, {'choices':[{'message':{'content':json.dumps({'components':order})}}]}]
   requests=[]
   def response(req,**kw):
    requests.append(json.loads(req.data));m=MagicMock();m.__enter__.return_value.read.return_value=json.dumps(replies.pop(0)).encode();return m

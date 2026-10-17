@@ -95,7 +95,7 @@ export default function App() {
   const judgeMode = window.location.pathname === "/judge"
   const [theme, setTheme] = useState(
     () =>
-      localStorage.getItem("firsttask-theme") ||
+      localStorage.getItem("workweave-theme") ||
       (window.matchMedia("(prefers-color-scheme: dark)").matches
         ? "dark"
         : "light")
@@ -106,12 +106,12 @@ export default function App() {
     document.documentElement.classList.toggle("dark", theme === "dark")
     document.documentElement.classList.toggle("scheme-dark", theme === "dark")
     document.documentElement.classList.toggle("scheme-light", theme !== "dark")
-    localStorage.setItem("firsttask-theme", theme)
+    localStorage.setItem("workweave-theme", theme)
   }, [theme])
   const [assignment, setAssignment] = useState(() =>
     judgeMode
       ? "checkout"
-      : localStorage.getItem("firsttask-assignment") || "checkout"
+      : localStorage.getItem("workweave-assignment") || "checkout"
   )
   const [result, setResult] = useState<Result | null>(null),
     [error, setError] = useState(""),
@@ -187,7 +187,7 @@ export default function App() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-FirstTask": "portal",
+          "X-Workweave": "portal",
           ...(path === "/api/agent" ? { "X-AI-Access": aiCode } : {}),
         },
         body: JSON.stringify({ assignment, ...body }),
@@ -209,7 +209,7 @@ export default function App() {
       if (destination) transition(commit)
       else commit()
       if (!judgeMode)
-        localStorage.setItem("firsttask-assignment", decoded.context.assignment)
+        localStorage.setItem("workweave-assignment", decoded.context.assignment)
       return true
     } catch (e) {
       setError(e instanceof Error ? e.message : "Request failed")
@@ -418,7 +418,7 @@ export default function App() {
               ? "Write down the checks and questions you want to discuss."
               : stage === "done"
                 ? "Your notes and current evidence are saved together. Reviewer approval is still required."
-                : "FirstTask has checked your reading, training, notes, and recorded reviewer."
+                : "Workweave has checked your reading, training, notes, and recorded reviewer."
   async function primaryAction() {
     if (stage === "reading") {
       if (!readingOpen) {
@@ -472,7 +472,7 @@ export default function App() {
             <div className="flex items-center gap-2.5">
               <RiBuildingLine className="size-6 text-primary" />
               <span className="font-heading text-xl font-semibold tracking-tight">
-                FirstTask
+                Workweave
               </span>
             </div>
             <div className="flex items-center gap-2 rounded-lg border bg-background px-3 py-2.5 text-sm">
@@ -968,13 +968,13 @@ export default function App() {
               {judgeMode && (
                 <TabsContent value="proof" className="space-y-8">
                   <section className="max-w-3xl space-y-4">
-                    <Badge>FirstTask / Review in two minutes</Badge>
+                    <Badge>Workweave / Review in two minutes</Badge>
                     <h1 className="font-heading text-3xl font-semibold tracking-tight lg:text-4xl">
-                      Catch outdated advice before a new employee acts on it.
+                      Keep company work connected to current decisions.
                     </h1>
                     <p className="text-base leading-7 text-muted-foreground">
                       The starter guide says Provider A. An approved decision
-                      replaced it with Provider B. FirstTask connects the
+                      replaced it with Provider B. Workweave connects the
                       assignment to both sources, explains the conflict, and
                       flags the saved plan when the decision changes again.
                     </p>
@@ -1136,7 +1136,7 @@ export default function App() {
                                 citation IDs.
                               </p>
                               <p>
-                                FirstTask does not let generated factual answers
+                                Workweave does not let generated factual answers
                                 control review requests. The tested graph gates
                                 decide whether an action is allowed.
                               </p>
@@ -1158,7 +1158,7 @@ export default function App() {
                             <TableRow>
                               <TableHead>Case</TableHead>
                               <TableHead>Expected</TableHead>
-                              <TableHead>FirstTask</TableHead>
+                              <TableHead>Workweave</TableHead>
                               <TableHead>Keyword top result</TableHead>
                               <TableHead>Check</TableHead>
                             </TableRow>
@@ -1400,7 +1400,7 @@ export default function App() {
                                 <>
                                   <p className="text-sm">
                                     {context.conflicts.length
-                                      ? "Your starter guide points to a superseded decision. FirstTask checked the replacement and its original source for this task."
+                                      ? "Your starter guide points to a superseded decision. Workweave checked the replacement and its original source for this task."
                                       : "This step follows the current guidance and prerequisites recorded for your task."}
                                   </p>
                                   <p className="text-sm font-medium">
@@ -1778,11 +1778,11 @@ export default function App() {
                           required
                         />
                         <Button type="submit" disabled={busy}>
-                          {busy ? "Working…" : "Ask FirstTask"}
+                          {busy ? "Working…" : "Ask Workweave"}
                         </Button>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        FirstTask uses your assignment and company sources to
+                        Workweave uses your assignment and company sources to
                         organize the guidance above.
                       </p>
                     </form>

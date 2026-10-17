@@ -1,21 +1,21 @@
-# React + TypeScript + Vite + shadcn/ui
+# Workweave web app
 
-This is a template for a new Vite project with React, TypeScript, and shadcn/ui.
+React, TypeScript, Vite, Tailwind CSS, and official shadcn base-rhea components.
 
-## Adding components
+From the repository root:
 
-To add components to your app, run the following command:
-
-```bash
-npx shadcn@latest add button
+```sh
+npm ci --prefix frontend
+npm run build --prefix frontend
 ```
 
-This will place the ui components in the `src/components` directory.
+The Python server serves `frontend/dist` at http://localhost:8080. See the root README for database and server setup.
 
-## Using components
+## Structure
 
-To use the components in your app, import them as follows:
+- `src/App.tsx`: employee workspace, meeting details, task actions, and judge view.
+- `src/lib/workspace.ts`: response types and allowlisted A2UI validation.
+- `src/components/ui`: official shadcn components.
+- `src/index.css`: framework imports and theme tokens only. Layout uses Tailwind classes.
 
-```tsx
-import { Button } from "@/components/ui/button"
-```
+Keep UI components from shadcn. Confirm with the project owner before adding a different UI library. Keep credentials on the server; never place them in Vite environment variables or frontend code.

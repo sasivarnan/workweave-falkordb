@@ -9,7 +9,7 @@ class GraphTests(unittest.TestCase):
  def tearDown(self):self.s.g.delete()
  def test_01_guidance(self):
   c=self.s.context();self.assertEqual(c['current'],'Use Provider B');self.assertEqual(c['conflicts'][0][0],'guide');self.assertEqual(len(c['conflicts'][0][5]),5)
- def test_02_native_path(self):self.assertEqual(self.s.context()['paths'][0][0],['Maya Chen','Ship your first checkout change','Checkout service'])
+ def test_02_native_path(self):self.assertEqual(self.s.context()['paths'][0][0],['Maya Chen','Ship checkout status change','Checkout service'])
  def test_03_replace_review(self):
   self.s.action('accept','Mentor review');self.s.action('replace');c=self.s.context();self.assertEqual(c['current'],'Use Provider C');self.assertTrue(c['needsReview']);self.assertEqual(c['plan'][0][1],'Use Provider B')
  def test_04_missing_owner(self):
@@ -17,7 +17,7 @@ class GraphTests(unittest.TestCase):
  def test_05_completed_training(self):
   self.s.action('complete');self.assertTrue(self.s.context()['training'][0][2])
  def test_06_new_session(self):
-  self.s.action('accept','Saved note');self.s.action('complete');other=Store(self.s.name.removeprefix('firsttask_'));c=other.context();self.assertEqual(c['plan'][0][2],'Saved note');self.assertTrue(c['training'][0][2])
+  self.s.action('accept','Saved note');self.s.action('complete');other=Store(self.s.name.removeprefix('workweave_'));c=other.context();self.assertEqual(c['plan'][0][2],'Saved note');self.assertTrue(c['training'][0][2])
  def test_07_isolation(self):
   other=Store(secrets.token_hex(16));other.seed()
   try:self.s.action('complete');self.assertFalse(other.context()['training'][0][2])
@@ -36,25 +36,25 @@ class GraphTests(unittest.TestCase):
  def test_12_reset(self):
   self.s.action('replace');self.s.action('complete');self.s.reset();c=self.s.context();self.assertEqual(c['current'],'Use Provider B');self.assertFalse(c['training'][0][2])
  def test_13_assignment_scope(self):
-  other=Store(self.s.name.removeprefix('firsttask_'),'refunds')
+  other=Store(self.s.name.removeprefix('workweave_'),'refunds')
   c=other.context();self.assertEqual(c['current'],'Use sandbox transactions only');self.assertEqual(c['people'][0][1],'Noah Williams');self.assertEqual(c['conflicts'],[])
   other.action('complete');self.assertTrue(other.context()['training'][0][2]);self.assertFalse(self.s.context()['training'][0][2])
  def test_14_separate_assignment_plans(self):
-  other=Store(self.s.name.removeprefix('firsttask_'),'refunds')
+  other=Store(self.s.name.removeprefix('workweave_'),'refunds')
   self.s.action('accept','Checkout note');other.action('accept','Refund note')
   self.assertEqual(self.s.context()['plan'][0][2],'Checkout note');self.assertEqual(other.context()['plan'][0][2],'Refund note')
  def test_15_unknown_assignment(self):
-  with self.assertRaises(ValueError):Store(self.s.name.removeprefix('firsttask_'),'unknown').context()
+  with self.assertRaises(ValueError):Store(self.s.name.removeprefix('workweave_'),'unknown').context()
  def test_16_read_guidance_changes(self):
   self.s.action('review');self.assertTrue(self.s.context()['guidanceRead'])
-  other=Store(self.s.name.removeprefix('firsttask_'),'refunds');self.assertFalse(other.context()['guidanceRead'])
+  other=Store(self.s.name.removeprefix('workweave_'),'refunds');self.assertFalse(other.context()['guidanceRead'])
   self.s.action('replace');self.assertFalse(self.s.context()['guidanceRead'])
  def test_17_employee_home(self):
   c=self.s.context();self.assertEqual([r[0] for r in c['week']],[1,2,3,4,5]);self.assertEqual({r[0] for r in c['colleagues']},{'leo','imani','noah'})
   self.s.action('accept','Retain my notes');self.s.seed();c=self.s.context();self.assertEqual(len(c['week']),5);self.assertEqual(c['plan'][0][2],'Retain my notes')
   self.s.action('remove-owner');self.assertEqual([r[0] for r in self.s.context()['colleagues']],['noah'])
  def test_18_home_findings_across_assignments(self):
-  other=Store(self.s.name.removeprefix('firsttask_'),'refunds');rows=other.context()['findings'];self.assertEqual(rows[0][0],'checkout');self.assertEqual(rows[0][4:8],['Use Provider A','Use Provider B','adr','ADR-042: Provider migration'])
+  other=Store(self.s.name.removeprefix('workweave_'),'refunds');rows=other.context()['findings'];self.assertEqual(rows[0][0],'checkout');self.assertEqual(rows[0][4:8],['Use Provider A','Use Provider B','adr','ADR-042: Provider migration'])
   self.s.action('replace');self.assertEqual(other.context()['findings'][0][5],'Use Provider C')
   self.s.q('unapprove','MATCH (d:Decision) SET d.approved=false',write=True);self.assertEqual(other.context()['findings'],[])
  def test_19_review_gate_and_persistence(self):
@@ -76,7 +76,7 @@ class GraphTests(unittest.TestCase):
  def test_23_company_links_and_impact(self):
   c=self.s.context();self.assertEqual(len(c['meetings']),2);self.assertEqual(len(c['notes']),2);self.assertEqual(c['impact'],[])
   self.assertEqual(c['meetings'][0][4:6],['checkout','meeting-checkout'])
-  self.s.action('replace');c=self.s.context();self.assertEqual(c['impact'][0],['Use Provider C','Checkout release review','Checkout planning notes','Ship your first checkout change'])
+  self.s.action('replace');c=self.s.context();self.assertEqual(c['impact'][0],['Use Provider C','Checkout release review','Checkout planning notes','Ship checkout status change'])
  def test_24_workspace_note_persistence(self):
   self.s.action('save-note','Check with Payments about release readiness');self.s.seed();c=self.s.context();self.assertTrue(any(r[2]=='Check with Payments about release readiness' for r in c['notes']))
 if __name__=='__main__':unittest.main(verbosity=2)

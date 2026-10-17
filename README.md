@@ -1,17 +1,25 @@
-# FirstTask
+# Workweave
 
-[![Verify FirstTask](https://github.com/sasivarnan/firsttask-falkordb/actions/workflows/verify.yml/badge.svg)](https://github.com/sasivarnan/firsttask-falkordb/actions/workflows/verify.yml)
+[![Verify Workweave](https://github.com/sasivarnan/workweave-falkordb/actions/workflows/verify.yml/badge.svg)](https://github.com/sasivarnan/workweave-falkordb/actions/workflows/verify.yml)
 
-A company workspace that connects work, meetings, notes and source-backed decisions.
+A company workspace that connects tasks, meetings, notes, knowledge, people, and source-backed decisions with FalkorDB.
 
-**Status:** working local graph workflow. OpenAI live function calling and layout selection passed. Public deployment still needs hosting configuration. Do not submit this as a completed hosted agent until those checks pass.
+**Status:** working local prototype for the Company Brain hackathon track. Public hosting and the final video remain release tasks. The sample has one employee and two assignments; the product direction serves all employees, but production identity and permissions are not implemented.
 
 ## Run locally
 
-Requires Node.js 22+, Python 3.9+, and Docker. The container below is bound to loopback, not the public network.
+Requires Node.js 22+, Python 3.9+, and Docker.
 
 ```sh
-docker run -d --name firsttask-falkordb -p 127.0.0.1:6381:6379 falkordb/falkordb:latest
+docker compose up --build
+```
+
+Open http://localhost:8080. The database stays inside the Compose network. Named volumes keep graph data and the AI usage ledger. The portal binds to loopback.
+
+For a local Python process instead:
+
+```sh
+docker run -d --name workweave-falkordb -p 127.0.0.1:6381:6379 falkordb/falkordb@sha256:b0bdcac2cbaff989e77cb0610439b7a9289e86de033ccbbd4368b66fb680ae7a
 npm ci --prefix frontend
 npm run build --prefix frontend
 python3 -m venv .venv
@@ -19,147 +27,91 @@ python3 -m venv .venv
 .venv/bin/python server.py
 ```
 
-Open http://localhost:8080. No model key is needed for explicitly labeled graph-tool exploration. Ask Agent needs a real OpenAI or Gemini key.
+If a database already uses port 6381, reuse it. Do not start a second container on the same port.
 
-Set environment variables before starting the server. `.env.example` lists them; the app loads known settings from an ignored local `.env` file. Existing environment variables take priority. Store keys in your hosting secret settings or local process environment. Do not commit keys. `GEMINI_MODEL` is configurable; verify current model availability and your quota in AI Studio. The supplied model name is not a quota guarantee.
+The graph workspace does not need an AI key. Optional AI requires server settings from `.env.example`, a provider key, and an invite code. The app loads allowlisted values from an ignored `.env` file; process variables take priority. Never put keys in frontend code or commit them.
 
-## Demo
+## Employee workflow
 
-Play Walkthrough runs real graph operations: reset the sample, inspect guidance, replace a decision, accept a plan, complete training, and retrieve state in a fresh request. The walkthrough does not consume model calls and is labeled accordingly. Ask Agent uses the configured provider’s function calling to read graph context and select the A2UI component order. Graph results supply displayed facts. There is no generated factual narrative.
+Today shows the next meeting, assigned work, schedule, and linked notes. Open a meeting brief to follow its stored links to a note or task. Search company documents from the header. Save a workspace note and switch between light and dark mode.
 
-Explore controls modify only the visitor's synthetic workspace. A changed decision preserves the accepted plan and flags it for review. Clearing the browser cookie starts a different workspace. Starting a new session preserves the workspace while discarding conversational context; the server does not retain model conversation history between requests.
+A task shows one next action: read current guidance → record required training → accept updated guidance if needed → save review notes → create a stored review request. The graph blocks that final action when required evidence, current guidance, notes, or the recorded reviewer is missing. Requests stay in the sample workspace; no email or calendar invitation is sent.
 
-## Graph model
+## Why relationships matter
 
 ```mermaid
 graph LR
- Employee -->|ASSIGNED_TO| Assignment
- Employee -->|MEMBER_OF| Team
- Assignment -->|TOUCHES| Service
- Team -->|OWNS| Service
+ Employee -->|ASSIGNED_TO| Task
+ Employee -->|ATTENDS| Meeting
+ Meeting -->|DISCUSSES| Task
+ Note -->|NOTES_FOR| Meeting
+ Meeting -->|CONSIDERS| OldDecision
+ Task -->|TOUCHES| Service
+ Decision -->|APPLIES_TO| Service
+ Decision -->|SUPERSEDES| OldDecision
+ Decision -->|SUPPORTED_BY| Source
  Reviewer -->|REVIEWER_FOR| Service
- Alternate -->|BACKUP_REVIEWER_FOR| Service
- Assignment -->|REQUIRES| Training
- Employee -->|COMPLETED| Training
- Guide -->|RECOMMENDS| OldDecision
- CurrentDecision -->|SUPERSEDES| OldDecision
- CurrentDecision -->|APPLIES_TO| Service
- CurrentDecision -->|SUPPORTED_BY| Source
- Employee -->|HAS_PLAN| LearningPlan
- LearningPlan -->|FOR_ASSIGNMENT| Assignment
- LearningPlan -->|SUPPORTED_BY| CurrentDecision
+ Plan -->|SUPPORTED_BY| Decision
 ```
 
-Eighteen synthetic source documents are bundled. `graph.py` contains all fixed queries. The stale-guide query follows document → old decision ← replacement decision → service ← assignment. Native `algo.SPpaths` explains the employee-to-service path. Range indexes support ID lookup. Separate FalkorDB graphs isolate visitor workspaces.
+An approved replacement can affect a task, a meeting that considered the earlier decision, and that meeting's notes. A saved plan keeps its decision identity so a replacement makes it stale. Missing ownership remains missing.
 
-The graph-depth comparison shows direct assignment sources and sources reached through typed relationships. It is not a retrieval benchmark. The application does not infer undocumented owners, trust recency alone, or claim that missing data means no risk.
+The relationship diagnostic changes edges while keeping source document IDs, titles, and bodies identical. Correct answers still change. Text alone cannot distinguish those states without relationship information. SQL with an equivalent relationship model could also solve them; this is not an exclusivity claim.
 
-## A2UI
+FalkorDB runs fixed parameterized Cypher, native `algo.SPpaths`, ID range indexes, document full-text lookup, and `GRAPH.EXPLAIN`. The latter is a query plan, not runtime profiling. See the generated [query catalogue](docs/CYPHER.md).
 
-The app implements a small custom renderer for an A2UI v0.9 subset: createSurface, updateComponents, and updateDataModel. The catalog is in `static/catalog.json`. It uses an allowlisted Column plus six domain components. It is not a complete general-purpose A2UI renderer or an official SDK. The server validates component selection; the browser validates message version, catalog, tree IDs, component types, and data bindings. Text values are escaped before display. Layout selection can change through the model. The graph-only mode uses a deterministic catalog layout.
+## AI and A2UI
 
-## Deploy to Render
+The optional OpenAI or Gemini adapter calls the fixed `get_workspace_context` tool, then selects an allowlisted layout. The graph supplies displayed facts and action gates. There is no unrestricted generated factual narrative or model-generated Cypher.
 
-1. Put this directory in a public Git repository. Include the license and disclose AI assistance.
-2. Create a Render Docker web service, or use `render.yaml`.
-3. Provision a reachable FalkorDB instance. Configure host, port, username, password, and TLS settings. Use secure networking suitable for the provider; do not disable certificate checks.
-4. Configure OPENAI_API_KEY, AI_PROVIDER=openai, and OPENAI_MODEL=gpt-6-luna, or use the Gemini settings. Verify model access for the account.
-5. Set `COOKIE_SECURE=true` on the HTTPS deployment.
-6. Run the workflow and live agent from the public URL. Check persistence after an app restart.
+The renderer supports a custom A2UI v0.9 subset: `createSurface`, `updateComponents`, and `updateDataModel`. It validates the catalog, tree, component IDs, types, and bindings. It is not a complete official SDK renderer. The catalog lives in `static/catalog.json`; the frontend copy must match.
 
-Render Free can sleep. Its filesystem is temporary. All onboarding state is stored in FalkorDB. Free FalkorDB availability, secure connectivity, persistence, and quota must be verified in the provider account. This repository does not provision a public database or paid services.
+UI controls use official shadcn base-rhea components, with the supplied violet/neutral preset, Public Sans, and Geist headings. Layout and transitions use Tailwind classes. The CSS file contains framework imports and theme tokens only.
 
-## Submission target
-
-Track: **Company Brain**. See [the full audit](docs/HACKATHON-AUDIT.md), [participant technical review](docs/PARTICIPANT-REVIEW.md), and [submission draft](docs/SUBMISSION.md).
-
-## Cypher catalogue
-
-[Generated query catalogue](docs/CYPHER.md). Refresh with `python scripts/export_queries.py`.
-
-## Tests
+## Validation
 
 ```sh
 .venv/bin/python -m unittest discover -s tests -v
+.venv/bin/python scripts/evaluate_relationships.py
+.venv/bin/python scripts/evaluate.py
+.venv/bin/python scripts/export_queries.py
+npm run build --prefix frontend
+.venv/bin/python scripts/check_secrets.py
 ```
 
-Graph tests use isolated disposable graphs and delete only their own test graphs. An actual local FalkorDB instance is required. Agent contract tests use mocked responses and do not establish live model quality.
+The suite contains 33 tests. Integration tests create isolated disposable graphs and delete only those test graphs. Agent contract tests use mocked responses. The saved eight-case retrieval diagnostic and paired model evaluation are small authored checks, not production accuracy or general RAG benchmarks. See [evaluation details](EVALUATION.md).
 
-## Limits and release checks
+## Local safety and deployment
 
-- One sample employee, two assignments, and a synthetic company. No production HR integration or authentication.
-- The local access-request feature and arbitrary document upload are not implemented.
-- No email or real access grants are performed.
-- The portal is not a production HR system.
-- Demo controls include 30 requests per workspace per minute, 120 global requests per minute, two concurrent AI operations, and durable global AI limits (default: 5 per rolling hour, 10 per rolling day, 30 in total). Each AI operation uses two model calls. Demo graphs expire after 24 hours of inactivity. There is a 200-workspace process cap. General request counters reset with the app. AI reservations are stored separately in SQLite and survive restarts only when its path uses persistent storage.
-- Workspace cookies are bearer credentials. No graph name is accepted from client input. Deploy behind HTTPS.
-- Full official A2UI conformance validation, live Gemini verification, public deployment, video, baseline evaluation, and a real-user test remain release tasks.
+Each visitor gets an isolated synthetic graph that expires after 24 hours of inactivity. Cookies are bearer credentials. No client-supplied graph name is accepted. AI calls require a server-configured invite code; the browser keeps it in memory only.
+
+Default AI limits reserve 5 operations per rolling hour, 10 per rolling day, and 30 in total, globally. Each operation makes two provider calls. Reservations use SQLite and survive restarts only on persistent storage. General request limits and the 200-workspace cap are process-local. Use one application instance with persistent storage for the shared AI budget. These are operation limits, not a dollar cap.
+
+Deploy only after the [predeployment checks](docs/PREDEPLOYMENT.md). Configure HTTPS, `COOKIE_SECURE=true`, a securely reachable FalkorDB instance, server-side secrets, and a persistent AI ledger. `render.yaml` is a starting configuration, not proof that a free host supplies persistent storage. Model access and provider billing must be verified for the account.
+
+The rebrand uses a new workspace cookie, graph prefix, local preference keys, and A2UI catalog ID. It starts a fresh sample session. Existing local graph data is not deleted. The local Docker container can keep its existing runtime name; new setup instructions use the new project name.
+
+## Limits
+
+Synthetic records only. No production login, permission-aware queries, calendar sync, external messages, automatic source ingestion, full note CRUD, general company question answering, or project detail pages. Mobile and full keyboard review remain release checks.
+
+## Hackathon materials
+
+- [Submission draft](docs/SUBMISSION.md)
+- [Demo script](DEMO-SCRIPT.md)
+- [Blog draft](BLOG-DRAFT.md)
+- [Rules and resource audit](docs/HACKATHON-AUDIT.md)
+- [Participant review](docs/PARTICIPANT-REVIEW.md)
+- [Company workspace plan](docs/COMPANY-WORKSPACE-PLAN.md)
+- [Workspace redesign](docs/WORKSPACE-REDESIGN.md)
 
 ## AI assistance
 
-Built with Codex assistance for implementation, sample data, tests, design, and documentation. The participant must review the code and be able to explain it.
+Codex assisted with implementation, synthetic data, tests, design, and documentation. The participant must review the code, verify results, explain the implementation, and disclose assistance in the submission.
 
-## References and Community Wisdom
+## References
 
-- Organizer guide: https://www.wemakedevs.org/blogs/how-to-build-an-agent-that-reasons-over-a-graph
-- FalkorDB algorithms: https://docs.falkordb.com/algorithms
-- A2UI: https://a2ui.org/specification/v0.9-a2ui/
-- Akash Pal, The A2UI Contract: https://dev.to/akashpal/the-a2ui-contract-a-deep-dive-into-agent-to-ui-architecture-4i00 — separates model-selected layout from computed data.
-
-## OpenAI configuration
-
-The OpenAI adapter uses function calling followed by schema-constrained layout selection. It sets store=false, caps completion tokens, and never displays the key. The current low-cost default is gpt-6-luna. Set AI_PROVIDER=openai and OPENAI_API_KEY in the ignored .env file or hosting secrets. Every agent operation makes two API calls and can incur API charges. .dockerignore excludes the local secret file from images.
-
-## shadcn UI rewrite
-
-The frontend uses the official shadcn base-rhea components and preset b3dlbUYd3w: violet theme, neutral base, Public Sans, and Geist headings. The final full stop in the supplied URL was punctuation and was removed after CLI validation. No custom UI widgets were added. App.tsx composes official components and maps existing A2UI domain descriptors to them. The descriptor names are not separate custom React components. Theme files and generated UI components come from the official CLI.
-
-Build the frontend before starting Python. Docker builds it automatically. The local .env file is ignored and excluded from the build context. For both services with persistent graph storage, run docker compose up --build. The graph is private to the Compose network and uses a named /data volume with append-only persistence. The portal binds to localhost; a public host needs HTTPS ingress.
-
-See RESOURCE-REVIEW.md for the resource audit. The execution view now includes GRAPH.EXPLAIN for the indexed assignment lookup. This is a query plan, not runtime profiling. /api/health checks database reachability.
-
-## Employee product workflow
-
-The default route opens one task and one next action. The sequence is current reading → required training → review notes → stored review request. Source details and saved notes are collapsed. The navigation menu holds other assignments and document search. The dashboard, weekly plan and progress percentage are removed from the employee flow. `/judge` retains evaluation, walkthrough and query evidence.
-
-Facts and action gates come from FalkorDB. A2UI descriptors control the order of optional evidence and saved-note disclosures, while the next required action follows deterministic graph state. The model cannot reorder prerequisites or bypass an action gate.
-
-### Changes that affect your work
-
-The task step warns when its starter guide is superseded. The current source opens on demand. A decision replacement makes the new guidance unread and flags the saved plan. The judge view contains relationship evidence across isolated fixtures. The review-ready state requires current unambiguous guidance, reading, completed training, saved non-empty working notes, a reviewer, and no stale plan. This state means preparation is complete; reviewer approval is still required.
-
-### Navigation motion
-
-Page, assignment, source-document, inspector, and walkthrough navigation use the native View Transition API with synchronous React commits. Only the main work area animates. Assignment data loads before the view changes. Rapid navigation skips the previous transition, and a pending task request does not redirect a later page choice. Unsupported browsers and reduced-motion preferences use instant updates. No UI library or custom component was added.
-
-## Judge review
-
-Open `/judge` for the two-minute review path, an executable graph walkthrough, and eight reproducible synthetic evidence checks. Run `python scripts/evaluate.py` before rebuilding to refresh the saved report. The walkthrough saves a plan before replacement so the stale-plan warning is visible. See DEMO-SCRIPT.md for the recording sequence and EVALUATION.md for method limits.
-
-## Review requests
-
-A review request is stored in FalkorDB after current reading, required training, non-empty saved notes and a recorded reviewer are verified. It links the exact decision identity and reviewer. Decision changes invalidate the plan even when the replacement has the same title. Requests remain visible with their original evidence; no email or external notification is sent.
-
-## Company document search
-
-Knowledge search uses FalkorDB full-text indexes over Document.title and Document.body. Input is converted to bounded plain-word terms and passed as a query parameter. A search hit is not an approval signal.
-
-## Protected live AI (deploy last)
-
-Graph exploration is public. `/api/agent` requires a separate `AI_ACCESS_CODE` of at least 16 characters in the X-AI-Access header. No code means live AI stays disabled. Generate a random code and configure it only in server secrets. The UI accepts it as a password, keeps it only in React memory, and lets the user clear it. The provider API key is never requested in the UI.
-
-AI operations are reserved before provider access in a SQLite ledger using an immediate write transaction. Defaults: 5/hour, 10/day, 30 total across all visitors. Each operation allows at most two provider calls. Failures consume the reservation. Both provider adapters limit request payload size and output tokens. This is a durable call budget, not a guaranteed dollar cap. Configure provider-side spend controls separately.
-
-Compose mounts a separate usage-data volume. On another host, set AI_USAGE_DB to a persistent path and use one app instance. If the ledger cannot be written, AI fails closed. Ephemeral hosting storage does not preserve limits across replacement. Do not publish live AI until persistent storage and HTTPS are verified. Resetting the sample graph does not reset the AI ledger. The invite code is shared access, not production employee identity or role management.
-
-Local code is stored in the ignored .env file with restricted file permissions. Never put it in README, the public video, or frontend environment variables. Reproduce secret checks with `python scripts/check_secrets.py` after building.
-
-## Relationship evidence
-
-Run `python scripts/evaluate_relationships.py`. Four isolated checks retain byte-identical source document IDs, titles and bodies while changing only relationships. Removing approval lineage creates ambiguity; removing source support blocks plan acceptance; changing the recorded reviewer changes the correct owner; disconnecting a task from its service removes its valid context. Full results: relationship-evaluation-results.json and `/judge`. This proves the need for relationship information and its central role here, not that SQL or other databases cannot represent the same model.
-
-## Company workspace
-
-The scope now includes a company Overview, Calendar, Notes, Tasks, Knowledge and People. Calendar entries are synthetic graph records, not external bookings. Meetings link to assignments, services, decision versions and notes. A replacement decision identifies meetings and notes whose linked decision needs review, together with the affected assignment. The note editor stores one personal workspace note; it is not a full document editor. Light/dark mode follows the system on first use and then remembers the selected preference.
-
-The one-task flow remains the focused action view. Authentication, permissions across real employees, external calendar sync, meeting transcription and general-purpose question answering remain unimplemented. AI access remains invite-protected; do not deploy until the release checklist is complete.
+- [Organizer graph-agent guide](https://www.wemakedevs.org/blogs/how-to-build-an-agent-that-reasons-over-a-graph)
+- [FalkorDB algorithms](https://docs.falkordb.com/algorithms)
+- [FalkorDB Cypher](https://docs.falkordb.com/cypher)
+- [A2UI v0.9](https://a2ui.org/specification/v0.9-a2ui/)

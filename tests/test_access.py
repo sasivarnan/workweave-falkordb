@@ -30,7 +30,7 @@ class AccessTests(unittest.TestCase):
    store.return_value.trace=[]
    server=ThreadingHTTPServer(('127.0.0.1',0),Handler);thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
    def send(code=None):
-    headers={'Content-Type':'application/json','X-FirstTask':'portal'}
+    headers={'Content-Type':'application/json','X-Workweave':'portal'}
     if code:headers['X-AI-Access']=code
     req=urllib.request.Request('http://127.0.0.1:'+str(server.server_port)+'/api/agent',data=b'{"prompt":"test"}',headers=headers)
     try:

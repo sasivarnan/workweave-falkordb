@@ -8,11 +8,11 @@ def database():
  return FalkorDB(host=os.getenv('FALKORDB_HOST','localhost'),port=int(os.getenv('FALKORDB_PORT','6381')),username=os.getenv('FALKORDB_USERNAME') or None,password=os.getenv('FALKORDB_PASSWORD') or None,ssl=os.getenv('FALKORDB_SSL','false').lower()=='true',socket_timeout=8,socket_connect_timeout=5)
 
 NODES = [
- ('Employee','maya','Maya Chen','New software engineer · Payments'),
+ ('Employee','maya','Maya Chen','Software engineer · Payments'),
  ('Employee','leo','Leo Martin','Service owner · Payments'),
  ('Employee','imani','Imani Shah','Documented alternate reviewer'),
  ('Team','payments','Payments','Checkout and transaction platform'),
- ('Assignment','checkout','Ship your first checkout change','Add a payment status indicator'),
+ ('Assignment','checkout','Ship checkout status change','Add a payment status indicator'),
  ('Service','checkout-service','Checkout service','Customer-facing checkout'),
  ('Decision','provider-a','Use Provider A','Approved historical decision'),
  ('Decision','provider-b','Use Provider B','Approved replacement decision'),
@@ -20,7 +20,7 @@ NODES = [
  ('Document','adr','ADR-042: Provider migration','Provider B replaces Provider A. Approved 2026-10-14. Provider A is no longer used for new checkout changes.'),
  ('Document','review','Review policy','Leo owns checkout reviews. Imani is the approved alternate reviewer.'),
  ('Document','security-doc','Secure payments checklist','Complete secure payments training before changing checkout.'),
- ('Training','security','Secure payments training','Required before the first checkout change'),
+ ('Training','security','Secure payments training','Required before changing checkout'),
  ('Document','task-doc','ENG-108: Status indicator','Add the status indicator. Follow current provider guidance and obtain a code review.'),
  ('Document','team-doc','Payments team charter','Payments owns the checkout service.'),
  ('Document','access','Sandbox access guide','Ask the service owner to approve sandbox access.'),
@@ -37,7 +37,7 @@ NODES = [
 EDGES=[('maya','MEMBER_OF','payments'),('maya','ASSIGNED_TO','checkout'),('checkout','TOUCHES','checkout-service'),('payments','OWNS','checkout-service'),('leo','REVIEWER_FOR','checkout-service'),('imani','BACKUP_REVIEWER_FOR','checkout-service'),('checkout','REQUIRES','security'),('provider-a','APPLIES_TO','checkout-service'),('provider-b','APPLIES_TO','checkout-service'),('provider-b','SUPERSEDES','provider-a'),('provider-b','SUPPORTED_BY','adr'),('guide','RECOMMENDS','provider-a'),('security','SUPPORTED_BY','security-doc'),('checkout','SUPPORTED_BY','task-doc'),('checkout-service','SUPPORTED_BY','architecture'),('leo','SUPPORTED_BY','review')]
 
 EXTRA_NODES=[
- ('Assignment','refunds','Prepare your first refund test','Verify refund outcomes in the sandbox'),
+ ('Assignment','refunds','Prepare refund tests','Verify refund outcomes in the sandbox'),
  ('Service','refund-service','Refund service','Refund processing and customer notifications'),
  ('Decision','refund-policy','Use sandbox transactions only','Approved refund testing policy'),
  ('Document','refund-source','Refund test policy','Run refund tests only with synthetic sandbox transactions. Never use live customer payments.'),
@@ -52,7 +52,7 @@ class Store:
   if not re.fullmatch(r'[a-f0-9]{32}',token): raise ValueError('Invalid workspace')
   if not isinstance(assignment,str) or not re.fullmatch(r'[a-z0-9-]{1,40}',assignment):raise ValueError('Invalid assignment')
   self.assignment=assignment
-  self.name='firsttask_'+token
+  self.name='workweave_'+token
   self.db=database()
   self.g=self.db.select_graph(self.name); self.trace=[]
  def q(self,name,query,params=None,write=False):

@@ -18,10 +18,10 @@ class Handler(BaseHTTPRequestHandler):
   if cookie:self.send_header('Set-Cookie',cookie)
   self.send_header('X-Content-Type-Options','nosniff');self.end_headers();self.wfile.write(body)
  def token(self):
-  c=SimpleCookie();c.load(self.headers.get('Cookie','')); token=c.get('firsttask')
+  c=SimpleCookie();c.load(self.headers.get('Cookie','')); token=c.get('workweave')
   if token and len(token.value)==32 and all(x in '0123456789abcdef' for x in token.value):return token.value,None
   token=secrets.token_hex(16)
-  return token,'firsttask='+token+'; Path=/; HttpOnly; SameSite=Strict'+('; Secure' if os.getenv('COOKIE_SECURE')=='true' else '')
+  return token,'workweave='+token+'; Path=/; HttpOnly; SameSite=Strict'+('; Secure' if os.getenv('COOKIE_SECURE')=='true' else '')
  def do_GET(self):
   if self.path=='/api/access':return self.respond(200,{'aiEnabled':len(os.getenv('AI_ACCESS_CODE',''))>=16})
   if self.path=='/api/health':
@@ -38,7 +38,7 @@ class Handler(BaseHTTPRequestHandler):
   self.send_header('X-Content-Type-Options','nosniff');self.end_headers();self.wfile.write(path.read_bytes())
  def do_POST(self):
   # All writes require the same-origin UI header. No cross-origin CORS is enabled.
-  if self.headers.get('X-FirstTask')!='portal':return self.respond(403,{'error':'Use the FirstTask portal'})
+  if self.headers.get('X-Workweave')!='portal':return self.respond(403,{'error':'Use the Workweave portal'})
   if self.path not in ['/api/reset','/api/action','/api/context','/api/agent','/api/search']:return self.respond(404,{'error':'Not found'})
   try:
    length=int(self.headers.get('Content-Length','0'))
@@ -75,5 +75,5 @@ class Handler(BaseHTTPRequestHandler):
   except Exception:self.respond(503,{'error':'The database or AI provider is unavailable. No answer was substituted. Check the server configuration and connection.'})
 if __name__=='__main__':
  load()
- print('FirstTask listening',flush=True)
+ print('Workweave listening',flush=True)
  ThreadingHTTPServer(('0.0.0.0',int(os.getenv('PORT','8080'))),Handler).serve_forever()

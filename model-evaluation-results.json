@@ -59,7 +59,7 @@
       }
     },
     {
-      "case": "Decision replaced after onboarding",
+      "case": "Decision replaced after plan acceptance",
       "expected": "Use Provider C",
       "documents": {
         "answer": {

@@ -7,7 +7,7 @@ from ui import compose
 class AgentContractTests(unittest.TestCase):
  def test_tool_to_layout(self):
   ctx={'people':[['owner']],'ambiguous':False};store=MagicMock();store.context.return_value=ctx
-  responses=[{'candidates':[{'content':{'role':'model','parts':[{'functionCall':{'name':'get_onboarding_context','args':{}}}]}}]}, {'candidates':[{'content':{'parts':[{'text':json.dumps({'components':['Checklist','SummaryCard','EvidenceComparison','PersonCard','ProgressCard']})}]}}]}]
+  responses=[{'candidates':[{'content':{'role':'model','parts':[{'functionCall':{'name':'get_workspace_context','args':{}}}]}}]}, {'candidates':[{'content':{'parts':[{'text':json.dumps({'components':['Checklist','SummaryCard','EvidenceComparison','PersonCard','ProgressCard']})}]}}]}]
   def response(*args,**kwargs):
    m=MagicMock();m.__enter__.return_value.read.return_value=json.dumps(responses.pop(0)).encode();return m
   with patch.dict(os.environ,{'GEMINI_API_KEY':'test-only'}),patch('urllib.request.urlopen',side_effect=response):

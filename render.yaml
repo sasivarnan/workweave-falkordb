@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: firsttask
+    name: workweave
     runtime: docker
     plan: free
     healthCheckPath: /api/health

@@ -100,7 +100,7 @@ export function decode(result: Result) {
     !Array.isArray(m) ||
     m.length !== 3 ||
     m.some((x) => x.version !== "v0.9") ||
-    m[0].createSurface?.catalogId !== "urn:firsttask:catalog:v1"
+    m[0].createSurface?.catalogId !== "urn:workweave:catalog:v1"
   )
     throw Error("Unsupported A2UI messages")
   const components = m[1].updateComponents?.components,

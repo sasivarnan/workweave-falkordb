@@ -1,14 +1,14 @@
-# FirstTask: finding outdated guidance before a new employee's first contribution
+# Workweave: connect company work to current decisions
 
 Draft. Replace pending items with verified results before publication.
 
 ## The problem
 
-A starter guide can remain readable after its underlying decision changes. A new employee needs the current decision, its source, the person responsible, and the prerequisites for the assignment.
+A starter guide can remain readable after its underlying decision changes. Any employee needs the current decision, its source, the person responsible, and the prerequisites for the work. Meetings and notes need the same context.
 
 ## What we built
 
-FirstTask connects assignments, services, decisions, documents, reviewers, and training in FalkorDB. It follows explicit approval and supersession relationships. It preserves an accepted plan and flags it for review after a decision changes.
+Workweave connects assignments, services, decisions, documents, reviewers, and training in FalkorDB. It follows explicit approval and supersession relationships. It preserves an accepted plan and flags it for review after a decision changes.
 
 ## Why the graph changes the answer
 
@@ -16,13 +16,13 @@ The conflict path is document → historical decision ← replacement decision �
 
 ## How the agent and interface work
 
-The model calls a fixed onboarding-context tool. It then selects the order of validated A2UI components. Database results supply facts. This separates model-selected presentation from verified company context. The current implementation supports a custom A2UI v0.9 subset, not a complete general renderer.
+The model calls a fixed workspace-context tool. It then selects the order of validated A2UI components. Database results supply facts. This separates model-selected presentation from verified company context. The current implementation supports a custom A2UI v0.9 subset, not a complete general renderer.
 
 ## The parts we tested
 
-The local test suite has 27 passing checks. It covers persistent state, workspace isolation, outdated guidance, missing ownership, conflicting decisions, reset, and model contract failures. Model responses in the contract tests are mocked.
+The local test suite has 33 passing checks. It covers persistent state, workspace isolation, outdated guidance, missing ownership, conflicting decisions, reset, and model contract failures. Model responses in the contract tests are mocked.
 
-A separate reproducible evaluation passed eight graph cases: outdated guidance, replacement, unapproved replacement, conflicting approvals, missing source, a second assignment, missing reviewer, and stale saved plan. A simple word-overlap top-document diagnostic matched expected guidance in one case. This narrow diagnostic is not a same-model RAG benchmark. FirstTask receives curated graph relationships that the text retrieval method does not use; ingestion quality is outside this evaluation. The script and full outputs ship with the source.
+A separate reproducible evaluation passed eight graph cases: outdated guidance, replacement, unapproved replacement, conflicting approvals, missing source, a second assignment, missing reviewer, and stale saved plan. A simple word-overlap top-document diagnostic matched expected guidance in one case. This narrow diagnostic is not a same-model RAG benchmark. Workweave receives curated graph relationships that the text retrieval method does not use; ingestion quality is outside this evaluation. The script and full outputs ship with the source.
 
 A live OpenAI GPT-6 Luna function-call and layout request completed in 3.23 seconds in one earlier local run. This confirms connectivity, not model quality or a latency benchmark. Public URL, recorded demo, same-model comparison, and user observations remain pending.
 
@@ -36,7 +36,7 @@ The company is fictional. The app does not grant access, send messages, or repla
 
 ## AI assistance and decisions
 
-Codex assisted with code, sample data, design, tests, and documentation. The participant selected the onboarding problem and required graph-based evidence, A2UI, judge-controlled changes, and a hosted demo. Add the participant's review and learning before submission.
+Codex assisted with code, sample data, design, tests, and documentation. The participant selected the company workspace problem and required graph-based evidence, A2UI, judge-controlled changes, and a hosted demo. Add the participant's review and learning before submission.
 
 ## Community Wisdom
 
@@ -64,4 +64,4 @@ This is a small builder-authored diagnostic, not a vector-RAG benchmark. Its pra
 
 I kept all source document IDs, titles and bodies byte-identical, then changed only relationships in four isolated fixtures. Removing the replacement link made approval ambiguous. Removing the current source link blocked plan acceptance. Changing the reviewer relationship changed the correct reviewer to Noah even while the old review-policy document still named Leo. Removing the task-service link made task context unavailable. All four checks passed.
 
-A text-only system receives identical input in each pair and cannot distinguish the changed company state without another source of relationship information. FalkorDB supplies that operational structure in FirstTask. SQL with an equivalent relationship model could also solve it; I do not claim otherwise. The product benefit is a source-backed next action with explicit authority checks, not a database exclusivity claim.
+A text-only system receives identical input in each pair and cannot distinguish the changed company state without another source of relationship information. FalkorDB supplies that operational structure in Workweave. SQL with an equivalent relationship model could also solve it; I do not claim otherwise. The product benefit is a source-backed next action with explicit authority checks, not a database exclusivity claim.

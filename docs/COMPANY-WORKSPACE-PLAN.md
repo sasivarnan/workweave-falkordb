@@ -12,7 +12,7 @@ Current implementation: Calendar records connect to tasks, services and the deci
 
 ## What exists now
 
-- Overview with assigned tasks, a next meeting and a relationship-backed change alert.
+- Today with assigned tasks, a next meeting, linked notes, and a relationship-backed change alert.
 - Calendar agenda with related task and exact meeting-note links.
 - Meeting notes and one editable personal workspace note, persisted in FalkorDB.
 - Focused task flow with evidence-gated review requests.

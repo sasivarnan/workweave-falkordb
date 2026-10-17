@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:firsttask:catalog:v1",
-  "catalogId": "urn:firsttask:catalog:v1",
-  "title": "FirstTask custom A2UI v0.9 subset",
+  "$id": "urn:workweave:catalog:v1",
+  "catalogId": "urn:workweave:catalog:v1",
+  "title": "Workweave custom A2UI v0.9 subset",
   "components": {
     "SummaryCard": {
       "type": "object",
