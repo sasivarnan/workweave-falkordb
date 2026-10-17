@@ -711,16 +711,6 @@ export default function App() {
               {sidebarOpen && <span>{label}</span>}
             </Button>
           ))}
-          <Button
-            variant="ghost"
-            aria-label="Help: restart workspace guide"
-            title="Help: restart workspace guide"
-            disabled={busy || !context}
-            className="w-full justify-start overflow-hidden"
-            onClick={() => void moveEmployeeGuide(1)}
-          >
-            {sidebarOpen ? "Help · Restart guide" : "?"}
-          </Button>
           {judgeMode && (
             <>
               <Separator className="my-5" />
@@ -851,39 +841,50 @@ export default function App() {
             <span className="text-muted-foreground">/</span>
             <span className="text-sm font-medium">{pageTitle}</span>
           </div>
-          <form
-            className="flex w-full items-center gap-2 sm:w-72"
-            onSubmit={(e) => {
-              e.preventDefault()
-              stop()
-              void request("/api/search", { query: searchQuery }, "sources")
-            }}
-          >
-            <Label htmlFor="workspace-search" className="sr-only">
-              Search your company
-            </Label>
-            <div className="relative flex-1">
-              <RiSearchLine className="pointer-events-none absolute top-2.5 left-3 size-4 text-muted-foreground" />
-              <Input
-                id="workspace-search"
-                className="h-9 bg-muted/30 pl-9"
-                placeholder="Search your company"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                maxLength={200}
-                required
-              />
-            </div>
-            <Button
-              type="submit"
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Search"
-              disabled={busy}
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+            <form
+              className="flex w-full items-center gap-2 sm:w-72"
+              onSubmit={(e) => {
+                e.preventDefault()
+                stop()
+                void request("/api/search", { query: searchQuery }, "sources")
+              }}
             >
+              <Label htmlFor="workspace-search" className="sr-only">
+                Search your company
+              </Label>
+              <div className="relative flex-1">
+                <RiSearchLine className="pointer-events-none absolute top-2.5 left-3 size-4 text-muted-foreground" />
+                <Input
+                  id="workspace-search"
+                  className="h-9 bg-muted/30 pl-9"
+                  placeholder="Search your company"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  maxLength={200}
+                  required
+                />
+              </div>
+              <Button
+                type="submit"
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Search"
+                disabled={busy}
+              >
+                <RiArrowRightLine />
+              </Button>
+            </form>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={busy || !context}
+              onClick={() => void moveEmployeeGuide(1)}
+            >
+              Start tour
               <RiArrowRightLine />
             </Button>
-          </form>
+          </div>
         </header>
         <main
           className={
@@ -1022,14 +1023,6 @@ export default function App() {
                 <p className="text-sm text-muted-foreground sm:text-base">
                   Your work and the context behind it.
                 </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={busy || !context}
-                  onClick={() => void moveEmployeeGuide(1)}
-                >
-                  Start tour <RiArrowRightLine />
-                </Button>
               </section>
               <div className="flex items-center gap-6 border-b">
                 <span className="border-b-2 border-primary pb-3 text-sm font-medium text-primary">
