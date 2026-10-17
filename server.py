@@ -6,11 +6,11 @@ from pathlib import Path
 from graph import Store,database
 from ui import compose
 from agent import run,provider
+from access import authorized,reserve,BudgetExceeded
 from config import load
-load()
 ROOT=Path(__file__).parent/'frontend'/'dist'
 LOCKS={};LIMITS={};GUARD=threading.Lock()
-GLOBAL=[]; AI_CALLS=[];AGENT_SLOTS=threading.BoundedSemaphore(2)
+GLOBAL=[];AGENT_SLOTS=threading.BoundedSemaphore(2)
 class Handler(BaseHTTPRequestHandler):
  def log_message(self,*args):pass
  def respond(self,status,data,cookie=None):
@@ -23,6 +23,7 @@ class Handler(BaseHTTPRequestHandler):
   token=secrets.token_hex(16)
   return token,'firsttask='+token+'; Path=/; HttpOnly; SameSite=Strict'+('; Secure' if os.getenv('COOKIE_SECURE')=='true' else '')
  def do_GET(self):
+  if self.path=='/api/access':return self.respond(200,{'aiEnabled':len(os.getenv('AI_ACCESS_CODE',''))>=16})
   if self.path=='/api/health':
    try:
     database().connection.ping()
@@ -41,19 +42,17 @@ class Handler(BaseHTTPRequestHandler):
   if self.path not in ['/api/reset','/api/action','/api/context','/api/agent','/api/search']:return self.respond(404,{'error':'Not found'})
   try:
    length=int(self.headers.get('Content-Length','0'))
-   if length>4096:raise ValueError('Request too large')
+   if length<0 or length>4096:raise ValueError('Request too large')
    body=json.loads(self.rfile.read(length) or '{}')
    if not isinstance(body,dict):raise ValueError('Invalid request')
+   if self.path=='/api/agent' and not authorized(self.headers.get('X-AI-Access','')):return self.respond(401,{'error':'Enter a valid AI invite code. Graph exploration remains public.'})
    token,cookie=self.token()
    with GUARD:
-    now=time.time();GLOBAL[:]=[t for t in GLOBAL if now-t<60];AI_CALLS[:]=[t for t in AI_CALLS if now-t<3600]
+    now=time.time();GLOBAL[:]=[t for t in GLOBAL if now-t<60]
     if len(GLOBAL)>=120:return self.respond(429,{'error':'The demo is busy. Try again in one minute.'},cookie)
     if len(LOCKS)>=200 and token not in LOCKS:return self.respond(429,{'error':'The demo workspace limit is reached.'},cookie)
     recent=[t for t in LIMITS.get(token,[]) if now-t<60]
     if len(recent)>=30:return self.respond(429,{'error':'Request limit reached. Wait one minute.'},cookie)
-    if self.path=='/api/agent':
-     if len(AI_CALLS)>=20:return self.respond(429,{'error':'The hourly AI demo limit is reached. Graph exploration is still available.'},cookie)
-     AI_CALLS.append(now)
     GLOBAL.append(now)
     LIMITS[token]=recent+[now];lock=LOCKS.setdefault(token,threading.Lock())
    with lock:
@@ -63,14 +62,18 @@ class Handler(BaseHTTPRequestHandler):
     elif self.path not in ['/api/context','/api/agent','/api/search']:return self.respond(404,{'error':'Not found'},cookie)
     if self.path=='/api/agent':
      if not AGENT_SLOTS.acquire(blocking=False):return self.respond(429,{'error':'The agent is busy. Try again shortly.'},cookie)
-     try:context,selection=run(s,str(body.get('prompt','')));mode='Live '+provider().title()+' tool call + model-selected layout'
+     try:
+      reserve()
+      context,selection=run(s,str(body.get('prompt','')));mode='Live '+provider().title()+' tool call + model-selected layout'
      finally:AGENT_SLOTS.release()
     else:
      context=s.context();selection=None
      if self.path=='/api/search':context['searchResults']=s.search(body.get('query',''))
     self.respond(200,{'messages':compose(context,selection),'trace':s.trace,'mode':mode},cookie)
+  except BudgetExceeded as e:self.respond(429,{'error':str(e)})
   except ValueError as e:self.respond(400,{'error':str(e)})
   except Exception:self.respond(503,{'error':'The database or AI provider is unavailable. No answer was substituted. Check the server configuration and connection.'})
 if __name__=='__main__':
+ load()
  print('FirstTask listening',flush=True)
  ThreadingHTTPServer(('0.0.0.0',int(os.getenv('PORT','8080'))),Handler).serve_forever()

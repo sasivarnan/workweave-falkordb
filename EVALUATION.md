@@ -58,3 +58,7 @@ Run `python scripts/evaluate.py` with local FalkorDB. Output: `evaluation-result
 ## Paired model diagnostic
 
 16 live calls to the configured gpt-4.1-mini model completed, using 9,600 reported tokens in total. The same eight synthetic questions, model, schema and source corpus were used in both arms. The graph-context arm also received curated decisions, source links, ambiguity, reviewer and stale-plan fields. Guidance correctness: documents 4/8, graph context 6/8. The model still failed both required-abstention cases. Two graph-context answers used a document title instead of a valid source ID. Guidance correctness alone therefore overstates usable-answer quality. Raw bounded responses and token usage are in model-evaluation-results.json. This is not vector RAG, independent gold data, or a production benchmark. The app avoids this failure path by keeping factual guidance and review gates deterministic.
+
+## Pre-deployment AI protection
+
+31 tests pass. Added missing-code refusal before provider/graph access, valid-code route verification with a mocked provider, rolling and lifetime budget persistence, and concurrent reservation limits. No model calls were used in these checks. A configured-secret scan passed against tracked files and the built frontend. AI reservations use a persistent SQLite ledger; Compose mounts it separately from graph data. Live deployment remains intentionally pending.

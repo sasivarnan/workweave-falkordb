@@ -91,7 +91,7 @@ Graph tests use isolated disposable graphs and delete only their own test graphs
 - The local access-request feature and arbitrary document upload are not implemented.
 - No email or real access grants are performed.
 - The portal is not a production HR system.
-- Demo controls include 30 requests per workspace per minute, 120 global requests per minute, 20 AI operations per hour, and two concurrent AI operations. Each AI operation uses two model calls. Demo graphs expire after 24 hours of inactivity. There is a 200-workspace process cap. These in-memory counters reset with the app; use durable limits and proxy protection before a larger public release.
+- Demo controls include 30 requests per workspace per minute, 120 global requests per minute, two concurrent AI operations, and durable global AI limits (default: 5 per rolling hour, 10 per rolling day, 30 in total). Each AI operation uses two model calls. Demo graphs expire after 24 hours of inactivity. There is a 200-workspace process cap. General request counters reset with the app. AI reservations are stored separately in SQLite and survive restarts only when its path uses persistent storage.
 - Workspace cookies are bearer credentials. No graph name is accepted from client input. Deploy behind HTTPS.
 - Full official A2UI conformance validation, live Gemini verification, public deployment, video, baseline evaluation, and a real-user test remain release tasks.
 
@@ -145,3 +145,13 @@ A review request is stored in FalkorDB after current reading, required training,
 ## Company document search
 
 Knowledge search uses FalkorDB full-text indexes over Document.title and Document.body. Input is converted to bounded plain-word terms and passed as a query parameter. A search hit is not an approval signal.
+
+## Protected live AI (deploy last)
+
+Graph exploration is public. `/api/agent` requires a separate `AI_ACCESS_CODE` of at least 16 characters in the X-AI-Access header. No code means live AI stays disabled. Generate a random code and configure it only in server secrets. The UI accepts it as a password, keeps it only in React memory, and lets the user clear it. The provider API key is never requested in the UI.
+
+AI operations are reserved before provider access in a SQLite ledger using an immediate write transaction. Defaults: 5/hour, 10/day, 30 total across all visitors. Each operation allows at most two provider calls. Failures consume the reservation. Both provider adapters limit request payload size and output tokens. This is a durable call budget, not a guaranteed dollar cap. Configure provider-side spend controls separately.
+
+Compose mounts a separate usage-data volume. On another host, set AI_USAGE_DB to a persistent path and use one app instance. If the ledger cannot be written, AI fails closed. Ephemeral hosting storage does not preserve limits across replacement. Do not publish live AI until persistent storage and HTTPS are verified. Resetting the sample graph does not reset the AI ledger. The invite code is shared access, not production employee identity or role management.
+
+Local code is stored in the ignored .env file with restricted file permissions. Never put it in README, the public video, or frontend environment variables. Reproduce secret checks with `python scripts/check_secrets.py` after building.

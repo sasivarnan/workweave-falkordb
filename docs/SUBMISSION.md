@@ -16,3 +16,5 @@ Demo video: PENDING
 Blog: local draft; not published
 
 Do not submit this draft with missing URLs or claim pending checks are complete.
+
+Release order: finish local verification and participant review first. Configure hosting secrets and persistent AI ledger without exposing the app. Deploy last, verify HTTPS, then record and submit the live URLs. Live AI requires a separate invite code; the public graph demo does not.

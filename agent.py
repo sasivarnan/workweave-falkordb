@@ -7,11 +7,13 @@ def run(store,prompt):
  model=os.getenv('GEMINI_MODEL','gemini-2.5-flash')
  url='https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent'
  def call(payload):
-  req=urllib.request.Request(url,data=json.dumps(payload).encode(),headers={'Content-Type':'application/json','x-goog-api-key':key})
+  encoded=json.dumps(payload).encode()
+  if len(encoded)>65536:raise ValueError('AI context is too large')
+  req=urllib.request.Request(url,data=encoded,headers={'Content-Type':'application/json','x-goog-api-key':key})
   with urllib.request.urlopen(req,timeout=35) as res:return json.load(res)
  tools=[{'functionDeclarations':[{'name':'get_onboarding_context','description':'Read the current assignment, people, outdated guidance, evidence paths and saved progress from FalkorDB.','parameters':{'type':'OBJECT','properties':{}}}]}]
  contents=[{'role':'user','parts':[{'text':prompt[:1000]}]}]
- first=call({'contents':contents,'tools':tools,'toolConfig':{'functionCallingConfig':{'mode':'ANY','allowedFunctionNames':['get_onboarding_context']}}})
+ first=call({'contents':contents,'generationConfig':{'maxOutputTokens':256},'tools':tools,'toolConfig':{'functionCallingConfig':{'mode':'ANY','allowedFunctionNames':['get_onboarding_context']}}})
  content=first['candidates'][0]['content'];parts=content.get('parts',[])
  calls=[p['functionCall'] for p in parts if 'functionCall' in p]
  if len(calls)!=1 or calls[0]['name']!='get_onboarding_context' or calls[0].get('args',{}):raise ValueError('Invalid model tool call')
@@ -35,7 +37,9 @@ def run_openai(store,prompt):
  if not key:raise ValueError('OPENAI_API_KEY is not configured. Graph tools remain available.')
  model=os.getenv('OPENAI_MODEL','gpt-6-luna')
  def call(payload):
-  req=urllib.request.Request('https://api.openai.com/v1/chat/completions',data=json.dumps({'model':model,'store':False,**({'reasoning_effort':'none'} if model.startswith('gpt-6') else {}),**payload}).encode(),headers={'Content-Type':'application/json','Authorization':'Bearer '+key})
+  encoded=json.dumps({'model':model,'store':False,**({'reasoning_effort':'none'} if model.startswith('gpt-6') else {}),**payload}).encode()
+  if len(encoded)>65536:raise ValueError('AI context is too large')
+  req=urllib.request.Request('https://api.openai.com/v1/chat/completions',data=encoded,headers={'Content-Type':'application/json','Authorization':'Bearer '+key})
   try:
    with urllib.request.urlopen(req,timeout=35) as res:return json.load(res)
   except urllib.error.HTTPError as e:
