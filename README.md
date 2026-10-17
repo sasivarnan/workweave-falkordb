@@ -10,7 +10,7 @@ Choose **one** option. Run commands from the repository root.
 
 **Open the application:** [http://localhost:8080](http://localhost:8080) after startup.
 
-**Judge view:** [http://localhost:8080/judge](http://localhost:8080/judge).
+**Technical proof (optional):** [http://localhost:8080/judge](http://localhost:8080/judge).
 
 ### Option 1: Docker — application and database
 
@@ -34,7 +34,7 @@ uv run --locked workweave
 
 If FalkorDB already runs at `127.0.0.1:6381`, skip the database command. Do not run the local app while the full Docker stack uses port 8080. To switch from Option 1, run `docker compose down` first; this retains named volumes. Avoid `down -v`, which deletes them.
 
-For either option, open [localhost:8080](http://localhost:8080). Start tour explains the application; [/judge](http://localhost:8080/judge) shows the graph proof.
+For either option, open [localhost:8080](http://localhost:8080). Start tour explains the application; [/judge](http://localhost:8080/judge) provides optional graph and query evidence.
 
 `uv sync --locked` rebuilds `.venv` from `uv.lock`. Keep `.env` and `.data/` when removing `.venv`. Optional AI uses [.env.example](.env.example) and a separate invite code. Graph workflows need no AI key.
 

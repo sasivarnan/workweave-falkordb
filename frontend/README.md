@@ -12,7 +12,7 @@ npm run build --prefix frontend
 
 The Python server serves `frontend/dist`. See the [root README](../README.md) for setup and architecture.
 
-- `src/App.tsx`: workspace, onboarding tour and judge views.
+- `src/App.tsx`: workspace, onboarding tour and technical proof views.
 - `src/lib/workspace.ts`: response types and A2UI subset validation.
 - `src/lib/app-store.ts`: local application state.
 - `src/lib/tour.ts`: application tour instructions.

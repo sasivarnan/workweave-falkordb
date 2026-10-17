@@ -647,7 +647,7 @@ export default function App() {
     (
       {
         assignment: "Task",
-        proof: "Proof & evaluation",
+        proof: "Technical proof",
         evidence: "Evidence & tools",
         demo: "Walkthrough",
       } as Record<string, string>
@@ -707,7 +707,7 @@ export default function App() {
             <>
               <Separator className="my-5" />
               {[
-                ["proof", "Proof & evaluation"],
+                ["proof", "Technical proof"],
                 ["evidence", "Evidence & tools"],
                 ["demo", "Walkthrough"],
               ].map(([id, label]) => (
@@ -788,7 +788,7 @@ export default function App() {
             ))}
             {judgeMode &&
               [
-                ["proof", "Proof & evaluation"],
+                ["proof", "Technical proof"],
                 ["evidence", "Evidence & tools"],
                 ["demo", "Walkthrough"],
               ].map(([id, label]) => (
@@ -998,7 +998,7 @@ export default function App() {
               <TabsTrigger value="changes">Decision review</TabsTrigger>
               <TabsTrigger value="calendar">Calendar</TabsTrigger>
               <TabsTrigger value="notes">Notes</TabsTrigger>
-              <TabsTrigger value="proof">Proof & evaluation</TabsTrigger>
+              <TabsTrigger value="proof">Technical proof</TabsTrigger>
               <TabsTrigger value="home">Tasks</TabsTrigger>
               <TabsTrigger value="assignment">My task</TabsTrigger>
               <TabsTrigger value="sources">Documents</TabsTrigger>
