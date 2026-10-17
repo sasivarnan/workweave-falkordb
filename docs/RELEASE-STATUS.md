@@ -33,3 +33,9 @@ No award or acceptance is guaranteed. No claim that this problem is impossible w
 The employee guide uses the official shadcn Popover, with a dimmed page and a highlighted existing Card. XState controls each step. Tailwind classes control the layout. The browser check covered three steps, Back and Escape with focus returned to Help. Skip and finish keep the existing local dismissal behaviour. The guide does not approve decisions or update saved plans.
 
 The home page now has a permanent Start tour button. The dismissible welcome card and its obsolete dismissal flag were removed. Start → Skip → Today was checked in the browser; Start tour remains available.
+
+## Full employee application tour
+
+The header Start tour button now opens 11 stops: Today, navigation and display controls, search, task list, task detail, calendar, notes, knowledge, people, decision review and cross-team impact. This replaces the earlier three-step workflow guide. Each stop highlights its own existing control or introduction. The tour does not import sample exports, run AI, accept plans, acknowledge decisions or save notes. Judge proof tools remain a separate experience.
+
+Browser validation covered all 11 forward stops, cross-page Back navigation and the header search spotlight. Four frontend tests, production build and configured-secret scan passed. Independent human feedback is still pending.

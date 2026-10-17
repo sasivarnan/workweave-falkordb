@@ -1,3 +1,4 @@
+import { workspaceTour } from "@/lib/tour"
 import {
   Popover,
   PopoverContent,
@@ -90,9 +91,7 @@ import type { ImpactResult } from "@/lib/impact"
 import { decode } from "@/lib/workspace"
 
 export default function App() {
-  const decisionTourRef = useRef<HTMLDivElement>(null)
-  const impactTourRef = useRef<HTMLDivElement>(null)
-  const taskTourRef = useRef<HTMLDivElement>(null)
+  const tourTarget = useRef<HTMLElement | null>(null)
   const judgeMode = window.location.pathname === "/judge"
   const state = useSelector(appStore, (snapshot) => snapshot.context)
   const {
@@ -407,12 +406,15 @@ export default function App() {
       appStore.trigger.requestFinished()
     }
   }
-  const tourTarget =
-    employeeGuide === 1
-      ? decisionTourRef
-      : employeeGuide === 2
-        ? impactTourRef
-        : taskTourRef
+  const tourSteps = workspaceTour
+  const activeTour = tourSteps[employeeGuide - 1]
+  function tourAnchor(target: string) {
+    return activeTour?.target === target
+      ? (node: HTMLElement | null) => {
+          tourTarget.current = node
+        }
+      : undefined
+  }
   useEffect(() => {
     if (employeeGuide)
       tourTarget.current?.scrollIntoView({
@@ -428,23 +430,13 @@ export default function App() {
       patch: { employeeGuide: 0 },
     })
   }
-  async function moveEmployeeGuide(step: 1 | 2 | 3) {
-    if (step === 2) {
-      appStore.trigger.updated({
-        patch: { proofStage: "off", proofBaseline: null },
-      })
-      const data = await analyzeImpact(
-        workspace?.synthetic ? "import" : "analyze"
-      )
-      if (!data) return
-      if (!data.analysis.ready || data.analysis.blocked) {
-        updateField("employeeGuide", 0)
-        navigate("impact")
-        return
-      }
-    }
+  async function moveEmployeeGuide(step: number) {
+    const next = tourSteps[step - 1]
+    if (!next) return
+    stop()
+    updateField("tourReady", 0)
     updateField("employeeGuide", step)
-    navigate(step === 1 ? "changes" : step === 2 ? "impact" : "assignment")
+    navigate(next.tab)
   }
   async function startImpactProof() {
     const navigationVersion = navigationRef.current
@@ -817,7 +809,15 @@ export default function App() {
       </Sheet>
       <div className="min-w-0 flex-1">
         <header className="flex min-h-16 flex-wrap items-center justify-between gap-3 border-b px-5 py-3 lg:px-10">
-          <div className="flex items-center gap-3">
+          <div
+            ref={tourAnchor("navigation")}
+            className={
+              "flex items-center gap-3 " +
+              (activeTour?.target === "navigation"
+                ? tourHighlight + " rounded-lg bg-background"
+                : "")
+            }
+          >
             <Button
               variant="ghost"
               size="icon-sm"
@@ -843,7 +843,13 @@ export default function App() {
           </div>
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
             <form
-              className="flex w-full items-center gap-2 sm:w-72"
+              ref={tourAnchor("search")}
+              className={
+                "flex w-full items-center gap-2 sm:w-72 " +
+                (activeTour?.target === "search"
+                  ? tourHighlight + " rounded-lg bg-background"
+                  : "")
+              }
               onSubmit={(e) => {
                 e.preventDefault()
                 stop()
@@ -943,21 +949,12 @@ export default function App() {
               >
                 <div className="space-y-2">
                   <PopoverDescription>
-                    Workspace guide · Step {employeeGuide} of 3
+                    Application tour · Step {employeeGuide} of{" "}
+                    {tourSteps.length}
                   </PopoverDescription>
-                  <PopoverTitle>
-                    {employeeGuide === 1
-                      ? "Start with the current decision"
-                      : employeeGuide === 2
-                        ? "See which work depends on it"
-                        : "Choose your next action"}
-                  </PopoverTitle>
+                  <PopoverTitle>{activeTour?.title}</PopoverTitle>
                   <PopoverDescription>
-                    {employeeGuide === 1
-                      ? `Current guidance: ${context.current || "Needs clarification"}. The highlighted record shows its approval and original source.`
-                      : employeeGuide === 2
-                        ? "This summary shows the affected tasks, teams and missing owners. After the tour, use “Why affected?” to inspect each path."
-                        : "Review your assigned task and its requirements. The guide does not accept a plan or change your work."}
+                    {activeTour?.description}
                   </PopoverDescription>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -965,9 +962,7 @@ export default function App() {
                     <Button
                       variant="outline"
                       disabled={busy}
-                      onClick={() =>
-                        void moveEmployeeGuide(employeeGuide === 3 ? 2 : 1)
-                      }
+                      onClick={() => void moveEmployeeGuide(employeeGuide - 1)}
                     >
                       Back
                     </Button>
@@ -975,12 +970,14 @@ export default function App() {
                   <Button
                     disabled={busy}
                     onClick={() =>
-                      employeeGuide === 3
+                      employeeGuide === tourSteps.length
                         ? finishEmployeeGuide()
-                        : void moveEmployeeGuide(employeeGuide === 1 ? 2 : 3)
+                        : void moveEmployeeGuide(employeeGuide + 1)
                     }
                   >
-                    {employeeGuide === 3 ? "Finish guide" : "Next"}
+                    {employeeGuide === tourSteps.length
+                      ? "Finish tour"
+                      : "Next"}
                     <RiArrowRightLine />
                   </Button>
                   <Button
@@ -988,7 +985,7 @@ export default function App() {
                     disabled={busy}
                     onClick={finishEmployeeGuide}
                   >
-                    Skip guide
+                    Skip tour
                   </Button>
                 </div>
               </PopoverContent>
@@ -1010,7 +1007,14 @@ export default function App() {
               <TabsTrigger value="demo">Walkthrough</TabsTrigger>
             </TabsList>
             <TabsContent value="workspace" className="space-y-9">
-              <section className="space-y-2">
+              <section
+                ref={tourAnchor("today")}
+                className={
+                  activeTour?.target === "today"
+                    ? tourHighlight + " rounded-xl bg-background p-4"
+                    : "space-y-2"
+                }
+              >
                 <p className="text-xs text-muted-foreground">
                   {workspace?.company.name}
                   {workspace?.synthetic && " · Sample workspace"}
@@ -1285,9 +1289,11 @@ export default function App() {
                     ))}
                   </div>
                   <Card
-                    ref={decisionTourRef}
+                    ref={tourAnchor("decision")}
                     className={
-                      employeeGuide === 1 ? tourHighlight : "shadow-none"
+                      activeTour?.target === "decision"
+                        ? tourHighlight
+                        : "shadow-none"
                     }
                   >
                     <CardHeader>
@@ -1623,7 +1629,14 @@ export default function App() {
               )}
             </TabsContent>
             <TabsContent value="impact" className="space-y-8">
-              <section className="space-y-3">
+              <section
+                ref={tourAnchor("impact")}
+                className={
+                  activeTour?.target === "impact"
+                    ? tourHighlight + " rounded-xl bg-background p-4"
+                    : "space-y-3"
+                }
+              >
                 <p className="text-xs text-muted-foreground">
                   Company work · Connected across tools
                 </p>
@@ -1760,10 +1773,7 @@ export default function App() {
               {impact?.analysis.ready && !impact.analysis.blocked && (
                 <>
                   <Card
-                    ref={impactTourRef}
-                    className={
-                      employeeGuide === 2 ? tourHighlight : "shadow-none"
-                    }
+                    className="shadow-none"
                   >
                     <CardHeader>
                       <CardTitle>{impact.analysis.decision?.title}</CardTitle>
@@ -2109,7 +2119,14 @@ export default function App() {
               )}
             </TabsContent>
             <TabsContent value="calendar" className="space-y-8">
-              <section className="space-y-2">
+              <section
+                ref={tourAnchor("calendar")}
+                className={
+                  activeTour?.target === "calendar"
+                    ? tourHighlight + " rounded-xl bg-background p-4"
+                    : "space-y-2"
+                }
+              >
                 <h1 className="font-heading text-3xl font-semibold tracking-tight">
                   Calendar
                 </h1>
@@ -2147,7 +2164,14 @@ export default function App() {
               </div>
             </TabsContent>
             <TabsContent value="notes" className="space-y-8">
-              <section className="space-y-2">
+              <section
+                ref={tourAnchor("notes")}
+                className={
+                  activeTour?.target === "notes"
+                    ? tourHighlight + " rounded-xl bg-background p-4"
+                    : "space-y-2"
+                }
+              >
                 <h1 className="font-heading text-3xl font-semibold tracking-tight">
                   Notes
                 </h1>
@@ -2503,7 +2527,14 @@ export default function App() {
               </TabsContent>
             )}
             <TabsContent value="home" className="space-y-6">
-              <h1 className="font-heading text-2xl font-semibold">
+              <h1
+                ref={tourAnchor("tasks")}
+                className={
+                  activeTour?.target === "tasks"
+                    ? tourHighlight + " rounded-xl bg-background p-4"
+                    : "font-heading text-2xl font-semibold"
+                }
+              >
                 Your tasks
               </h1>
               <div className="divide-y border-y">
@@ -2544,9 +2575,11 @@ export default function App() {
               ) : (
                 <>
                   <Card
-                    ref={taskTourRef}
+                    ref={tourAnchor("task")}
                     className={
-                      employeeGuide === 3 ? tourHighlight : "shadow-none"
+                      activeTour?.target === "task"
+                        ? tourHighlight
+                        : "shadow-none"
                     }
                   >
                     <CardHeader>
@@ -2716,7 +2749,14 @@ export default function App() {
               )}
             </TabsContent>
             <TabsContent value="sources" className="space-y-6">
-              <h1 className="font-heading text-3xl font-semibold tracking-tight">
+              <h1
+                ref={tourAnchor("knowledge")}
+                className={
+                  activeTour?.target === "knowledge"
+                    ? tourHighlight + " rounded-xl bg-background p-4"
+                    : "font-heading text-3xl font-semibold tracking-tight"
+                }
+              >
                 Knowledge
               </h1>
               <p className="text-sm text-muted-foreground">
@@ -2800,7 +2840,14 @@ export default function App() {
               )}
             </TabsContent>
             <TabsContent value="people" className="space-y-6">
-              <h1 className="font-heading text-3xl font-semibold tracking-tight">
+              <h1
+                ref={tourAnchor("people")}
+                className={
+                  activeTour?.target === "people"
+                    ? tourHighlight + " rounded-xl bg-background p-4"
+                    : "font-heading text-3xl font-semibold tracking-tight"
+                }
+              >
                 People
               </h1>
               <p className="text-sm text-muted-foreground">

@@ -4,7 +4,7 @@ import type { Evaluation, Result } from "./workspace"
 
 export type AppState = {
   tourReady: number
-  employeeGuide: 0 | 1 | 2 | 3
+  employeeGuide: number
   proofStage: "off" | "inspect" | "removed" | "restored"
   proofBaseline: ImpactAnalysis | null
   impactExpanded: string[]
