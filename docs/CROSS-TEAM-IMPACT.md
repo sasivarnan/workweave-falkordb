@@ -35,7 +35,7 @@ The decision must pass the existing approval, source, approver, and effective-ti
 
 ## Proof
 
-Run `uv run --locked python scripts/evaluate_impact.py` for seven authored correctness checks and `impact-evaluation-results.json`. The checked-in report shows expected affected IDs, the unaffected task, route counts before/after, equal content hashes, and restoration.
+Run `uv run --locked python scripts/evaluate_impact.py` for seven authored correctness checks and `reports/impact-evaluation-results.json`. The checked-in report shows expected affected IDs, the unaffected task, route counts before/after, equal content hashes, and restoration.
 
 The test suite covers cycles, duplicate names, alternate paths, missing owners, missing authority, ambiguous meeting IDs, workspace isolation, actual HTTP dispatch, native algorithm failure, and the five-link bound.
 

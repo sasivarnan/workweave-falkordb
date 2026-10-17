@@ -15,7 +15,7 @@ if not key:
     raise SystemExit("OPENAI_API_KEY is required")
 model = os.getenv("OPENAI_MODEL", "gpt-6-luna")
 root = Path(__file__).resolve().parents[1]
-gold = json.loads((root / "evaluation-results.json").read_text())["results"]
+gold = json.loads((root / "reports" / "evaluation-results.json").read_text())["results"]
 changes = ["", "replace", "unapprove", "conflict", "source", "", "remove-owner", "stale"]
 results = []
 for case, change in zip(gold, changes):
@@ -122,7 +122,7 @@ report = {
     "method": "Eight builder-authored synthetic cases. Same model, same output schema, same question and full source corpus for each pair. Graph arm additionally receives curated current-decision, source-link, ambiguity, reviewer and stale-plan fields. No retrieval or tool-selection comparison; not vector RAG. One attempt per arm; 16 calls total. Citation existence does not prove citation support.",
     "results": results,
 }
-(root / "model-evaluation-results.json").write_text(json.dumps(report, indent=2) + "\n")
+(root / "reports" / "model-evaluation-results.json").write_text(json.dumps(report, indent=2) + "\n")
 print(
     "Document arm: "
     + str(sum(r["documents"]["correct"] for r in results))

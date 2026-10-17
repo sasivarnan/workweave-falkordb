@@ -4,9 +4,21 @@ An employee workspace that connects tasks, meetings, notes, people and approved 
 
 **Status:** working local prototype with synthetic data. Public demo and final video are pending.
 
-## Run locally with uv
+## Run
 
-Requires uv, Node.js 22+ and Docker. Run commands from the repository root.
+Choose **one** option. Run commands from the repository root.
+
+### Option 1: Docker — application and database
+
+Requires Docker with Compose. This builds and starts both services; no local uv or Node.js commands are needed.
+
+```sh
+docker compose up --build
+```
+
+### Option 2: uv — local application, database in Docker
+
+Requires uv, Node.js 22+ and Docker. The `database` command below starts **only FalkorDB**. The final `uv run` starts the application on your machine.
 
 ```sh
 uv sync --locked
@@ -16,15 +28,11 @@ docker compose -f compose.yaml -f compose.dev.yaml up -d database
 uv run --locked workweave
 ```
 
-If a FalkorDB container already uses `127.0.0.1:6381`, reuse it and skip the database startup. Open [localhost:8080](http://localhost:8080). Start tour explains the application; [/judge](http://localhost:8080/judge) shows the graph proof.
+If FalkorDB already runs at `127.0.0.1:6381`, skip the database command. Do not run the local app while the full Docker stack uses port 8080. To switch from Option 1, run `docker compose down` first; this retains named volumes. Avoid `down -v`, which deletes them.
 
-`uv sync --locked` creates or rebuilds `.venv` from `uv.lock`. No activation or pip commands are needed. Keep `.env` and `.data/` when deleting `.venv`; they contain local configuration and the durable AI usage ledger. Optional AI uses [.env.example](.env.example) and a separate invite code. Graph workflows need no AI key.
+For either option, open [localhost:8080](http://localhost:8080). Start tour explains the application; [/judge](http://localhost:8080/judge) shows the graph proof.
 
-To run the whole stack in containers instead:
-
-```sh
-docker compose up --build
-```
+`uv sync --locked` rebuilds `.venv` from `uv.lock`. Keep `.env` and `.data/` when removing `.venv`. Optional AI uses [.env.example](.env.example) and a separate invite code. Graph workflows need no AI key.
 
 ## Project layout
 
@@ -35,6 +43,7 @@ frontend/           React application
 scripts/            Reproducible evaluations and source checks
 tests/              Backend and graph tests
 docs/               API, graph queries and feature documentation
+reports/            Reproducible validation results
 pyproject.toml      Python metadata and direct dependencies
 uv.lock             Locked Python dependencies
 ```

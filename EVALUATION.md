@@ -14,10 +14,10 @@ Integration tests create isolated disposable graphs and delete only those graphs
 
 ## Saved reports
 
-- [Cross-team impact](impact-evaluation-results.json): affected sets, alternate routes and source-content preservation.
-- [Relationship changes](relationship-evaluation-results.json): guidance changes when relationships change but document text remains equal.
-- [Retrieval diagnostic](evaluation-results.json): graph guidance 8/8; simple word-overlap retrieval 1/8. The graph receives curated relationships and approval flags. This is not a vector-RAG comparison.
-- [Paired model diagnostic](model-evaluation-results.json): document guidance 4/8; graph-context guidance 6/8 with the same configured gpt-4.1-mini model. The model failed both required-abstention cases; two graph-context answers had invalid citation IDs. The application therefore keeps factual guidance and action checks deterministic.
+- [Cross-team impact](reports/impact-evaluation-results.json): affected sets, alternate routes and source-content preservation.
+- [Relationship changes](reports/relationship-evaluation-results.json): guidance changes when relationships change but document text remains equal.
+- [Retrieval diagnostic](reports/evaluation-results.json): graph guidance 8/8; simple word-overlap retrieval 1/8. The graph receives curated relationships and approval flags. This is not a vector-RAG comparison.
+- [Paired model diagnostic](reports/model-evaluation-results.json): document guidance 4/8; graph-context guidance 6/8 with the same configured gpt-4.1-mini model. The model failed both required-abstention cases; two graph-context answers had invalid citation IDs. The application therefore keeps factual guidance and action checks deterministic.
 
 The paired model report records 16 live calls. Do not run `scripts/evaluate_model.py` unless you intend to spend provider credits. Other diagnostic commands above do not call a model.
 

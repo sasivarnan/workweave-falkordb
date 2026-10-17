@@ -72,7 +72,9 @@ try:
             "No path within five links does not prove absence of impact beyond that bound.",
         ],
     }
-    (root / "impact-evaluation-results.json").write_text(json.dumps(report, indent=2) + "\n")
+    (root / "reports" / "impact-evaluation-results.json").write_text(
+        json.dumps(report, indent=2) + "\n"
+    )
     print(
         str(sum(row["passed"] for row in rows)) + "/" + str(len(rows)) + " cross-team checks passed"
     )

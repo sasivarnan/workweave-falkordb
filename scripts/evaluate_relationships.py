@@ -90,7 +90,9 @@ report = {
     "claim": "Document text alone cannot distinguish these paired states. FalkorDB relationships supply the missing authority and ownership information in this implementation. A relational database with an equivalent relationship model could also solve this; the test does not prove graph-database exclusivity.",
     "results": rows,
 }
-(root / "relationship-evaluation-results.json").write_text(json.dumps(report, indent=2) + "\n")
+(root / "reports" / "relationship-evaluation-results.json").write_text(
+    json.dumps(report, indent=2) + "\n"
+)
 print(str(sum(r["passed"] for r in rows)) + "/4 relationship checks passed")
 if not all(r["passed"] for r in rows):
     raise SystemExit(1)
