@@ -45,6 +45,6 @@ The content fingerprint includes IDs, labels, titles, and bodies of original doc
 
 Small builder-authored fixture. No independent user study, large-graph benchmark, real OAuth integration, general document ingestion, or production permission enforcement. The server displays a synthetic company-wide view within the visitor's isolated graph. Not reached within five links does not prove absence of impact beyond that bound or through missing links. The import does not populate all portal modules or create real Jira tasks, calendar invites, or Zoom notes.
 
-## Local verification
+## Validation
 
-60 server/graph tests, two frontend store tests, seven cross-team report checks, four existing relationship checks, and eight existing graph retrieval cases passed. The production frontend build and secret scan passed. Browser verification confirmed import, native path/source details, dependency removal, and restoration. The changes remain local pending source publication and hosting.
+See [validation results and reproduction commands](../EVALUATION.md). Tests cover path direction, cycles, alternate routes, missing evidence, workspace isolation and the traversal bound.

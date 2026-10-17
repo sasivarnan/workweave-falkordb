@@ -32,6 +32,26 @@ flowchart TB
 
 Company records and action checks come from the server and FalkorDB. AI selects component order; it does not generate company facts or arbitrary Cypher. The renderer supports a custom A2UI v0.9 subset, not a complete official SDK implementation. SQLite stores AI usage limits only.
 
+## Graph data model
+
+```mermaid
+flowchart LR
+    Employee -->|ASSIGNED_TO| Assignment
+    Assignment -->|TOUCHES| Service
+    WorkItem[Imported WorkItem] -->|TOUCHES| Service
+    Service -->|DEPENDS_ON| OtherService[Service]
+    Decision -->|APPLIES_TO| Service
+    Decision -->|SUPERSEDES| EarlierDecision[Decision]
+    Decision -->|SUPPORTED_BY| Document
+    Reviewer[Employee] -->|REVIEWER_FOR| Service
+    LearningPlan -->|FOR_ASSIGNMENT| Assignment
+    LearningPlan -->|SUPPORTED_BY| Decision
+    Meeting -->|DISCUSSES| Assignment
+    Note[Document: meeting note] -->|NOTES_FOR| Meeting
+```
+
+Employees, assignments, services, decisions, documents and saved plans have stable IDs. Imported work items remain distinct from employee assignments. Approval and effective-time properties qualify decisions; a relationship alone does not establish authority.
+
 ## How FalkorDB drives the workflow
 
 ```mermaid

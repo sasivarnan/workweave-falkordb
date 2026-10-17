@@ -9,6 +9,7 @@ All responses use the server's same-origin API. Credentials stay on the server. 
 | POST | `/api/search` | Full-text company document lookup; accepts `query`. |
 | POST | `/api/action` | Validated graph action; accepts `name`, optional `note`, and optional `assignment`. Includes saving a workspace note. |
 | POST | `/api/agent` | Protected provider tool call and allowlisted layout selection; requires `X-AI-Access`. |
+| POST | `/api/impact` | Import the bundled sample, analyze dependencies, or remove/restore the defined test link. |
 | POST | `/api/reset` | Reset only the visitor's synthetic workspace. |
 | GET | `/api/health` | Database reachability and provider configuration status. |
 | GET | `/api/access` | Whether protected AI access is configured; no code disclosure. |
@@ -23,7 +24,7 @@ The UI state store holds the latest response, navigation, theme, sidebar mode, d
 
 This API is for synthetic hackathon workspaces. Employee identity is a server-owned sample, not production authentication or permission enforcement.
 
-Checks: 60 server/graph tests and four frontend tests pass. The frontend source contains no sample company/person names or fixture assignment IDs. Browser checks cover collapse, expansion, saved mode after reload, and server-backed meeting details.
+See [validation results](../EVALUATION.md) for tests and known gaps.
 
 ## Decision review data
 

@@ -1,6 +1,6 @@
 # Decision change review
 
-The employee can open Decision review from the workspace navigation and choose an assigned task. All records come from the server and FalkorDB. Local navigation remains in XState Store; visible controls use shadcn and Tailwind.
+Open Decision review and choose an assigned task. All company records come from the server and FalkorDB.
 
 ## What is shown
 
@@ -30,6 +30,6 @@ The guided judge walkthrough also includes the proposal and acknowledgement acti
 
 ## Proof and limits
 
-47 server/graph tests and two store tests pass. The checks include version-specific acknowledgement, idempotency, preserved notes, unaffected assignment scope, proposal-only meetings, missing sources, missing approvers, conflicting decisions, and future-date blocking. Existing four relationship checks and eight retrieval diagnostic cases still pass.
+See [validation results](../EVALUATION.md) for the current test counts and reproduction commands. Decision checks cover version identity, preserved notes, proposal handling and missing or conflicting approval evidence.
 
 The graph links are curated synthetic data. Approval controls are explicitly sample controls, not a production authorization system. Jira, Google Calendar, and Zoom connectors, production identities and permission checks, automatic decision extraction, general decision editing, and scheduled replacement routing remain unimplemented. Future-effective decisions cause conservative clarification; the system does not route to the earlier decision until a scheduled activation. Receipt history is persistent sample data, not a tamper-proof audit ledger. Impact is only as complete as the recorded links.

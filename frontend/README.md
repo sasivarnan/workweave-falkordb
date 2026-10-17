@@ -1,21 +1,22 @@
-# Workweave web app
+# Workweave frontend
 
-React, TypeScript, Vite, Tailwind CSS, and official shadcn base-rhea components.
+React, TypeScript, Vite, Tailwind and shadcn. XState Store holds application state.
 
 From the repository root:
 
 ```sh
 npm ci --prefix frontend
+npm test --prefix frontend
 npm run build --prefix frontend
 ```
 
-The Python server serves `frontend/dist` at http://localhost:8080. See the root README for database and server setup.
+The Python server serves `frontend/dist`. See the [root README](../README.md) for setup and architecture.
 
-## Structure
+- `src/App.tsx`: workspace, onboarding tour and judge views.
+- `src/lib/workspace.ts`: response types and A2UI subset validation.
+- `src/lib/app-store.ts`: local application state.
+- `src/lib/tour.ts`: application tour instructions.
+- `src/components/ui`: shadcn controls.
+- `src/index.css`: framework imports, fonts and theme tokens. Layout uses Tailwind classes.
 
-- `src/App.tsx`: employee workspace, meeting details, task actions, and judge view.
-- `src/lib/workspace.ts`: response types and allowlisted A2UI validation.
-- `src/components/ui`: official shadcn components.
-- `src/index.css`: framework imports and theme tokens only. Layout uses Tailwind classes.
-
-Keep UI components from shadcn. Confirm with the project owner before adding a different UI library. Keep credentials on the server; never place them in Vite environment variables or frontend code.
+Company records come from the server. Provider keys must stay on the server.
