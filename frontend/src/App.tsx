@@ -1,3 +1,4 @@
+import { Spinner } from "@/components/ui/spinner"
 import { useOnboardingTour } from "@/hooks/use-onboarding-tour"
 import { useEffect, useLayoutEffect, useRef } from "react"
 import { useSelector } from "@xstate/store-react"
@@ -622,6 +623,23 @@ export default function App() {
     )[tab]
   return (
     <div className="flex min-h-svh w-full">
+      {busy && (
+        <div
+          role="status"
+          aria-live="polite"
+          aria-label="Loading workspace"
+          className="fixed inset-0 z-[100] flex cursor-wait items-center justify-center bg-background/45 backdrop-blur-[2px]"
+        >
+          <div className="flex size-16 items-center justify-center rounded-2xl border bg-background shadow-lg">
+            <Spinner
+              role="presentation"
+              aria-hidden="true"
+              className="size-7 text-primary"
+            />
+          </div>
+          <span className="sr-only">Loading workspace</span>
+        </div>
+      )}
       <aside
         data-tour="sidebar"
         aria-label="Workspace navigation"
@@ -888,6 +906,7 @@ export default function App() {
           </div>
         </header>
         <main
+          aria-busy={busy}
           className={
             "mx-auto flex w-full flex-col gap-7 px-5 py-8 [view-transition-name:work-area] md:px-9 lg:px-12 lg:py-10 " +
             (tab === "assignment" ? "max-w-3xl" : "max-w-7xl")
@@ -908,15 +927,6 @@ export default function App() {
                 </Button>
               </AlertDescription>
             </Alert>
-          )}
-          {busy && (
-            <p
-              role="status"
-              aria-live="polite"
-              className="text-xs text-muted-foreground"
-            >
-              Updating workspace…
-            </p>
           )}
           <Tabs value={tab} onValueChange={(v) => navigate(String(v))}>
             <TabsList className="hidden">
@@ -2869,10 +2879,7 @@ export default function App() {
               <h1 className="font-heading text-3xl font-semibold tracking-tight">
                 People
               </h1>
-              <p className="text-sm text-muted-foreground">
-                Find the assigned team members and reviewers connected to your
-                work.
-              </p>
+              <p className="text-sm text-muted-foreground">People directory.</p>
               <Card className="shadow-none">
                 <CardContent className="divide-y px-5">
                   {Array.from(
