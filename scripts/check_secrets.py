@@ -9,7 +9,7 @@ load()
 root = Path(__file__).resolve().parents[1]
 values = [
     os.getenv(name, "").encode()
-    for name in ["OPENAI_API_KEY", "GEMINI_API_KEY", "FALKORDB_PASSWORD", "AI_ACCESS_CODE"]
+    for name in ["OPENAI_API_KEY", "GEMINI_API_KEY", "FALKORDB_PASSWORD"]
     if len(os.getenv(name, "")) >= 8
 ]
 files = [

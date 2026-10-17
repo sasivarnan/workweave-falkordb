@@ -4,7 +4,7 @@ import os
 from workweave.paths import PROJECT_ROOT
 
 ALLOWED = {
-    "AI_ACCESS_CODE",
+    "AI_ENABLED",
     "AI_USAGE_DB",
     "AI_HOURLY_LIMIT",
     "AI_DAILY_LIMIT",

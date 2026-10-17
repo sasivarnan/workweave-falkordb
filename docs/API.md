@@ -4,16 +4,16 @@ All responses use the server's same-origin API. Credentials stay on the server. 
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| GET | `/api/workspace` | Public startup settings: product name, default assignment, and recording scenario. No provider secrets or invite code. |
+| GET | `/api/workspace` | Public startup settings: product name, default assignment, and recording scenario. No provider secrets. |
 | POST | `/api/context` | Current graph-backed workspace profile, employee, team, time zone, tasks, meetings, notes, people, sources, and action prerequisites. |
 | POST | `/api/search` | Full-text company document lookup; accepts `query`. |
 | POST | `/api/action` | Validated graph action; accepts `name`, optional `note`, and optional `assignment`. Includes saving a workspace note. |
-| POST | `/api/agent` | Protected provider tool call and allowlisted layout selection; requires `X-AI-Access`. |
+| POST | `/api/agent` | Backend-enabled provider tool call and allowlisted layout selection. Requires a configured provider key and AI not disabled; no user credential header. |
 | POST | `/api/impact` | Import the bundled sample, analyze dependencies, or remove/restore the defined test link. |
 | POST | `/api/demo/setup` | Reset and prepare Maya’s fixed recording scenario; no AI calls. |
 | POST | `/api/reset` | Reset only the visitor's synthetic workspace. |
 | GET | `/api/health` | Database reachability and provider configuration status. |
-| GET | `/api/access` | Whether protected AI access is configured; no code disclosure. |
+| GET | `/api/access` | Whether AI is enabled for the selected server provider; no key disclosure. |
 
 POST requests require `Content-Type: application/json` and `X-Workweave: portal`. A body may specify an assignment ID received from the server. Omitted or empty assignment values use the server's default. The HttpOnly workspace cookie selects the isolated graph; clients cannot choose a graph name.
 
@@ -21,7 +21,7 @@ Context, search, actions, agent operations, and reset return `{messages, trace, 
 
 The UI computes initials and formats server dates. It retains static UI labels and help text. It does not substitute company names, people, tasks, or source records on failure. A missing graph identity causes an error; it does not fall back to a local fixture.
 
-The UI state store holds the latest response, navigation, theme, sidebar mode, drafts, and loading state. Only theme, sidebar preference, and selected assignment ID use local storage. The AI invite code stays in store memory and is cleared after authorization failure or the user's clear action. Server writes remain in FalkorDB and the AI budget remains in server-side SQLite.
+The UI state store holds the latest response, navigation, theme, sidebar mode, drafts, and loading state. Only theme, sidebar preference, and selected assignment ID use local storage. The server-reported AI availability is held only in memory. Users do not enter provider keys or invite codes. Server writes remain in FalkorDB and the AI budget remains in server-side SQLite.
 
 This API is for synthetic hackathon workspaces. Employee identity is a server-owned sample, not production authentication or permission enforcement.
 

@@ -23,7 +23,7 @@ export type AppState = {
   busy: boolean
   readingOpen: boolean
   editingNotes: boolean
-  aiCode: string
+  aiEnabled: boolean
   searchNavigation: {
     query: string
     view: string
@@ -67,7 +67,7 @@ const initial: AppState = {
   busy: false,
   readingOpen: false,
   editingNotes: false,
-  aiCode: "",
+  aiEnabled: false,
   searchQuery: readSearchQuery(window.location.search),
   searchNavigation: { ...initialRoute, revision: 0 },
   evaluation: null,

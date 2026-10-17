@@ -14,7 +14,7 @@ from workweave.paths import FRONTEND_DIR
 from workweave.graph import Store, database
 from workweave.ui import compose
 from workweave.agent import run, provider
-from workweave.access import authorized, reserve, BudgetExceeded
+from workweave.access import enabled, reserve, BudgetExceeded
 from workweave.config import load
 from workweave.impact import run as run_impact
 from workweave.workspace import APP_NAME, DEMO_ASSIGNMENT, DEMO_SCENARIO
@@ -64,7 +64,7 @@ class Handler(BaseHTTPRequestHandler):
                 },
             )
         if self.path == "/api/access":
-            return self.respond(200, {"aiEnabled": len(os.getenv("AI_ACCESS_CODE", "")) >= 16})
+            return self.respond(200, {"aiEnabled": enabled(provider())})
         if self.path == "/api/health":
             try:
                 database().connection.ping()
@@ -141,10 +141,12 @@ class Handler(BaseHTTPRequestHandler):
             body = json.loads(self.rfile.read(length) or "{}")
             if not isinstance(body, dict):
                 raise ValueError("Invalid request")
-            if self.path == "/api/agent" and not authorized(self.headers.get("X-AI-Access", "")):
+            if self.path == "/api/agent" and not enabled(provider()):
                 return self.respond(
-                    401,
-                    {"error": "Enter a valid AI invite code. Graph exploration remains public."},
+                    403,
+                    {
+                        "error": "AI assistance is not enabled on the server. Graph workflows remain available."
+                    },
                 )
             token, cookie = self.token()
             with GUARD:

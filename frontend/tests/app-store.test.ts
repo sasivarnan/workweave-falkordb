@@ -28,12 +28,12 @@ test("sidebar state and request lifecycle do not discard draft state", () => {
   assert.equal(appStore.getSnapshot().context.sidebarOpen, true)
 })
 
-test("functional updates use the latest snapshot and invite codes remain in memory", () => {
+test("functional updates use the latest snapshot and server AI settings are not persisted", () => {
   updateField("openSources", ["one"])
   updateField("openSources", (sources) => [...sources, "two"])
   assert.deepEqual(appStore.getSnapshot().context.openSources, ["one", "two"])
-  updateField("aiCode", "synthetic-test-invite")
+  updateField("aiEnabled", true)
   assert.equal(persisted.size, 0)
-  updateField("aiCode", "")
-  assert.equal(appStore.getSnapshot().context.aiCode, "")
+  updateField("aiEnabled", false)
+  assert.equal(appStore.getSnapshot().context.aiEnabled, false)
 })

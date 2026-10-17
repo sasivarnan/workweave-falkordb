@@ -1,6 +1,5 @@
 """Fail-closed AI access and durable operation budgets. No provider key reaches UI."""
 
-import hmac
 import os
 import sqlite3
 import time
@@ -8,21 +7,16 @@ from pathlib import Path
 from workweave.paths import PROJECT_ROOT
 
 
-class AccessDenied(Exception):
-    pass
-
-
 class BudgetExceeded(Exception):
     pass
 
 
-def authorized(code):
-    expected = os.getenv("AI_ACCESS_CODE", "")
-    return bool(
-        len(expected) >= 16
-        and isinstance(code, str)
-        and hmac.compare_digest(code.encode(), expected.encode())
-    )
+def enabled(provider_name):
+    """AI is operator-configured; callers never supply provider credentials."""
+    if os.getenv("AI_ENABLED", "true").lower() != "true":
+        return False
+    key_name = {"openai": "OPENAI_API_KEY", "gemini": "GEMINI_API_KEY"}.get(provider_name)
+    return bool(key_name and os.getenv(key_name, "").strip())
 
 
 def reserve(path=None, now=None, limits=None):

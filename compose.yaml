@@ -18,7 +18,7 @@ services:
     environment:
       FALKORDB_HOST: database
       FALKORDB_PORT: '6379'
-      AI_ACCESS_CODE: ${AI_ACCESS_CODE:-}
+      AI_ENABLED: ${AI_ENABLED:-true}
       AI_USAGE_DB: /app/.data/ai-usage.sqlite3
       AI_HOURLY_LIMIT: ${AI_HOURLY_LIMIT:-5}
       AI_DAILY_LIMIT: ${AI_DAILY_LIMIT:-10}

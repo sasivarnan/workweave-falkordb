@@ -8,18 +8,22 @@ import urllib.error
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import patch
-from workweave.access import authorized, reserve, BudgetExceeded
+from workweave.access import enabled, reserve, BudgetExceeded
 from workweave.server import Handler, ThreadingHTTPServer
 
 
 class AccessTests(unittest.TestCase):
-    def test_closed_without_code(self):
-        with patch.dict(os.environ, {"AI_ACCESS_CODE": ""}):
-            self.assertFalse(authorized("anything"))
-        with patch.dict(os.environ, {"AI_ACCESS_CODE": "test-invite-code-only"}):
-            self.assertTrue(authorized("test-invite-code-only"))
-            self.assertFalse(authorized("wrong"))
-            self.assertFalse(authorized("é" * 20))
+    def test_ai_requires_selected_provider_key_and_honors_disable(self):
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertFalse(enabled("openai"))
+            os.environ["OPENAI_API_KEY"] = "test-key-never-used"
+            self.assertTrue(enabled("openai"))
+            self.assertFalse(enabled("gemini"))
+            self.assertFalse(enabled("unknown"))
+            os.environ["AI_ENABLED"] = "false"
+            self.assertFalse(enabled("openai"))
+            os.environ["AI_ENABLED"] = "true"
+            self.assertTrue(enabled("openai"))
 
     def test_budget_survives_reopen_and_windows(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -48,13 +52,15 @@ class AccessTests(unittest.TestCase):
             with ThreadPoolExecutor(max_workers=6) as pool:
                 self.assertEqual(sum(pool.map(attempt, range(6))), 3)
 
-    def test_http_auth_blocks_provider_and_budget_is_shared(self):
+    def test_http_server_setting_blocks_provider_and_budget_is_shared(self):
         with (
             tempfile.TemporaryDirectory() as tmp,
             patch.dict(
                 os.environ,
                 {
-                    "AI_ACCESS_CODE": "test-invite-code-only",
+                    "AI_ENABLED": "false",
+                    "AI_PROVIDER": "openai",
+                    "OPENAI_API_KEY": "test-key-never-used",
                     "AI_USAGE_DB": str(Path(tmp) / "usage.sqlite3"),
                     "AI_HOURLY_LIMIT": "1",
                     "AI_DAILY_LIMIT": "1",
@@ -71,10 +77,8 @@ class AccessTests(unittest.TestCase):
             thread = threading.Thread(target=server.serve_forever, daemon=True)
             thread.start()
 
-            def send(code=None):
+            def send():
                 headers = {"Content-Type": "application/json", "X-Workweave": "portal"}
-                if code:
-                    headers["X-AI-Access"] = code
                 req = urllib.request.Request(
                     "http://127.0.0.1:" + str(server.server_port) + "/api/agent",
                     data=b'{"prompt":"test"}',
@@ -87,15 +91,16 @@ class AccessTests(unittest.TestCase):
                     return e.code, json.load(e)
 
             try:
-                self.assertEqual(send()[0], 401)
+                self.assertEqual(send()[0], 403)
                 agent.assert_not_called()
                 store.assert_not_called()
-                self.assertEqual(send("test-invite-code-only")[0], 200)
+                os.environ["AI_ENABLED"] = "true"
+                self.assertEqual(send()[0], 200)
                 self.assertEqual(agent.call_count, 1)
-                self.assertEqual(send("test-invite-code-only")[0], 429)
+                self.assertEqual(send()[0], 429)
                 self.assertEqual(agent.call_count, 1)
                 with patch("workweave.server.reserve", side_effect=OSError("storage unavailable")):
-                    self.assertEqual(send("test-invite-code-only")[0], 503)
+                    self.assertEqual(send()[0], 503)
                     self.assertEqual(agent.call_count, 1)
             finally:
                 server.shutdown()

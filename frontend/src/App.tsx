@@ -101,7 +101,7 @@ export default function App() {
     busy,
     readingOpen,
     editingNotes,
-    aiCode,
+    aiEnabled,
     searchQuery,
     searchNavigation,
     evaluation,
@@ -140,8 +140,6 @@ export default function App() {
   const setEditingNotes = (
     value: Parameters<typeof updateField<"editingNotes">>[1]
   ) => updateField("editingNotes", value)
-  const setAiCode = (value: Parameters<typeof updateField<"aiCode">>[1]) =>
-    updateField("aiCode", value)
   const setSearchQuery = (
     value: Parameters<typeof updateField<"searchQuery">>[1]
   ) => updateField("searchQuery", value)
@@ -263,12 +261,10 @@ export default function App() {
         headers: {
           "Content-Type": "application/json",
           "X-Workweave": "portal",
-          ...(path === "/api/agent" ? { "X-AI-Access": aiCode } : {}),
         },
         body: JSON.stringify({ assignment, ...body }),
       })
       const data = await response.json()
-      if (response.status === 401) setAiCode("")
       if (!response.ok) throw Error(data.error || "Request failed")
       if (!isCurrent()) return false
       const decoded = decode(data)
@@ -322,6 +318,12 @@ export default function App() {
         .catch(() => setEvaluationError(true))
   }, [])
   useEffect(() => {
+    void fetch("/api/access")
+      .then((response) =>
+        response.ok ? response.json() : { aiEnabled: false }
+      )
+      .then((data) => updateField("aiEnabled", data.aiEnabled === true))
+      .catch(() => updateField("aiEnabled", false))
     void fetch("/api/workspace")
       .then(async (response) => {
         if (!response.ok) throw Error("Workspace settings are unavailable")
@@ -2975,7 +2977,7 @@ export default function App() {
               </TabsContent>
             )}
           </Tabs>
-          {tab === "assignment" && (
+          {tab === "assignment" && aiEnabled && (
             <Accordion className="mx-auto w-full max-w-2xl">
               <AccordionItem value="help">
                 <AccordionTrigger>
@@ -2990,32 +2992,6 @@ export default function App() {
                       void request("/api/agent", { prompt })
                     }}
                   >
-                    <Label htmlFor="ai-invite">AI invite code</Label>
-                    <Input
-                      id="ai-invite"
-                      type="password"
-                      autoComplete="off"
-                      value={aiCode}
-                      onChange={(e) => setAiCode(e.target.value)}
-                      placeholder="Required for live AI access"
-                      minLength={16}
-                      maxLength={256}
-                      required
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      The code stays in this tab only. Public graph exploration
-                      does not need a code.
-                    </p>
-                    {aiCode && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setAiCode("")}
-                      >
-                        Clear invite code
-                      </Button>
-                    )}
                     <Label htmlFor="prompt">What would you like to know?</Label>
                     <div className="flex flex-col gap-2 sm:flex-row">
                       <Input
