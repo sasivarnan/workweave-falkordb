@@ -68,3 +68,7 @@ Run `python scripts/evaluate.py` with local FalkorDB. Output: `evaluation-result
 The employee route now shows a single required action, its explanation, and the reviewer. Prerequisites appear in sequence. Dashboard, week plan, duplicate guidance panels and progress percentage were removed. All 31 existing tests and production build pass. Four additional reproducible ablation checks pass: source documents remain byte-identical while changes to supersession, source support, reviewer assignment or task-service links change the correct result. Missing authority rejects plan acceptance. This is evidence of relationship dependence, not graph-database exclusivity.
 
 Browser verification: employee route has one primary task action; the secondary menu opens the assignment list. Refund guidance opens inline, and acknowledging it advances the main action to recording required training. Existing checkout state correctly displayed the missing-reviewer block. No workspace reset was used.
+
+## Company workspace pass
+
+33 tests pass. New tests verify meeting-task-note links, replacement-decision impact across those records, and persisted workspace notes. Four relationship ablations and eight graph diagnostic cases still pass. Production build and configured-secret scan pass. Browser checks verified Overview, Calendar and switching between light/dark modes.

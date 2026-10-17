@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
@@ -47,7 +47,7 @@ export default function App(){
  const judgeMode=window.location.pathname==='/judge'
  const [theme,setTheme]=useState(()=>localStorage.getItem('firsttask-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'))
  const [workspaceNote,setWorkspaceNote]=useState('')
- useEffect(()=>{document.documentElement.classList.toggle('dark',theme==='dark');document.documentElement.style.colorScheme=theme;localStorage.setItem('firsttask-theme',theme)},[theme])
+ useLayoutEffect(()=>{document.documentElement.classList.toggle('dark',theme==='dark');document.documentElement.style.colorScheme=theme;localStorage.setItem('firsttask-theme',theme)},[theme])
  const [assignment,setAssignment]=useState(()=>judgeMode?'checkout':localStorage.getItem('firsttask-assignment')||'checkout')
  const [result,setResult]=useState<Result|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false)
  const [readingOpen,setReadingOpen]=useState(false),[editingNotes,setEditingNotes]=useState(false)
@@ -138,7 +138,7 @@ export default function App(){
  return <TooltipProvider><SidebarProvider defaultOpen>
   <Sidebar className="border-r" collapsible="offcanvas">
    <SidebarHeader className="gap-5 px-5 py-6"><div className="flex items-center gap-3"><Avatar className="rounded-lg bg-primary text-primary-foreground"><AvatarFallback className="rounded-lg bg-primary text-primary-foreground font-heading font-bold">N</AvatarFallback></Avatar><div><p className="font-heading font-semibold">Northstar Labs</p><p className="text-xs text-muted-foreground">Employee workspace</p></div></div></SidebarHeader>
-   <SidebarContent><SidebarGroup><SidebarGroupLabel>WORKSPACE</SidebarGroupLabel><SidebarMenu>{[['assignment','My task'],['home','Other assignments'],['sources','Documents'],...(judgeMode?[['proof','Proof & evaluation'],['evidence','Evidence & tools'],['demo','Walkthrough']]:[])].map(([id,label])=><SidebarMenuItem key={id}><SidebarMenuButton isActive={tab===id} onClick={()=>navigate(id)} className="h-10 px-3">{label}</SidebarMenuButton></SidebarMenuItem>)}</SidebarMenu></SidebarGroup>
+   <SidebarContent><SidebarGroup><SidebarGroupLabel>WORKSPACE</SidebarGroupLabel><SidebarMenu>{[['workspace','Overview'],['calendar','Calendar'],['notes','Notes'],['home','Tasks'],['sources','Knowledge'],['people','People'],...(judgeMode?[['proof','Proof & evaluation'],['evidence','Evidence & tools'],['demo','Walkthrough']]:[])].map(([id,label])=><SidebarMenuItem key={id}><SidebarMenuButton isActive={tab===id} onClick={()=>navigate(id)} className="h-10 px-3">{label}</SidebarMenuButton></SidebarMenuItem>)}</SidebarMenu></SidebarGroup>
    {judgeMode&&<SidebarGroup><SidebarGroupLabel>ASSIGNED TO YOU</SidebarGroupLabel><SidebarMenu>{context?.assignments.map(r=><SidebarMenuItem key={r[0]}><SidebarMenuButton className="h-auto items-start whitespace-normal px-3 py-3" isActive={assignment===r[0]&&tab==='assignment'} disabled={busy} onClick={()=>void openAssignment(r[0])}><span className="space-y-1"><span className="block text-xs text-muted-foreground">{r[0]==='checkout'?'01':'02'} / Payments</span><span className="block leading-5">{r[1]}</span></span></SidebarMenuButton></SidebarMenuItem>)}</SidebarMenu></SidebarGroup>}</SidebarContent>
    <SidebarFooter className="border-t p-5"><div className="flex items-center gap-3"><Avatar><AvatarFallback>MC</AvatarFallback></Avatar><div><p className="text-sm font-medium">Maya Chen</p><p className="text-xs text-muted-foreground">Payments · Engineering</p></div></div></SidebarFooter>
   </Sidebar>
