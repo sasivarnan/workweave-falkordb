@@ -40,5 +40,7 @@ class AccessTests(unittest.TestCase):
     self.assertEqual(send()[0],401);agent.assert_not_called();store.assert_not_called()
     self.assertEqual(send('test-invite-code-only')[0],200);self.assertEqual(agent.call_count,1)
     self.assertEqual(send('test-invite-code-only')[0],429);self.assertEqual(agent.call_count,1)
+    with patch('server.reserve',side_effect=OSError('storage unavailable')):
+     self.assertEqual(send('test-invite-code-only')[0],503);self.assertEqual(agent.call_count,1)
    finally:server.shutdown();server.server_close();thread.join()
 if __name__=='__main__':unittest.main()
