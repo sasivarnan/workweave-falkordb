@@ -145,6 +145,7 @@
     "supportRetained": true,
     "stalePlan": true,
     "reviewer": true,
-    "noPlanWrite": true
+    "noPlanWrite": true,
+    "supportRoutesChanged": true
   }
 }

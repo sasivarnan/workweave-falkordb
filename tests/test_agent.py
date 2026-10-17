@@ -114,3 +114,25 @@ class AgentContractTests(unittest.TestCase):
     def test_missing_key(self):
         with patch.dict(os.environ, {}, clear=True), self.assertRaises(ValueError):
             run(self.store, "test")
+
+    def test_missing_plan_does_not_claim_a_stale_saved_plan(self):
+        self.context["plan"] = []
+        (context, _), _ = self.invoke(
+            [
+                reply([tool("get_current_decision"), tool("inspect_saved_plan")]),
+                reply(facts=["authority", "plan"]),
+            ]
+        )
+        text = context["agentResult"]["facts"][1]["text"]
+        self.assertIn("No saved plan", text)
+        self.assertNotIn("needs review", text)
+
+    def test_cannot_propose_review_of_a_missing_plan(self):
+        self.context["plan"] = []
+        with self.assertRaises(ValueError):
+            self.invoke(
+                [
+                    reply([tool("get_current_decision"), tool("inspect_saved_plan")]),
+                    reply(facts=["authority", "plan"], actions=["review-plan"]),
+                ]
+            )

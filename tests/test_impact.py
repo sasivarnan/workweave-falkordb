@@ -259,3 +259,46 @@ class ImpactTests(unittest.TestCase):
             server.shutdown()
             server.server_close()
             thread.join()
+
+    def test_agent_answer_changes_with_dependencies_without_plan_writes(self):
+        import json
+        from workweave.agent import investigate
+
+        run(self.store, "import")
+        before_plan = self.store.context()["plan"]
+
+        def answer():
+            def model(payload):
+                if len(payload["messages"]) == 2:
+                    calls = [
+                        {
+                            "id": name,
+                            "type": "function",
+                            "function": {"name": name, "arguments": "{}"},
+                        }
+                        for name in ["get_current_decision", "find_affected_work"]
+                    ]
+                    return {"choices": [{"message": {"tool_calls": calls}}]}
+                facts = [
+                    fact["id"]
+                    for message in payload["messages"]
+                    if message["role"] == "tool"
+                    for fact in json.loads(message["content"])
+                ]
+                return {
+                    "choices": [
+                        {"message": {"content": json.dumps({"factIds": facts, "nextSteps": []})}}
+                    ]
+                }
+
+            context, _ = investigate(self.store, "Who is affected?", model)
+            return context["agentResult"]
+
+        before = answer()
+        experiment = run(self.store, "remove")["experiment"]
+        after = answer()
+        self.assertIn("work:BILL-204", [fact["id"] for fact in before["facts"]])
+        self.assertNotIn("work:BILL-204", [fact["id"] for fact in after["facts"]])
+        self.assertIn("work:SUP-310", [fact["id"] for fact in after["facts"]])
+        self.assertTrue(experiment["documentsUnchanged"])
+        self.assertEqual(before_plan, self.store.context()["plan"])

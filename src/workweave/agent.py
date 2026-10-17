@@ -151,6 +151,9 @@ def investigate(store, prompt, call):
     """Bounded read-only tool loop. The model can select only observed graph facts."""
     from workweave.impact import analyze
 
+    prompt = (
+        prompt.strip() or "What changed for my work, who else is affected, and whom should I ask?"
+    )
     context = store.context()
     impact_snapshot = None
     facts = {}
@@ -192,15 +195,27 @@ def investigate(store, prompt, call):
                 if plan
                 else "No saved plan exists for this assignment."
             )
-            text += (
-                " The saved plan needs review."
-                if context["needsReview"]
-                else " The saved plan does not need a decision update."
-            )
+            if plan:
+                text += (
+                    " The saved plan needs review."
+                    if context["needsReview"]
+                    else " The saved plan does not need a decision update."
+                )
             return [fact("plan", text)]
         if name == "find_reviewers":
             return [
-                fact("person:" + row[0], row[1] + ": " + row[2] + " (" + row[3] + ").")
+                fact(
+                    "person:" + row[0],
+                    row[1]
+                    + ": "
+                    + (
+                        "Task reviewer. "
+                        if row[3] == "REVIEWER_FOR"
+                        else "Alternate task reviewer. "
+                    )
+                    + row[2]
+                    + ".",
+                )
                 for row in context["people"]
             ] or [
                 fact(
@@ -341,6 +356,7 @@ def investigate(store, prompt, call):
         actions = answer.get("nextSteps", [])
         if (
             not ids
+            or len(ids) > 30
             or len(ids) != len(set(ids))
             or any(identifier not in facts for identifier in ids)
         ):
@@ -353,8 +369,12 @@ def investigate(store, prompt, call):
             "contact-reviewer": "Open the task's People list and contact the linked reviewer.",
         }
         if (
-            any(action not in labels for action in actions)
-            or ("review-plan" in actions and "inspect_saved_plan" not in used)
+            len(actions) > 3
+            or any(action not in labels for action in actions)
+            or (
+                "review-plan" in actions
+                and ("inspect_saved_plan" not in used or not context["plan"])
+            )
             or (
                 "contact-reviewer" in actions
                 and ("find_reviewers" not in used or not context["people"])
@@ -367,7 +387,8 @@ def investigate(store, prompt, call):
             raise ValueError("The decision is unresolved. No next-step plan can be issued.")
         latest = store.context()
         if (
-            latest["people"] != context["people"]
+            latest["decisions"] != context["decisions"]
+            or latest["people"] != context["people"]
             or latest["plan"] != context["plan"]
             or latest["current"] != context["current"]
             or latest["needsReview"] != context["needsReview"]

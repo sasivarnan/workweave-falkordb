@@ -1,7 +1,7 @@
 import { decodePerson } from "@/lib/people"
 import { Spinner } from "@/components/ui/spinner"
 import { useOnboardingTour } from "@/hooks/use-onboarding-tour"
-import { useEffect, useLayoutEffect, useRef } from "react"
+import { useEffect, useLayoutEffect, useRef, type MouseEvent } from "react"
 import { useSelector } from "@xstate/store-react"
 import { appStore, updateField } from "@/lib/app-store"
 import { flushSync } from "react-dom"
@@ -250,6 +250,10 @@ export default function App() {
   }
   function navigate(destination: string) {
     goToURL(viewPaths[destination] || "/")
+  }
+  function navigateMobile(event: MouseEvent<HTMLButtonElement>) {
+    navigate(event.currentTarget.dataset.destination || "workspace")
+    setMobileSidebarOpen(false)
   }
   async function openAssignment(id: string) {
     goToURL("/tasks/" + encodeURIComponent(id))
@@ -825,10 +829,8 @@ export default function App() {
                   key={id}
                   variant="ghost"
                   className="w-full justify-start gap-3"
-                  onClick={() => {
-                    navigate(id)
-                    setMobileSidebarOpen(false)
-                  }}
+                  data-destination={id}
+                  onClick={navigateMobile}
                 >
                   <Icon />
                   {label}
@@ -843,10 +845,8 @@ export default function App() {
                   key={id}
                   variant="ghost"
                   className="w-full justify-start"
-                  onClick={() => {
-                    navigate(id)
-                    setMobileSidebarOpen(false)
-                  }}
+                  data-destination={id}
+                  onClick={navigateMobile}
                 >
                   {label}
                 </Button>

@@ -47,6 +47,14 @@ try:
         "checks": {
             "billingRemoved": "work:BILL-204" in before_ids and "work:BILL-204" not in after_ids,
             "supportRetained": "work:SUP-310" in before_ids and "work:SUP-310" in after_ids,
+            "supportRoutesChanged": any(
+                f["id"] == "work:SUP-310" and "Dependency routes: 2." in f["text"]
+                for f in before["agentResult"]["facts"]
+            )
+            and any(
+                f["id"] == "work:SUP-310" and "Dependency routes: 1." in f["text"]
+                for f in after["agentResult"]["facts"]
+            ),
             "stalePlan": "plan" in before_ids,
             "reviewer": any(x.startswith("person:") for x in before_ids),
             "noPlanWrite": store.context()["plan"] == before_context["plan"],
