@@ -1,7 +1,14 @@
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  PopoverTitle,
+  PopoverDescription,
+} from "@/components/ui/popover"
 import { useEffect, useLayoutEffect, useRef } from "react"
 import { useSelector } from "@xstate/store-react"
 import { appStore, updateField } from "@/lib/app-store"
-import { flushSync } from "react-dom"
+import { flushSync, createPortal } from "react-dom"
 import {
   RiHome5Line,
   RiCheckboxCircleLine,
@@ -83,9 +90,13 @@ import type { ImpactResult } from "@/lib/impact"
 import { decode } from "@/lib/workspace"
 
 export default function App() {
+  const decisionTourRef = useRef<HTMLDivElement>(null)
+  const impactTourRef = useRef<HTMLDivElement>(null)
+  const taskTourRef = useRef<HTMLDivElement>(null)
   const judgeMode = window.location.pathname === "/judge"
   const state = useSelector(appStore, (snapshot) => snapshot.context)
   const {
+    tourReady,
     employeeGuide,
     guideDismissed,
     impact,
@@ -397,6 +408,22 @@ export default function App() {
       appStore.trigger.requestFinished()
     }
   }
+  const tourTarget =
+    employeeGuide === 1
+      ? decisionTourRef
+      : employeeGuide === 2
+        ? impactTourRef
+        : taskTourRef
+  useEffect(() => {
+    if (employeeGuide)
+      tourTarget.current?.scrollIntoView({
+        block: "center",
+        behavior: "instant",
+      })
+    updateField("tourReady", employeeGuide)
+  }, [employeeGuide, tab])
+  const tourHighlight =
+    "relative z-40 ring-2 ring-primary shadow-[0_0_0_9999px_rgb(0_0_0/0.65)]"
   function finishEmployeeGuide() {
     appStore.trigger.updated({
       patch: { employeeGuide: 0, guideDismissed: true },
@@ -412,6 +439,11 @@ export default function App() {
         workspace?.synthetic ? "import" : "analyze"
       )
       if (!data) return
+      if (!data.analysis.ready || data.analysis.blocked) {
+        updateField("employeeGuide", 0)
+        navigate("impact")
+        return
+      }
     }
     updateField("employeeGuide", step)
     navigate(step === 1 ? "changes" : step === 2 ? "impact" : "assignment")
@@ -419,7 +451,12 @@ export default function App() {
   async function startImpactProof() {
     const navigationVersion = navigationRef.current
     appStore.trigger.updated({
-      patch: { employeeGuide: 0, proofStage: "off", proofBaseline: null, impactExpanded: [] },
+      patch: {
+        employeeGuide: 0,
+        proofStage: "off",
+        proofBaseline: null,
+        impactExpanded: [],
+      },
     })
     let data = await analyzeImpact("import")
     if (!data?.analysis.ready || data.analysis.blocked) {
@@ -877,59 +914,86 @@ export default function App() {
               </AlertDescription>
             </Alert>
           )}
-          {employeeGuide > 0 && context && (
-            <Card className="border-primary/20 bg-primary/5 shadow-none">
-              <CardHeader>
-                <CardDescription>
-                  Workspace guide · Step {employeeGuide} of 3
-                </CardDescription>
-                <CardTitle>
-                  {employeeGuide === 1
-                    ? "Start with the current decision"
-                    : employeeGuide === 2
-                      ? "See which work depends on it"
-                      : "Choose your next action"}
-                </CardTitle>
-                <CardDescription>
-                  {employeeGuide === 1
-                    ? `Current guidance: ${context.current || "Needs clarification"}. Open the original source below to check its approval.`
-                    : employeeGuide === 2
-                      ? "Affected tasks are grouped by team. Open “Why affected?” to follow the recorded paths and linked meeting notes."
-                      : "Review your assigned task and its requirements. The guide does not accept a plan or change your work."}
-                </CardDescription>
-              </CardHeader>
-              <CardFooter className="flex flex-wrap gap-2">
-                {employeeGuide > 1 && (
+          {employeeGuide > 0 && tourReady === employeeGuide && context && (
+            <Popover
+              key={employeeGuide}
+              triggerId="employee-tour-anchor"
+              open
+              modal
+              onOpenChange={(open) => {
+                if (!open) finishEmployeeGuide()
+              }}
+            >
+              {tourTarget.current &&
+                createPortal(
+                  <PopoverTrigger
+                    id="employee-tour-anchor"
+                    nativeButton={false}
+                    render={<span className="pointer-events-none sr-only" />}
+                    tabIndex={-1}
+                    aria-hidden
+                  />,
+                  tourTarget.current
+                )}
+              <PopoverContent
+                anchor={tourTarget}
+                side="top"
+                align="start"
+                sideOffset={24}
+                className="w-[min(22rem,calc(100vw-2rem))] rounded-xl p-5"
+              >
+                <div className="space-y-2">
+                  <PopoverDescription>
+                    Workspace guide · Step {employeeGuide} of 3
+                  </PopoverDescription>
+                  <PopoverTitle>
+                    {employeeGuide === 1
+                      ? "Start with the current decision"
+                      : employeeGuide === 2
+                        ? "See which work depends on it"
+                        : "Choose your next action"}
+                  </PopoverTitle>
+                  <PopoverDescription>
+                    {employeeGuide === 1
+                      ? `Current guidance: ${context.current || "Needs clarification"}. The highlighted record shows its approval and original source.`
+                      : employeeGuide === 2
+                        ? "This summary shows the affected tasks, teams and missing owners. After the tour, use “Why affected?” to inspect each path."
+                        : "Review your assigned task and its requirements. The guide does not accept a plan or change your work."}
+                  </PopoverDescription>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {employeeGuide > 1 && (
+                    <Button
+                      variant="outline"
+                      disabled={busy}
+                      onClick={() =>
+                        void moveEmployeeGuide(employeeGuide === 3 ? 2 : 1)
+                      }
+                    >
+                      Back
+                    </Button>
+                  )}
                   <Button
-                    variant="outline"
                     disabled={busy}
                     onClick={() =>
-                      void moveEmployeeGuide(employeeGuide === 3 ? 2 : 1)
+                      employeeGuide === 3
+                        ? finishEmployeeGuide()
+                        : void moveEmployeeGuide(employeeGuide === 1 ? 2 : 3)
                     }
                   >
-                    Back
+                    {employeeGuide === 3 ? "Finish guide" : "Next"}
+                    <RiArrowRightLine />
                   </Button>
-                )}
-                <Button
-                  disabled={busy}
-                  onClick={() =>
-                    employeeGuide === 3
-                      ? finishEmployeeGuide()
-                      : void moveEmployeeGuide(employeeGuide === 1 ? 2 : 3)
-                  }
-                >
-                  {employeeGuide === 3 ? "Finish guide" : "Next"}
-                  <RiArrowRightLine />
-                </Button>
-                <Button
-                  variant="ghost"
-                  disabled={busy}
-                  onClick={finishEmployeeGuide}
-                >
-                  Skip guide
-                </Button>
-              </CardFooter>
-            </Card>
+                  <Button
+                    variant="ghost"
+                    disabled={busy}
+                    onClick={finishEmployeeGuide}
+                  >
+                    Skip guide
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
           )}
           <Tabs value={tab} onValueChange={(v) => navigate(String(v))}>
             <TabsList className="hidden">
@@ -1243,7 +1307,12 @@ export default function App() {
                       </Button>
                     ))}
                   </div>
-                  <Card className="shadow-none">
+                  <Card
+                    ref={decisionTourRef}
+                    className={
+                      employeeGuide === 1 ? tourHighlight : "shadow-none"
+                    }
+                  >
                     <CardHeader>
                       <div className="flex items-center justify-between gap-3">
                         <CardTitle>
@@ -1713,7 +1782,12 @@ export default function App() {
               )}
               {impact?.analysis.ready && !impact.analysis.blocked && (
                 <>
-                  <Card className="shadow-none">
+                  <Card
+                    ref={impactTourRef}
+                    className={
+                      employeeGuide === 2 ? tourHighlight : "shadow-none"
+                    }
+                  >
                     <CardHeader>
                       <CardTitle>{impact.analysis.decision?.title}</CardTitle>
                       <CardDescription>
@@ -2492,7 +2566,12 @@ export default function App() {
                 <Skeleton className="h-64 w-full" />
               ) : (
                 <>
-                  <Card className="shadow-none">
+                  <Card
+                    ref={taskTourRef}
+                    className={
+                      employeeGuide === 3 ? tourHighlight : "shadow-none"
+                    }
+                  >
                     <CardHeader>
                       <p className="text-xs font-medium text-primary">
                         {stage === "done"

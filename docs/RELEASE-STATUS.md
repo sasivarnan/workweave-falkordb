@@ -27,3 +27,7 @@
 4. Record the public demo, update links and submit to Company Brain.
 
 No award or acceptance is guaranteed. No claim that this problem is impossible without a graph database is made.
+
+## Tour overlay update
+
+The employee guide uses the official shadcn Popover, with a dimmed page and a highlighted existing Card. XState controls each step. Tailwind classes control the layout. The browser check covered three steps, Back and Escape with focus returned to Help. Skip and finish keep the existing local dismissal behaviour. The guide does not approve decisions or update saved plans.
