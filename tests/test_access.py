@@ -139,7 +139,7 @@ class AccessTests(unittest.TestCase):
                         "/tasks/checkout",
                         "/calendar/release-review",
                         "/knowledge/adr",
-                        "/judge/evidence",
+                        "/external-trigger/evidence",
                         "/knowledge?q=payment",
                     ]:
                         with urllib.request.urlopen(base + path) as response:

@@ -94,9 +94,9 @@ class Handler(BaseHTTPRequestHandler):
             "/people",
             "/decisions",
             "/impact",
-            "/judge",
-            "/judge/evidence",
-            "/judge/walkthrough",
+            "/external-trigger",
+            "/external-trigger/evidence",
+            "/external-trigger/walkthrough",
         ] or bool(re.fullmatch(r"/(tasks|calendar|knowledge)/[a-zA-Z0-9_-]{1,100}", urlpath))
         if (
             not app_route

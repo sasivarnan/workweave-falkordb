@@ -87,9 +87,7 @@ import { decode } from "@/lib/workspace"
 
 export default function App() {
   const searchRevision = useRef(0)
-  const judgeMode = useRef(
-    window.location.pathname.startsWith("/judge")
-  ).current
+  const judgeMode = window.location.pathname.startsWith("/external-trigger")
   const state = useSelector(appStore, (snapshot) => snapshot.context)
   const {
     impact,
@@ -468,7 +466,7 @@ export default function App() {
     })
     let data = await analyzeImpact("import")
     if (!data?.analysis.ready || data.analysis.blocked) {
-      if (data) navigate("impact")
+      if (data) navigate("proof")
       return
     }
     if (!data.analysis.experimentLink?.connected)
@@ -493,7 +491,7 @@ export default function App() {
         impactExpanded: [alternate.id],
       },
     })
-    navigate("impact")
+    navigate("proof")
     window.scrollTo({ top: 0, behavior: "instant" })
   }
   const proofEvidence =
@@ -666,7 +664,7 @@ export default function App() {
       {
         assignment: "Task",
         document: "Knowledge document",
-        proof: "Technical proof",
+        proof: "Demo controls",
         evidence: "Evidence & tools",
         demo: "Walkthrough",
       } as Record<string, string>
@@ -715,35 +713,41 @@ export default function App() {
           data-tour="left-nav"
           className="flex-1 space-y-1 overflow-y-auto px-2"
         >
-          {navItems.map(([id, label, Icon]) => (
-            <Button
-              key={id}
-              variant="ghost"
-              data-tour={"nav-" + id}
-              aria-label={label}
-              title={sidebarOpen ? undefined : label}
-              aria-current={
-                tab === id || (id === "sources" && tab === "document")
-                  ? "page"
-                  : undefined
-              }
-              onClick={() => navigate(id)}
-              className={
-                "h-11 w-full justify-start gap-3 rounded-lg px-3 " +
-                (tab === id || (id === "sources" && tab === "document")
-                  ? "bg-primary/10 text-primary"
-                  : "")
-              }
-            >
-              <Icon className="size-4 shrink-0" />
-              {sidebarOpen && <span>{label}</span>}
-            </Button>
-          ))}
+          {navItems
+            .filter(([id]) => !judgeMode || id === "workspace")
+            .map(([id, label, Icon]) => (
+              <Button
+                key={id}
+                variant="ghost"
+                data-tour={"nav-" + id}
+                aria-label={label}
+                title={sidebarOpen ? undefined : label}
+                aria-current={
+                  tab === id ||
+                  (id === "sources" && tab === "document") ||
+                  (id === "home" && tab === "assignment")
+                    ? "page"
+                    : undefined
+                }
+                onClick={() => navigate(id)}
+                className={
+                  "h-11 w-full justify-start gap-3 rounded-lg px-3 " +
+                  (tab === id ||
+                  (id === "sources" && tab === "document") ||
+                  (id === "home" && tab === "assignment")
+                    ? "bg-primary/10 text-primary"
+                    : "")
+                }
+              >
+                <Icon className="size-4 shrink-0" />
+                {sidebarOpen && <span>{label}</span>}
+              </Button>
+            ))}
           {judgeMode && (
             <>
               <Separator className="my-5" />
               {[
-                ["proof", "Technical proof"],
+                ["proof", "Demo controls"],
                 ["evidence", "Evidence & tools"],
                 ["demo", "Walkthrough"],
               ].map(([id, label]) => (
@@ -809,23 +813,25 @@ export default function App() {
             aria-label="Mobile workspace navigation"
             className="space-y-1 px-4"
           >
-            {navItems.map(([id, label, Icon]) => (
-              <Button
-                key={id}
-                variant="ghost"
-                className="w-full justify-start gap-3"
-                onClick={() => {
-                  navigate(id)
-                  setMobileSidebarOpen(false)
-                }}
-              >
-                <Icon />
-                {label}
-              </Button>
-            ))}
+            {navItems
+              .filter(([id]) => !judgeMode || id === "workspace")
+              .map(([id, label, Icon]) => (
+                <Button
+                  key={id}
+                  variant="ghost"
+                  className="w-full justify-start gap-3"
+                  onClick={() => {
+                    navigate(id)
+                    setMobileSidebarOpen(false)
+                  }}
+                >
+                  <Icon />
+                  {label}
+                </Button>
+              ))}
             {judgeMode &&
               [
-                ["proof", "Technical proof"],
+                ["proof", "Demo controls"],
                 ["evidence", "Evidence & tools"],
                 ["demo", "Walkthrough"],
               ].map(([id, label]) => (
@@ -918,16 +924,18 @@ export default function App() {
                 <RiArrowRightLine />
               </Button>
             </form>
-            <Button
-              data-tour="start-tour"
-              variant="outline"
-              size="sm"
-              disabled={busy || !context}
-              onClick={startEmployeeTour}
-            >
-              Start tour
-              <RiCompass3Line />
-            </Button>
+            {!judgeMode && (
+              <Button
+                data-tour="start-tour"
+                variant="outline"
+                size="sm"
+                disabled={busy || !context}
+                onClick={startEmployeeTour}
+              >
+                Start tour
+                <RiCompass3Line />
+              </Button>
+            )}
           </div>
         </header>
         <main
@@ -941,10 +949,27 @@ export default function App() {
               <AlertTitle>Operation could not finish</AlertTitle>
               <AlertDescription>
                 {error} Previous results can be out of date.
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={busy}
+                  onClick={restoreRoute}
+                >
+                  Reload page data
+                </Button>
               </AlertDescription>
             </Alert>
           )}
-          {playing && (
+          {busy && (
+            <p
+              role="status"
+              aria-live="polite"
+              className="text-xs text-muted-foreground"
+            >
+              Updating workspace…
+            </p>
+          )}
+          {judgeMode && playing && (
             <Alert>
               <AlertTitle>
                 Walkthrough · {demoStep} of {steps.length}
@@ -964,7 +989,7 @@ export default function App() {
               <TabsTrigger value="changes">Decision review</TabsTrigger>
               <TabsTrigger value="calendar">Calendar</TabsTrigger>
               <TabsTrigger value="notes">Notes</TabsTrigger>
-              <TabsTrigger value="proof">Technical proof</TabsTrigger>
+              <TabsTrigger value="proof">Demo controls</TabsTrigger>
               <TabsTrigger value="home">Tasks</TabsTrigger>
               <TabsTrigger value="assignment">My task</TabsTrigger>
               <TabsTrigger value="sources">Documents</TabsTrigger>
@@ -1540,44 +1565,6 @@ export default function App() {
                       </AccordionContent>
                     </AccordionItem>
                   </Accordion>
-                  {workspace?.synthetic && (
-                    <Accordion>
-                      <AccordionItem value="scenario">
-                        <AccordionTrigger>
-                          Try a change in this sample workspace
-                        </AccordionTrigger>
-                        <AccordionContent className="space-y-3">
-                          <p className="text-xs leading-6 text-muted-foreground">
-                            Save review notes in the task first. Approve a
-                            replacement to see the saved plan become stale. Then
-                            add a newer proposal: approved guidance should stay
-                            the same. These controls do not approve decisions in
-                            a real company.
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            <Button
-                              variant="outline"
-                              disabled={
-                                busy || assignment !== workspace.demo.assignment
-                              }
-                              onClick={() => void act("replace")}
-                            >
-                              Approve sample replacement
-                            </Button>
-                            <Button
-                              variant="outline"
-                              disabled={
-                                busy || assignment !== workspace.demo.assignment
-                              }
-                              onClick={() => void act("propose")}
-                            >
-                              Add newer proposal
-                            </Button>
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
-                  )}
                 </>
               )}
             </TabsContent>
@@ -1593,7 +1580,7 @@ export default function App() {
                   Follow a shared service decision through team dependencies to
                   the tasks, meetings, and notes that rely on it.
                 </p>
-                {proofStage === "off" && (
+                {(!judgeMode || proofStage === "off") && (
                   <div className="flex flex-wrap gap-2">
                     <Button
                       disabled={busy}
@@ -1603,11 +1590,7 @@ export default function App() {
                         )
                       }
                     >
-                      {busy
-                        ? "Analyzing…"
-                        : impact?.analysis.ready
-                          ? "Find affected work"
-                          : "Load synthetic source exports"}
+                      {busy ? "Analyzing…" : "Find affected work"}
                     </Button>
                   </div>
                 )}
@@ -1616,94 +1599,6 @@ export default function App() {
                   No live accounts are connected.
                 </p>
               </section>
-              {proofStage !== "off" &&
-                proofBaseline &&
-                impact?.analysis.ready && (
-                  <Card className="border-primary/20 bg-primary/5 shadow-none">
-                    <CardHeader>
-                      <p className="text-xs font-medium text-primary">
-                        {proofStage === "inspect"
-                          ? "STEP 1 OF 3"
-                          : proofStage === "removed"
-                            ? "STEP 2 OF 3"
-                            : "STEP 3 OF 3"}
-                      </p>
-                      <CardTitle>
-                        {proofStage === "inspect"
-                          ? "Follow two routes to the same decision"
-                          : proofStage === "removed"
-                            ? "One task left. Another route remained."
-                            : "The original result is restored"}
-                      </CardTitle>
-                      <CardDescription className="leading-6">
-                        {proofStage === "inspect"
-                          ? `${proofTarget?.title} reaches ${proofBaseline.root} through more than one recorded route.`
-                          : proofStage === "removed"
-                            ? `No longer reached: ${proofEvidence?.removed.join(", ")}. Still reached through another route: ${proofEvidence?.alternate.join(", ")}.`
-                            : "The affected task IDs and route counts match the starting state. Source content hashes stayed equal."}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {proofStage === "inspect" ? (
-                        <>
-                          {proofTarget?.paths.map((path, index) => (
-                            <p key={index} className="text-sm leading-6">
-                              {path.join(" → ")}
-                            </p>
-                          ))}
-                          <p className="text-xs text-muted-foreground">
-                            Next, remove {proofBaseline.experimentLink?.from} →{" "}
-                            {proofBaseline.experimentLink?.to}.
-                          </p>
-                        </>
-                      ) : (
-                        <p className="text-sm">
-                          {impact.analysis.experiment?.documentsUnchanged
-                            ? "Verified: source text is unchanged."
-                            : "Source content changed; inspect the result."}
-                        </p>
-                      )}
-                    </CardContent>
-                    <CardFooter className="flex flex-wrap gap-2">
-                      {proofStage === "inspect" ? (
-                        <Button
-                          disabled={busy}
-                          onClick={() => void analyzeImpact("remove")}
-                        >
-                          Remove the test link
-                          <RiArrowRightLine />
-                        </Button>
-                      ) : proofStage === "removed" ? (
-                        <Button
-                          disabled={busy}
-                          onClick={() => void analyzeImpact("restore")}
-                        >
-                          Restore the link
-                          <RiArrowRightLine />
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          disabled={busy}
-                          onClick={() => void startImpactProof()}
-                        >
-                          Try again
-                        </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        onClick={() => {
-                          updateField("proofStage", "off")
-                          updateField("proofBaseline", null)
-                        }}
-                      >
-                        {proofStage === "restored"
-                          ? "Explore the workspace"
-                          : "Leave the guide"}
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                )}
               {impact?.analysis.blocked && (
                 <Alert variant="destructive">
                   <AlertTitle>
@@ -1775,7 +1670,7 @@ export default function App() {
                       </Button>
                     </CardFooter>
                   </Card>
-                  {impact.analysis.experiment && (
+                  {judgeMode && impact.analysis.experiment && (
                     <Alert>
                       <AlertTitle>
                         {impact.analysis.experiment.documentsUnchanged
@@ -1960,104 +1855,110 @@ export default function App() {
                         ))}
                       </AccordionContent>
                     </AccordionItem>
-                    <AccordionItem value="experiment">
-                      <AccordionTrigger>
-                        Test one dependency link
-                      </AccordionTrigger>
-                      <AccordionContent className="space-y-4">
-                        <p className="text-xs leading-6 text-muted-foreground">
-                          Remove the sample dependency below. Tasks with another
-                          route should stay affected. Source documents stay
-                          intact. Restore the link to recover the original
-                          result.
-                        </p>
-                        <p className="text-sm font-medium">
-                          Test link: {impact.analysis.experimentLink?.from} →{" "}
-                          {impact.analysis.experimentLink?.to}
-                        </p>
-                        {impact.analysis.dependencies?.map((row) => (
-                          <p
-                            key={row[0] + row[2]}
-                            className="text-xs text-muted-foreground"
-                          >
-                            {row[1]} → {row[3]}
+                    {judgeMode && (
+                      <AccordionItem value="experiment">
+                        <AccordionTrigger>
+                          Test one dependency link
+                        </AccordionTrigger>
+                        <AccordionContent className="space-y-4">
+                          <p className="text-xs leading-6 text-muted-foreground">
+                            Remove the sample dependency below. Tasks with
+                            another route should stay affected. Source documents
+                            stay intact. Restore the link to recover the
+                            original result.
                           </p>
-                        ))}
-                        <div className="flex flex-wrap gap-2">
-                          <Button
-                            variant="outline"
-                            disabled={
-                              busy || !impact.analysis.experimentLink?.connected
-                            }
-                            onClick={() => void analyzeImpact("remove")}
-                          >
-                            Remove sample dependency
-                          </Button>
-                          <Button
-                            variant="outline"
-                            disabled={
-                              busy || impact.analysis.experimentLink?.connected
-                            }
-                            onClick={() => void analyzeImpact("restore")}
-                          >
-                            Restore dependency
-                          </Button>
-                        </div>
-                        {impact.analysis.experiment && (
-                          <div className="space-y-2">
-                            <p className="text-xs break-all text-muted-foreground">
-                              Before: {impact.analysis.experiment.beforeHash}
+                          <p className="text-sm font-medium">
+                            Test link: {impact.analysis.experimentLink?.from} →{" "}
+                            {impact.analysis.experimentLink?.to}
+                          </p>
+                          {impact.analysis.dependencies?.map((row) => (
+                            <p
+                              key={row[0] + row[2]}
+                              className="text-xs text-muted-foreground"
+                            >
+                              {row[1]} → {row[3]}
                             </p>
-                            <p className="text-xs break-all text-muted-foreground">
-                              After: {impact.analysis.experiment.afterHash}
-                            </p>
+                          ))}
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              variant="outline"
+                              disabled={
+                                busy ||
+                                !impact.analysis.experimentLink?.connected
+                              }
+                              onClick={() => void analyzeImpact("remove")}
+                            >
+                              Remove sample dependency
+                            </Button>
+                            <Button
+                              variant="outline"
+                              disabled={
+                                busy ||
+                                impact.analysis.experimentLink?.connected
+                              }
+                              onClick={() => void analyzeImpact("restore")}
+                            >
+                              Restore dependency
+                            </Button>
                           </div>
-                        )}
-                      </AccordionContent>
-                    </AccordionItem>
-                    <AccordionItem value="queries">
-                      <AccordionTrigger>
-                        How the analysis was computed
-                      </AccordionTrigger>
-                      <AccordionContent className="space-y-4">
-                        <p className="text-xs leading-6 text-muted-foreground">
-                          Bounded Cypher finds the affected set and alternative
-                          simple paths. FalkorDB’s native shortest-path
-                          procedure explains indirect dependencies. Direct links
-                          need no pathfinding. This analysis uses no model
-                          calls.
-                        </p>
-                        <Trace>
-                          {impact.trace
-                            .filter((row) =>
-                              [
-                                "bounded_dependency_impact",
-                                "native_dependency_explanation",
-                                "affected_source_links",
-                              ].includes(row.tool)
-                            )
-                            .map((row, index) => (
-                              <TraceCollapsible key={index}>
-                                <TraceCollapsibleTrigger>
-                                  <TraceLine>
-                                    <TraceTitle>{row.tool}</TraceTitle>
-                                    <TraceDescription>
-                                      {row.rows} rows · {row.ms} ms
-                                    </TraceDescription>
-                                  </TraceLine>
-                                </TraceCollapsibleTrigger>
-                                <TraceCollapsibleContent>
-                                  <pre className="overflow-auto text-xs break-words whitespace-pre-wrap">
-                                    {row.query +
-                                      "\n" +
-                                      JSON.stringify(row.arguments, null, 2)}
-                                  </pre>
-                                </TraceCollapsibleContent>
-                              </TraceCollapsible>
-                            ))}
-                        </Trace>
-                      </AccordionContent>
-                    </AccordionItem>
+                          {judgeMode && impact.analysis.experiment && (
+                            <div className="space-y-2">
+                              <p className="text-xs break-all text-muted-foreground">
+                                Before: {impact.analysis.experiment.beforeHash}
+                              </p>
+                              <p className="text-xs break-all text-muted-foreground">
+                                After: {impact.analysis.experiment.afterHash}
+                              </p>
+                            </div>
+                          )}
+                        </AccordionContent>
+                      </AccordionItem>
+                    )}
+                    {judgeMode && (
+                      <AccordionItem value="queries">
+                        <AccordionTrigger>
+                          How the analysis was computed
+                        </AccordionTrigger>
+                        <AccordionContent className="space-y-4">
+                          <p className="text-xs leading-6 text-muted-foreground">
+                            Bounded Cypher finds the affected set and
+                            alternative simple paths. FalkorDB’s native
+                            shortest-path procedure explains indirect
+                            dependencies. Direct links need no pathfinding. This
+                            analysis uses no model calls.
+                          </p>
+                          <Trace>
+                            {impact.trace
+                              .filter((row) =>
+                                [
+                                  "bounded_dependency_impact",
+                                  "native_dependency_explanation",
+                                  "affected_source_links",
+                                ].includes(row.tool)
+                              )
+                              .map((row, index) => (
+                                <TraceCollapsible key={index}>
+                                  <TraceCollapsibleTrigger>
+                                    <TraceLine>
+                                      <TraceTitle>{row.tool}</TraceTitle>
+                                      <TraceDescription>
+                                        {row.rows} rows · {row.ms} ms
+                                      </TraceDescription>
+                                    </TraceLine>
+                                  </TraceCollapsibleTrigger>
+                                  <TraceCollapsibleContent>
+                                    <pre className="overflow-auto text-xs break-words whitespace-pre-wrap">
+                                      {row.query +
+                                        "\n" +
+                                        JSON.stringify(row.arguments, null, 2)}
+                                    </pre>
+                                  </TraceCollapsibleContent>
+                                </TraceCollapsible>
+                              ))}
+                          </Trace>
+                        </AccordionContent>
+                      </AccordionItem>
+                    )}
                   </Accordion>
                 </>
               )}
@@ -2163,21 +2064,18 @@ export default function App() {
                     {workspace?.appName} · Company Brain
                   </Badge>
                   <h1 className="font-heading text-3xl font-semibold tracking-tight lg:text-4xl">
-                    One decision changes. Find the work that needs review.
+                    Demo controls
                   </h1>
                   <p className="text-base leading-7 text-muted-foreground">
-                    Tasks live in one tool, meetings in another, and decisions
-                    in the notes. Workweave connects those records so employees
-                    can see what a changed service decision affects.
+                    Trigger a synthetic change, then inspect its effect in the
+                    employee workspace.
                   </p>
                   <Button
                     size="lg"
                     disabled={busy || !context}
                     onClick={() => void startImpactProof()}
                   >
-                    {busy
-                      ? "Preparing the sample…"
-                      : "Try the one-minute proof"}
+                    {busy ? "Preparing the sample…" : "Start dependency demo"}
                     <RiArrowRightLine />
                   </Button>
                   <p className="text-xs leading-6 text-muted-foreground">
@@ -2187,273 +2085,430 @@ export default function App() {
                     retained.
                   </p>
                 </section>
-                <div className="grid gap-5 md:grid-cols-3">
-                  {[
-                    [
-                      "Follow the routes",
-                      "See why work across teams depends on the same decision.",
-                    ],
-                    [
-                      "Change one link",
-                      "Watch one task leave the affected set while another stays connected.",
-                    ],
-                    [
-                      "Check the evidence",
-                      "Confirm source text is unchanged, then restore the original result.",
-                    ],
-                  ].map(([title, body]) => (
-                    <Card key={title} className="shadow-none">
+                {proofStage !== "off" &&
+                  proofBaseline &&
+                  impact?.analysis.ready && (
+                    <Card className="border-primary/20 bg-primary/5 shadow-none">
                       <CardHeader>
-                        <CardTitle>{title}</CardTitle>
+                        <p className="text-xs font-medium text-primary">
+                          {proofStage === "inspect"
+                            ? "STEP 1 OF 3"
+                            : proofStage === "removed"
+                              ? "STEP 2 OF 3"
+                              : "STEP 3 OF 3"}
+                        </p>
+                        <CardTitle>
+                          {proofStage === "inspect"
+                            ? "Follow two routes to the same decision"
+                            : proofStage === "removed"
+                              ? "One task left. Another route remained."
+                              : "The original result is restored"}
+                        </CardTitle>
                         <CardDescription className="leading-6">
-                          {body}
+                          {proofStage === "inspect"
+                            ? `${proofTarget?.title} reaches ${proofBaseline.root} through more than one recorded route.`
+                            : proofStage === "removed"
+                              ? `No longer reached: ${proofEvidence?.removed.join(", ")}. Still reached through another route: ${proofEvidence?.alternate.join(", ")}.`
+                              : "The affected task IDs and route counts match the starting state. Source content hashes stayed equal."}
                         </CardDescription>
                       </CardHeader>
-                    </Card>
-                  ))}
-                </div>
-                <Accordion>
-                  <AccordionItem value="more">
-                    <AccordionTrigger>
-                      Explore the employee workflow
-                    </AccordionTrigger>
-                    <AccordionContent className="space-y-3">
-                      <p className="text-sm text-muted-foreground">
-                        Review a task, preserve its original plan, and
-                        acknowledge a changed decision.
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          variant="outline"
-                          disabled={busy || playing}
-                          onClick={() => void play()}
-                        >
-                          Run decision walkthrough
-                        </Button>
+                      <CardContent className="space-y-3">
+                        {proofStage === "inspect" ? (
+                          <>
+                            {proofTarget?.paths.map((path, index) => (
+                              <p key={index} className="text-sm leading-6">
+                                {path.join(" → ")}
+                              </p>
+                            ))}
+                            <p className="text-xs text-muted-foreground">
+                              Next, remove {proofBaseline.experimentLink?.from}{" "}
+                              → {proofBaseline.experimentLink?.to}.
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-sm">
+                            {impact.analysis.experiment?.documentsUnchanged
+                              ? "Verified: source text is unchanged."
+                              : "Source content changed; inspect the result."}
+                          </p>
+                        )}
+                      </CardContent>
+                      <CardFooter className="flex flex-wrap gap-2">
+                        {proofStage === "inspect" ? (
+                          <Button
+                            disabled={busy}
+                            onClick={() => void analyzeImpact("remove")}
+                          >
+                            Remove the test link
+                            <RiArrowRightLine />
+                          </Button>
+                        ) : proofStage === "removed" ? (
+                          <Button
+                            disabled={busy}
+                            onClick={() => void analyzeImpact("restore")}
+                          >
+                            Restore the link
+                            <RiArrowRightLine />
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            disabled={busy}
+                            onClick={() => void startImpactProof()}
+                          >
+                            Try again
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
-                          onClick={() => navigate("workspace")}
+                          onClick={() => {
+                            updateField("proofStage", "off")
+                            updateField("proofBaseline", null)
+                            if (proofStage === "restored") navigate("workspace")
+                          }}
                         >
-                          Open employee home
+                          {proofStage === "restored"
+                            ? "Explore the workspace"
+                            : "Leave the guide"}
                         </Button>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-                {evaluation?.relationshipDiagnostic && (
-                  <section className="space-y-4">
-                    <h2 className="font-heading text-xl font-semibold">
-                      Same documents. Different company state.
-                    </h2>
-                    <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
-                      We changed only graph relationships. Every source document
-                      kept the same ID, title, and body. The correct guidance or
-                      reviewer still changed.
-                    </p>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Relationship change</TableHead>
-                          <TableHead>Before</TableHead>
-                          <TableHead>After</TableHead>
-                          <TableHead>Documents</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {evaluation.relationshipDiagnostic.results.map((r) => (
-                          <TableRow key={r.case}>
-                            <TableCell>{r.case}</TableCell>
-                            <TableCell>{r.before}</TableCell>
-                            <TableCell>{r.after}</TableCell>
-                            <TableCell>
-                              {r.documentsUnchanged ? "Identical" : "Changed"}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                    <Accordion>
-                      <AccordionItem value="relationship-method">
-                        <AccordionTrigger>
-                          What this proves—and what it does not
-                        </AccordionTrigger>
-                        <AccordionContent className="space-y-3">
-                          <p>{evaluation.relationshipDiagnostic.method}</p>
-                          <p>{evaluation.relationshipDiagnostic.claim}</p>
-                          {evaluation.relationshipDiagnostic.results.map(
-                            (r) => (
-                              <section key={r.case}>
-                                <p className="font-medium">{r.case}</p>
-                                <pre className="overflow-auto text-xs whitespace-pre-wrap">
-                                  {r.query}
-                                </pre>
-                              </section>
-                            )
-                          )}
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
-                  </section>
+                      </CardFooter>
+                    </Card>
+                  )}
+                {impact?.analysis.ready && (
+                  <p role="status" className="text-sm text-muted-foreground">
+                    {impact.analysis.items?.length} affected tasks. Open
+                    Cross-team impact in the employee tab to inspect owners and
+                    source paths.
+                  </p>
                 )}
-                <section className="space-y-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <h2 className="font-heading text-xl font-semibold">
-                      Reproducible evidence checks
-                    </h2>
-                    {evaluation && (
-                      <Badge variant="secondary">
-                        {evaluation.results.filter((r) => r.passed).length} /{" "}
-                        {evaluation.results.length} graph checks passed
-                      </Badge>
-                    )}
-                  </div>
-                  {evaluationError && (
-                    <Alert variant="destructive">
-                      <AlertTitle>Evaluation report unavailable</AlertTitle>
-                      <AlertDescription>
-                        Run scripts/evaluate.py and rebuild the frontend.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                  {!evaluation && !evaluationError && (
-                    <Skeleton className="h-48" />
-                  )}
-                  {evaluation && (
-                    <>
-                      <p className="text-sm leading-6 text-muted-foreground">
-                        {evaluation.dataset} Results below are a saved local
-                        run, not a live benchmark.
-                      </p>
-                      {evaluation.modelDiagnostic && (
-                        <Alert>
-                          <AlertTitle>
-                            Graph context alone did not make the model safe
-                          </AlertTitle>
-                          <AlertDescription className="space-y-2">
-                            <p>
-                              Paired {evaluation.modelDiagnostic.model} check:
-                              document-only guidance{" "}
-                              {
-                                evaluation.modelDiagnostic.results.filter(
-                                  (r) => r.documents.correct
-                                ).length
-                              }
-                              /8; graph-context guidance{" "}
-                              {
-                                evaluation.modelDiagnostic.results.filter(
-                                  (r) => r.graph.correct
-                                ).length
-                              }
-                              /8. The model still failed to abstain on
-                              conflicting approval and missing source evidence.
-                              Some correct answers also used invalid citation
-                              IDs.
-                            </p>
-                            <p>
-                              The workspace does not let generated factual
-                              answers control review requests. The tested graph
-                              gates decide whether an action is allowed.
-                            </p>
-                            <Accordion>
-                              <AccordionItem value="model-method">
-                                <AccordionTrigger>
-                                  Paired model method
-                                </AccordionTrigger>
-                                <AccordionContent>
-                                  {evaluation.modelDiagnostic.method}
-                                </AccordionContent>
-                              </AccordionItem>
-                            </Accordion>
-                          </AlertDescription>
-                        </Alert>
-                      )}
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Case</TableHead>
-                            <TableHead>Expected</TableHead>
-                            <TableHead>{workspace?.appName}</TableHead>
-                            <TableHead>Keyword top result</TableHead>
-                            <TableHead>Check</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {evaluation.results.map((r) => (
-                            <TableRow key={r.case}>
-                              <TableCell className="max-w-64 whitespace-normal">
-                                <p className="font-medium">{r.case}</p>
-                                <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                                  {r.detail}
-                                </p>
-                              </TableCell>
-                              <TableCell>{r.expected || "Abstain"}</TableCell>
-                              <TableCell>{r.graph || "Abstained"}</TableCell>
-                              <TableCell className="max-w-52 whitespace-normal">
-                                <p>{r.lexical || "No extracted answer"}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {r.lexicalSource}
-                                </p>
-                              </TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant={
-                                    r.passed ? "secondary" : "destructive"
-                                  }
-                                >
-                                  {r.passed ? "Pass" : "Fail"}
-                                </Badge>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                <Card className="shadow-none">
+                  <CardHeader>
+                    <CardTitle>Decision change</CardTitle>
+                    <CardDescription>
+                      Save task review notes first. These controls change only
+                      this synthetic workspace.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      disabled={
+                        busy || assignment !== workspace?.demo.assignment
+                      }
+                      onClick={() => void act("replace")}
+                    >
+                      Approve sample replacement
+                    </Button>
+                    <Button
+                      variant="outline"
+                      disabled={
+                        busy || assignment !== workspace?.demo.assignment
+                      }
+                      onClick={() => void act("propose")}
+                    >
+                      Add newer proposal
+                    </Button>
+                    <Button variant="ghost" onClick={() => navigate("changes")}>
+                      Open decision review
+                    </Button>
+                  </CardContent>
+                </Card>
+                <Accordion>
+                  <AccordionItem value="reference">
+                    <AccordionTrigger>
+                      Technical reference and validation
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="grid gap-5 md:grid-cols-3">
+                        {[
+                          [
+                            "Follow the routes",
+                            "See why work across teams depends on the same decision.",
+                          ],
+                          [
+                            "Change one link",
+                            "Watch one task leave the affected set while another stays connected.",
+                          ],
+                          [
+                            "Check the evidence",
+                            "Confirm source text is unchanged, then restore the original result.",
+                          ],
+                        ].map(([title, body]) => (
+                          <Card key={title} className="shadow-none">
+                            <CardHeader>
+                              <CardTitle>{title}</CardTitle>
+                              <CardDescription className="leading-6">
+                                {body}
+                              </CardDescription>
+                            </CardHeader>
+                          </Card>
+                        ))}
+                      </div>
                       <Accordion>
-                        <AccordionItem value="method">
+                        <AccordionItem value="more">
                           <AccordionTrigger>
-                            Method, limits, and how to reproduce
+                            Explore the employee workflow
                           </AccordionTrigger>
-                          <AccordionContent className="space-y-4">
-                            <p>{evaluation.method}</p>
-                            <ul className="list-disc space-y-2 pl-5">
-                              {evaluation.limitations.map((r) => (
-                                <li key={r}>{r}</li>
-                              ))}
-                            </ul>
-                            <p>
-                              Reproduce: start FalkorDB, then run python
-                              scripts/evaluate.py. Each case uses a fresh graph
-                              that is deleted after the run.
+                          <AccordionContent className="space-y-3">
+                            <p className="text-sm text-muted-foreground">
+                              Review a task, preserve its original plan, and
+                              acknowledge a changed decision.
                             </p>
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                variant="outline"
+                                disabled={busy || playing}
+                                onClick={() => void play()}
+                              >
+                                Run decision walkthrough
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                onClick={() => navigate("workspace")}
+                              >
+                                Open employee home
+                              </Button>
+                            </div>
                           </AccordionContent>
                         </AccordionItem>
                       </Accordion>
-                    </>
-                  )}
-                </section>
-                <section className="space-y-3 border-t pt-6">
-                  <h2 className="font-heading text-lg font-semibold">
-                    What the prototype proves
-                  </h2>
-                  <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
-                    FalkorDB resolves approval and replacement relationships,
-                    stores assignment-specific progress, and runs a native
-                    shortest-path query. The optional OpenAI tool call reads
-                    that context and selects an allowlisted A2UI layout. Graph
-                    data supplies the facts.
-                  </p>
-                  <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
-                    The data is synthetic. There is no production login, HR
-                    integration, calendar booking, or automatic document
-                    ingestion. Public hosting and a recorded demo remain release
-                    tasks.
-                  </p>
-                  <Button
-                    variant="outline"
-                    onClick={() => navigate("evidence")}
-                  >
-                    Inspect the actual queries
-                  </Button>
-                </section>
+                      {evaluation?.relationshipDiagnostic && (
+                        <section className="space-y-4">
+                          <h2 className="font-heading text-xl font-semibold">
+                            Same documents. Different company state.
+                          </h2>
+                          <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
+                            We changed only graph relationships. Every source
+                            document kept the same ID, title, and body. The
+                            correct guidance or reviewer still changed.
+                          </p>
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Relationship change</TableHead>
+                                <TableHead>Before</TableHead>
+                                <TableHead>After</TableHead>
+                                <TableHead>Documents</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {evaluation.relationshipDiagnostic.results.map(
+                                (r) => (
+                                  <TableRow key={r.case}>
+                                    <TableCell>{r.case}</TableCell>
+                                    <TableCell>{r.before}</TableCell>
+                                    <TableCell>{r.after}</TableCell>
+                                    <TableCell>
+                                      {r.documentsUnchanged
+                                        ? "Identical"
+                                        : "Changed"}
+                                    </TableCell>
+                                  </TableRow>
+                                )
+                              )}
+                            </TableBody>
+                          </Table>
+                          <Accordion>
+                            <AccordionItem value="relationship-method">
+                              <AccordionTrigger>
+                                What this proves—and what it does not
+                              </AccordionTrigger>
+                              <AccordionContent className="space-y-3">
+                                <p>
+                                  {evaluation.relationshipDiagnostic.method}
+                                </p>
+                                <p>{evaluation.relationshipDiagnostic.claim}</p>
+                                {evaluation.relationshipDiagnostic.results.map(
+                                  (r) => (
+                                    <section key={r.case}>
+                                      <p className="font-medium">{r.case}</p>
+                                      <pre className="overflow-auto text-xs whitespace-pre-wrap">
+                                        {r.query}
+                                      </pre>
+                                    </section>
+                                  )
+                                )}
+                              </AccordionContent>
+                            </AccordionItem>
+                          </Accordion>
+                        </section>
+                      )}
+                      <section className="space-y-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <h2 className="font-heading text-xl font-semibold">
+                            Reproducible evidence checks
+                          </h2>
+                          {evaluation && (
+                            <Badge variant="secondary">
+                              {
+                                evaluation.results.filter((r) => r.passed)
+                                  .length
+                              }{" "}
+                              / {evaluation.results.length} graph checks passed
+                            </Badge>
+                          )}
+                        </div>
+                        {evaluationError && (
+                          <Alert variant="destructive">
+                            <AlertTitle>
+                              Evaluation report unavailable
+                            </AlertTitle>
+                            <AlertDescription>
+                              Run scripts/evaluate.py and rebuild the frontend.
+                            </AlertDescription>
+                          </Alert>
+                        )}
+                        {!evaluation && !evaluationError && (
+                          <Skeleton className="h-48" />
+                        )}
+                        {evaluation && (
+                          <>
+                            <p className="text-sm leading-6 text-muted-foreground">
+                              {evaluation.dataset} Results below are a saved
+                              local run, not a live benchmark.
+                            </p>
+                            {evaluation.modelDiagnostic && (
+                              <Alert>
+                                <AlertTitle>
+                                  Graph context alone did not make the model
+                                  safe
+                                </AlertTitle>
+                                <AlertDescription className="space-y-2">
+                                  <p>
+                                    Paired {evaluation.modelDiagnostic.model}{" "}
+                                    check: document-only guidance{" "}
+                                    {
+                                      evaluation.modelDiagnostic.results.filter(
+                                        (r) => r.documents.correct
+                                      ).length
+                                    }
+                                    /8; graph-context guidance{" "}
+                                    {
+                                      evaluation.modelDiagnostic.results.filter(
+                                        (r) => r.graph.correct
+                                      ).length
+                                    }
+                                    /8. The model still failed to abstain on
+                                    conflicting approval and missing source
+                                    evidence. Some correct answers also used
+                                    invalid citation IDs.
+                                  </p>
+                                  <p>
+                                    The workspace does not let generated factual
+                                    answers control review requests. The tested
+                                    graph gates decide whether an action is
+                                    allowed.
+                                  </p>
+                                  <Accordion>
+                                    <AccordionItem value="model-method">
+                                      <AccordionTrigger>
+                                        Paired model method
+                                      </AccordionTrigger>
+                                      <AccordionContent>
+                                        {evaluation.modelDiagnostic.method}
+                                      </AccordionContent>
+                                    </AccordionItem>
+                                  </Accordion>
+                                </AlertDescription>
+                              </Alert>
+                            )}
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Case</TableHead>
+                                  <TableHead>Expected</TableHead>
+                                  <TableHead>{workspace?.appName}</TableHead>
+                                  <TableHead>Keyword top result</TableHead>
+                                  <TableHead>Check</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {evaluation.results.map((r) => (
+                                  <TableRow key={r.case}>
+                                    <TableCell className="max-w-64 whitespace-normal">
+                                      <p className="font-medium">{r.case}</p>
+                                      <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                                        {r.detail}
+                                      </p>
+                                    </TableCell>
+                                    <TableCell>
+                                      {r.expected || "Abstain"}
+                                    </TableCell>
+                                    <TableCell>
+                                      {r.graph || "Abstained"}
+                                    </TableCell>
+                                    <TableCell className="max-w-52 whitespace-normal">
+                                      <p>
+                                        {r.lexical || "No extracted answer"}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground">
+                                        {r.lexicalSource}
+                                      </p>
+                                    </TableCell>
+                                    <TableCell>
+                                      <Badge
+                                        variant={
+                                          r.passed ? "secondary" : "destructive"
+                                        }
+                                      >
+                                        {r.passed ? "Pass" : "Fail"}
+                                      </Badge>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                            <Accordion>
+                              <AccordionItem value="method">
+                                <AccordionTrigger>
+                                  Method, limits, and how to reproduce
+                                </AccordionTrigger>
+                                <AccordionContent className="space-y-4">
+                                  <p>{evaluation.method}</p>
+                                  <ul className="list-disc space-y-2 pl-5">
+                                    {evaluation.limitations.map((r) => (
+                                      <li key={r}>{r}</li>
+                                    ))}
+                                  </ul>
+                                  <p>
+                                    Reproduce: start FalkorDB, then run python
+                                    scripts/evaluate.py. Each case uses a fresh
+                                    graph that is deleted after the run.
+                                  </p>
+                                </AccordionContent>
+                              </AccordionItem>
+                            </Accordion>
+                          </>
+                        )}
+                      </section>
+                      <section className="space-y-3 border-t pt-6">
+                        <h2 className="font-heading text-lg font-semibold">
+                          What the prototype proves
+                        </h2>
+                        <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
+                          FalkorDB resolves approval and replacement
+                          relationships, stores assignment-specific progress,
+                          and runs a native shortest-path query. The optional
+                          OpenAI tool call reads that context and selects an
+                          allowlisted A2UI layout. Graph data supplies the
+                          facts.
+                        </p>
+                        <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
+                          The data is synthetic. There is no production login,
+                          HR integration, calendar booking, or automatic
+                          document ingestion. The public app uses Render and
+                          FalkorDB Cloud.
+                        </p>
+                        <Button
+                          variant="outline"
+                          onClick={() => navigate("evidence")}
+                        >
+                          Inspect the actual queries
+                        </Button>
+                      </section>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               </TabsContent>
             )}
             <TabsContent value="home" className="space-y-6">
@@ -2709,6 +2764,22 @@ export default function App() {
                   relevance does not establish approval.
                 </p>
               )}
+              {context?.searchResults?.length === 0 && (
+                <Card className="shadow-none">
+                  <CardHeader>
+                    <CardTitle>No matching documents</CardTitle>
+                    <CardDescription>
+                      Try a different term or clear the search to browse company
+                      knowledge.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button variant="outline" onClick={() => submitSearch("")}>
+                      Browse all documents
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
               <div className="divide-y rounded-xl border">
                 {(context?.searchResults || context?.sources)?.map((r) => (
                   <Button
@@ -2843,68 +2914,74 @@ export default function App() {
                 </CardContent>
               </Card>
             </TabsContent>
-            <TabsContent value="evidence" className="space-y-5 pt-5">
-              <Button variant="ghost" onClick={() => navigate("sources")}>
-                Back to company knowledge
-              </Button>
-              <p className="text-sm text-muted-foreground">
-                Completed graph operations for the latest successful request.
-                These results are not streamed live.
-              </p>
-              {busy && (
+            {judgeMode && (
+              <TabsContent value="evidence" className="space-y-5 pt-5">
+                <Button variant="ghost" onClick={() => navigate("sources")}>
+                  Back to company knowledge
+                </Button>
+                <p className="text-sm text-muted-foreground">
+                  Completed graph operations for the latest successful request.
+                  These results are not streamed live.
+                </p>
+                {busy && (
+                  <Trace>
+                    <TraceLine status="running">
+                      <TraceTitle>Processing request</TraceTitle>
+                      <TraceDescription>
+                        Waiting for completed results
+                      </TraceDescription>
+                    </TraceLine>
+                  </Trace>
+                )}
+                {error && (
+                  <Trace>
+                    <TraceLine status="error">
+                      <TraceTitle>Request failed</TraceTitle>
+                    </TraceLine>
+                  </Trace>
+                )}
                 <Trace>
-                  <TraceLine status="running">
-                    <TraceTitle>Processing request</TraceTitle>
-                    <TraceDescription>
-                      Waiting for completed results
-                    </TraceDescription>
-                  </TraceLine>
+                  {[...(result?.trace || []), ...(impact?.trace || [])].map(
+                    (r, i) => (
+                      <TraceCollapsible key={i}>
+                        <TraceCollapsibleTrigger>
+                          <TraceLine>
+                            <TraceTitle>{r.tool}</TraceTitle>
+                            <TraceDescription>
+                              {r.executionPlan
+                                ? "Query plan"
+                                : `${r.rows} rows`}{" "}
+                              · {r.ms} ms
+                            </TraceDescription>
+                          </TraceLine>
+                        </TraceCollapsibleTrigger>
+                        <TraceCollapsibleContent>
+                          <pre className="overflow-auto text-xs break-words whitespace-pre-wrap">
+                            {r.query +
+                              "\n\n" +
+                              JSON.stringify(r.arguments, null, 2) +
+                              (r.executionPlan
+                                ? "\n\nExecution plan (not runtime profiling):\n" +
+                                  r.executionPlan
+                                : "")}
+                          </pre>
+                        </TraceCollapsibleContent>
+                      </TraceCollapsible>
+                    )
+                  )}
                 </Trace>
-              )}
-              {error && (
-                <Trace>
-                  <TraceLine status="error">
-                    <TraceTitle>Request failed</TraceTitle>
-                  </TraceLine>
-                </Trace>
-              )}
-              <Trace>
-                {result?.trace.map((r, i) => (
-                  <TraceCollapsible key={i}>
-                    <TraceCollapsibleTrigger>
-                      <TraceLine>
-                        <TraceTitle>{r.tool}</TraceTitle>
-                        <TraceDescription>
-                          {r.executionPlan ? "Query plan" : `${r.rows} rows`} ·{" "}
-                          {r.ms} ms
-                        </TraceDescription>
-                      </TraceLine>
-                    </TraceCollapsibleTrigger>
-                    <TraceCollapsibleContent>
-                      <pre className="overflow-auto text-xs break-words whitespace-pre-wrap">
-                        {r.query +
-                          "\n\n" +
-                          JSON.stringify(r.arguments, null, 2) +
-                          (r.executionPlan
-                            ? "\n\nExecution plan (not runtime profiling):\n" +
-                              r.executionPlan
-                            : "")}
+                <Accordion>
+                  <AccordionItem value="json">
+                    <AccordionTrigger>A2UI messages</AccordionTrigger>
+                    <AccordionContent>
+                      <pre className="max-h-96 overflow-auto text-xs break-words whitespace-pre-wrap">
+                        {JSON.stringify(result?.messages, null, 2)}
                       </pre>
-                    </TraceCollapsibleContent>
-                  </TraceCollapsible>
-                ))}
-              </Trace>
-              <Accordion>
-                <AccordionItem value="json">
-                  <AccordionTrigger>A2UI messages</AccordionTrigger>
-                  <AccordionContent>
-                    <pre className="max-h-96 overflow-auto text-xs break-words whitespace-pre-wrap">
-                      {JSON.stringify(result?.messages, null, 2)}
-                    </pre>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            </TabsContent>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </TabsContent>
+            )}
             {judgeMode && (
               <TabsContent value="demo" className="space-y-5 pt-5">
                 <Card>

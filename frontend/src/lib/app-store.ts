@@ -42,7 +42,7 @@ export type AppState = {
   playing: boolean
   openSources: string[]
 }
-const judgeMode = window.location.pathname.startsWith("/judge")
+const judgeMode = window.location.pathname.startsWith("/external-trigger")
 const initialRoute = readRoute(window.location.pathname, window.location.search)
 const initial: AppState = {
   tourSidebarBefore: null,
