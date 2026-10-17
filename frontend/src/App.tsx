@@ -62,11 +62,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import {
-  Progress,
-  ProgressLabel,
-  ProgressValue,
-} from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -92,6 +87,7 @@ export default function App() {
   const {
     impact,
     proofStage,
+    storyPrepared,
     proofBaseline,
     impactExpanded,
     theme,
@@ -113,9 +109,6 @@ export default function App() {
     tab,
     prompt,
     note,
-    demoStep,
-    demoLabel,
-    playing,
     openSources,
   } = state
   const setTheme = (value: Parameters<typeof updateField<"theme">>[1]) =>
@@ -164,13 +157,6 @@ export default function App() {
     updateField("prompt", value)
   const setNote = (value: Parameters<typeof updateField<"note">>[1]) =>
     updateField("note", value)
-  const setDemoStep = (value: Parameters<typeof updateField<"demoStep">>[1]) =>
-    updateField("demoStep", value)
-  const setDemoLabel = (
-    value: Parameters<typeof updateField<"demoLabel">>[1]
-  ) => updateField("demoLabel", value)
-  const setPlaying = (value: Parameters<typeof updateField<"playing">>[1]) =>
-    updateField("playing", value)
   const setOpenSources = (
     value: Parameters<typeof updateField<"openSources">>[1]
   ) => updateField("openSources", value)
@@ -186,8 +172,6 @@ export default function App() {
       sidebarOpen ? "expanded" : "collapsed"
     )
   }, [sidebarOpen])
-  const playRef = useRef(0),
-    stepRef = useRef(0)
   const decoded = result ? decode(result) : null,
     context = decoded?.context
   const workspace = context?.workspace
@@ -291,10 +275,15 @@ export default function App() {
       if (navigationRef.current !== navigationVersion) destination = undefined
       const commit = () => {
         setResult(data)
-        if (path === "/api/action" || path === "/api/reset")
+        if (
+          path === "/api/action" ||
+          path === "/api/reset" ||
+          path === "/api/demo/setup"
+        )
           appStore.trigger.updated({
             patch: {
               impact: null,
+              storyPrepared: path === "/api/demo/setup",
               proofStage: "off",
               proofBaseline: null,
               impactExpanded: [],
@@ -349,7 +338,6 @@ export default function App() {
         )
       )
     return () => {
-      playRef.current++
       activeTransition.current?.skipTransition()
     }
   }, [])
@@ -391,8 +379,7 @@ export default function App() {
     })
   }, [searchNavigation, busy, context])
   function stop() {
-    playRef.current++
-    setPlaying(false)
+    activeTransition.current?.skipTransition()
   }
   function showSource(id: string) {
     goToURL("/knowledge/" + encodeURIComponent(id))
@@ -513,52 +500,8 @@ export default function App() {
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
   }, [])
-  const steps = workspace?.demo.steps || []
-  async function next() {
-    if (!workspace || !steps.length) return false
-    if (stepRef.current >= steps.length) {
-      stop()
-      setDemoLabel("Walkthrough complete. Change a fact to explore.")
-      return false
-    }
-    const s = steps[stepRef.current]
-    setDemoLabel(s.label)
-    if (
-      !(await request(
-        s.path,
-        { ...s.body, assignment: workspace?.demo.assignment },
-        "assignment"
-      ))
-    ) {
-      stop()
-      return false
-    }
-    stepRef.current++
-    setDemoStep(stepRef.current)
-    return true
-  }
-  async function play() {
-    if (!workspace) return
-    setAssignment(workspace.demo.assignment)
-    stop()
-    if (
-      !(await request("/api/reset", { assignment: workspace?.demo.assignment }))
-    )
-      return
-    stepRef.current = 0
-    setDemoStep(0)
-    setPlaying(true)
-    const token = ++playRef.current
-    while (playRef.current === token) {
-      if (!(await next())) break
-      await new Promise((resolve) => setTimeout(resolve, 4500))
-    }
-  }
   async function reset() {
     stop()
-    stepRef.current = 0
-    setDemoStep(0)
-    setDemoLabel("Sample reset. Start the walkthrough or explore.")
     await request("/api/reset", { assignment: workspace?.demo.assignment })
   }
   const required = context ? 1 + context.training.length : 1
@@ -666,7 +609,6 @@ export default function App() {
         document: "Knowledge document",
         proof: "Demo controls",
         evidence: "Evidence & tools",
-        demo: "Walkthrough",
       } as Record<string, string>
     )[tab]
   return (
@@ -749,7 +691,6 @@ export default function App() {
               {[
                 ["proof", "Demo controls"],
                 ["evidence", "Evidence & tools"],
-                ["demo", "Walkthrough"],
               ].map(([id, label]) => (
                 <Button
                   key={id}
@@ -833,7 +774,6 @@ export default function App() {
               [
                 ["proof", "Demo controls"],
                 ["evidence", "Evidence & tools"],
-                ["demo", "Walkthrough"],
               ].map(([id, label]) => (
                 <Button
                   key={id}
@@ -969,19 +909,6 @@ export default function App() {
               Updating workspace…
             </p>
           )}
-          {judgeMode && playing && (
-            <Alert>
-              <AlertTitle>
-                Walkthrough · {demoStep} of {steps.length}
-              </AlertTitle>
-              <AlertDescription>
-                {demoLabel}
-                <Button variant="link" onClick={stop}>
-                  Pause walkthrough
-                </Button>
-              </AlertDescription>
-            </Alert>
-          )}
           <Tabs value={tab} onValueChange={(v) => navigate(String(v))}>
             <TabsList className="hidden">
               <TabsTrigger value="workspace">Home</TabsTrigger>
@@ -996,7 +923,6 @@ export default function App() {
               <TabsTrigger value="document">Knowledge document</TabsTrigger>
               <TabsTrigger value="people">People</TabsTrigger>
               <TabsTrigger value="evidence">Evidence & tools</TabsTrigger>
-              <TabsTrigger value="demo">Walkthrough</TabsTrigger>
             </TabsList>
             <TabsContent value="workspace" className="space-y-9">
               <section className="space-y-2">
@@ -2055,6 +1981,43 @@ export default function App() {
             </TabsContent>
             {judgeMode && (
               <TabsContent value="proof" className="space-y-8">
+                <Card className="shadow-none">
+                  <CardHeader>
+                    <CardTitle>{workspace?.demo.scenario.title}</CardTitle>
+                    <CardDescription>
+                      {workspace?.demo.scenario.employee} has a saved plan.{" "}
+                      {workspace?.demo.scenario.approver} approves the change.{" "}
+                      {workspace?.demo.scenario.reviewer} reviews her work.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      Setup resets only this visitor workspace, records the
+                      sample reading and training, saves Maya’s original plan
+                      and imports the source records. Use before recording, not
+                      during the employee workflow.
+                    </p>
+                    <Button
+                      disabled={busy}
+                      onClick={() => void request("/api/demo/setup", {})}
+                    >
+                      Reset and prepare story
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() =>
+                        void openAssignment(workspace?.demo.assignment || "")
+                      }
+                    >
+                      Open Maya’s task
+                    </Button>
+                    {storyPrepared && (
+                      <p role="status" className="text-sm text-primary">
+                        Story ready. Refresh the employee tab before recording.
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
                 <section className="max-w-3xl space-y-5">
                   <Badge variant="secondary">
                     {workspace?.appName} · Company Brain
@@ -2191,7 +2154,12 @@ export default function App() {
                       disabled={
                         busy || assignment !== workspace?.demo.assignment
                       }
-                      onClick={() => void act("replace")}
+                      onClick={() =>
+                        void request("/api/action", {
+                          name: "replace",
+                          assignment: workspace?.demo.assignment,
+                        })
+                      }
                     >
                       Approve sample replacement
                     </Button>
@@ -2200,7 +2168,12 @@ export default function App() {
                       disabled={
                         busy || assignment !== workspace?.demo.assignment
                       }
-                      onClick={() => void act("propose")}
+                      onClick={() =>
+                        void request("/api/action", {
+                          name: "propose",
+                          assignment: workspace?.demo.assignment,
+                        })
+                      }
                     >
                       Add newer proposal
                     </Button>
@@ -2265,34 +2238,7 @@ export default function App() {
                           </Card>
                         ))}
                       </div>
-                      <Accordion>
-                        <AccordionItem value="more">
-                          <AccordionTrigger>
-                            Explore the employee workflow
-                          </AccordionTrigger>
-                          <AccordionContent className="space-y-3">
-                            <p className="text-sm text-muted-foreground">
-                              Review a task, preserve its original plan, and
-                              acknowledge a changed decision.
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                              <Button
-                                variant="outline"
-                                disabled={busy || playing}
-                                onClick={() => void play()}
-                              >
-                                Run decision walkthrough
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                onClick={() => navigate("workspace")}
-                              >
-                                Open employee home
-                              </Button>
-                            </div>
-                          </AccordionContent>
-                        </AccordionItem>
-                      </Accordion>
+
                       {evaluation?.relationshipDiagnostic && (
                         <section className="space-y-4">
                           <h2 className="font-heading text-xl font-semibold">
@@ -3026,92 +2972,6 @@ export default function App() {
                     </AccordionContent>
                   </AccordionItem>
                 </Accordion>
-              </TabsContent>
-            )}
-            {judgeMode && (
-              <TabsContent value="demo" className="space-y-5 pt-5">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>See the connected story</CardTitle>
-                    <CardDescription>{demoLabel}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Progress value={(demoStep / steps.length) * 100}>
-                      <ProgressLabel>Guided walkthrough</ProgressLabel>
-                      <ProgressValue>
-                        {() => `${demoStep} of ${steps.length}`}
-                      </ProgressValue>
-                    </Progress>
-                  </CardContent>
-                  <CardFooter className="flex flex-wrap gap-2">
-                    <Button
-                      onClick={() => void play()}
-                      disabled={busy || playing}
-                    >
-                      Play walkthrough
-                    </Button>
-                    {playing && (
-                      <Button variant="secondary" onClick={stop}>
-                        Pause
-                      </Button>
-                    )}
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        stop()
-                        void next()
-                      }}
-                      disabled={busy}
-                    >
-                      Next step
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      onClick={() => void reset()}
-                      disabled={busy}
-                    >
-                      Reset sample
-                    </Button>
-                  </CardFooter>
-                </Card>
-                <p className="text-xs text-muted-foreground">
-                  The walkthrough runs real graph actions without AI calls.
-                </p>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Change the sample</CardTitle>
-                    <CardDescription>
-                      Changes affect only your workspace.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex flex-wrap gap-2">
-                    <Button
-                      variant="outline"
-                      disabled={
-                        busy || assignment !== workspace?.demo.assignment
-                      }
-                      onClick={() => void act("replace")}
-                    >
-                      Replace decision
-                    </Button>
-                    <Button
-                      variant="outline"
-                      disabled={
-                        busy || assignment !== workspace?.demo.assignment
-                      }
-                      onClick={() => void act("remove-owner")}
-                    >
-                      Remove owner
-                    </Button>
-                    <Button
-                      variant="outline"
-                      disabled={busy}
-                      onClick={() => void act("complete")}
-                    >
-                      Complete training
-                    </Button>
-                  </CardContent>
-                </Card>
               </TabsContent>
             )}
           </Tabs>

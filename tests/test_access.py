@@ -115,7 +115,7 @@ class AccessTests(unittest.TestCase):
                     data = json.load(response)
                 self.assertEqual(set(data), {"appName", "defaultAssignment", "demo"})
                 self.assertEqual(data["appName"], "Workweave")
-                self.assertTrue(data["demo"]["steps"])
+                self.assertEqual(data["demo"]["scenario"]["approver"], "Priya Shah")
                 self.assertEqual(data["defaultAssignment"], data["demo"]["assignment"])
                 store.assert_not_called()
             finally:

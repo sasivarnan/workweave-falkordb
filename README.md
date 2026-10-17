@@ -89,9 +89,11 @@ Open [http://localhost:5173](http://localhost:5173). Vite forwards `/api` reques
 
 Employee pages show work, guidance and source evidence. `/demo-controls` contains synthetic dependency and decision-change controls; optional validation details and query traces stay there. Use two tabs in the same browser session: trigger a change in one, then refresh the employee view in the other. This route separates presentation only; it is not an authentication boundary.
 
-### Reset demo data
+### Prepare or reset the demo
 
-Open `/demo-controls` → **Reset demo data** → **Reset this demo workspace**. This resets only the current visitor graph, including notes, plans, progress, review requests and imported sample data. It does not reset other visitors or the paid AI usage ledger. Then select **Start dependency demo** to import the sample records again. Keep both recording tabs in the same browser session and refresh employee pages after resetting. A fresh private browser window creates a separate workspace without deleting the old one.
+Open `/demo-controls` and select **Reset and prepare story**. It resets only this visitor graph, records sample reading and training, saves Maya’s original Adyen plan and imports the synthetic source records. Priya is the recorded approver of a later replacement; Leo remains the work reviewer. The controls simulate company events, not separate authenticated roles. Setup makes no AI calls.
+
+For an empty workspace, use **Reset demo data → Reset this demo workspace**. Both actions remove this visitor’s saved notes, plans, progress, review requests and sample changes. They do not reset other visitors or the paid AI usage ledger. Keep recording tabs in the same browser session and refresh the employee tab after a trigger. The presenter controls the pace.
 
 ## Record links
 

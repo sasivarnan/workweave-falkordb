@@ -7,6 +7,7 @@ import type { Evaluation, Result } from "./workspace"
 export type AppState = {
   tourSidebarBefore: boolean | null
   employeeGuide: number
+  storyPrepared: boolean
   proofStage: "off" | "inspect" | "removed" | "restored"
   proofBaseline: ImpactAnalysis | null
   impactExpanded: string[]
@@ -37,9 +38,6 @@ export type AppState = {
   tab: string
   prompt: string
   note: string
-  demoStep: number
-  demoLabel: string
-  playing: boolean
   openSources: string[]
 }
 const judgeMode = window.location.pathname.startsWith("/demo-controls")
@@ -47,6 +45,7 @@ const initialRoute = readRoute(window.location.pathname, window.location.search)
 const initial: AppState = {
   tourSidebarBefore: null,
   employeeGuide: 0,
+  storyPrepared: false,
   proofStage: "off",
   proofBaseline: null,
   impactExpanded: [],
@@ -76,9 +75,6 @@ const initial: AppState = {
   tab: initialRoute.view,
   prompt: "",
   note: "",
-  demoStep: 0,
-  demoLabel: "",
-  playing: false,
   openSources: [],
 }
 export const appStore = createStore({

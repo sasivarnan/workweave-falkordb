@@ -165,6 +165,59 @@ class ImpactTests(unittest.TestCase):
         self.assertEqual(item["routeCount"], 3)
         self.assertEqual(len(item["pathIds"]), 3)
 
+    def test_story_setup_is_scoped_and_records_distinct_approver(self):
+        import json
+        import threading
+        import urllib.request
+        from workweave.server import Handler, ThreadingHTTPServer
+
+        other = Store(secrets.token_hex(16))
+        other.seed()
+        other.action("accept", "Keep this other visitor plan")
+        server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            token = self.store.name.removeprefix("workweave_")
+            for _ in range(2):
+                request = urllib.request.Request(
+                    "http://127.0.0.1:" + str(server.server_port) + "/api/demo/setup",
+                    data=b'{"assignment":"refunds"}',
+                    headers={
+                        "Content-Type": "application/json",
+                        "X-Workweave": "portal",
+                        "Cookie": "workweave=" + token,
+                    },
+                )
+                with urllib.request.urlopen(request) as response:
+                    self.assertEqual(response.status, 200)
+                    json.load(response)
+                context = self.store.context()
+                self.assertEqual(context["assignment"], "checkout")
+                self.assertEqual(context["current"], "Use Adyen")
+                self.assertFalse(context["needsReview"])
+                self.assertTrue(context["guidanceRead"])
+                self.assertTrue(all(row[2] for row in context["training"]))
+                self.assertEqual(len(analyze(self.store)["items"]), 4)
+            self.store.action("replace")
+            context = self.store.context()
+            self.assertTrue(context["needsReview"])
+            self.assertTrue(
+                any(
+                    row[0] == "provider-c" and row[4] == "Priya Shah"
+                    for row in context["changeReview"]["history"]
+                )
+            )
+            self.assertTrue(
+                any(row[0] == "leo" and row[3] == "REVIEWER_FOR" for row in context["people"])
+            )
+            self.assertEqual(other.context()["plan"][0][2], "Keep this other visitor plan")
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join()
+            other.g.delete()
+
     def test_http_impact_api_uses_the_cookie_workspace(self):
         import json
         import threading

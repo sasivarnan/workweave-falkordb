@@ -5,7 +5,7 @@ import re
 import time
 from functools import lru_cache
 from falkordb import FalkorDB
-from workweave.workspace import APP_NAME, DEMO_ASSIGNMENT, DEMO_STEPS
+from workweave.workspace import APP_NAME, DEMO_ASSIGNMENT, DEMO_SCENARIO
 
 
 @lru_cache(maxsize=1)
@@ -193,6 +193,7 @@ class Store:
             self.seed_company()
             self.seed_decision_review()
             self.seed_provider_names()
+            self.seed_demo_cast()
             self.g.execute_command("EXPIRE", self.name, 86400)
             return
         for label, id, title, body in NODES:
@@ -227,9 +228,19 @@ class Store:
         self.seed_company()
         self.seed_decision_review()
         self.seed_provider_names()
+        self.seed_demo_cast()
         self.q("seed_complete", "CREATE (:Meta {id:$id})", {"id": "seed"}, True)
         self.g.execute_command("EXPIRE", self.name, 86400)
         self.trace = []
+
+    def seed_demo_cast(self):
+        if self.q("demo_cast_version", 'MATCH (:Meta {id:"demo-cast-v1"}) RETURN true'):
+            return
+        self.q(
+            "seed_decision_approver",
+            'MERGE (p:Employee {id:"priya"}) SET p.title="Priya Shah",p.body="Engineering lead · Decision approver" WITH p MATCH (o:Organization {id:"northstar"}),(t:Team {id:"payments"}) MERGE (p)-[:WORKS_AT]->(o) MERGE (p)-[:MEMBER_OF]->(t) MERGE (:Meta {id:"demo-cast-v1"})',
+            write=True,
+        )
 
     def seed_provider_names(self):
         """Rename legacy sample labels without resetting progress or user notes."""
@@ -635,7 +646,7 @@ class Store:
             "employee": {"id": row[3], "name": row[4]},
             "team": {"id": row[5], "name": row[6], "department": row[7]},
             "synthetic": True,
-            "demo": {"assignment": DEMO_ASSIGNMENT, "steps": DEMO_STEPS},
+            "demo": {"assignment": DEMO_ASSIGNMENT, "scenario": DEMO_SCENARIO},
         }
         return_extra = {
             "workspace": workspace,
@@ -677,12 +688,12 @@ class Store:
         if name == "replace":
             self.q(
                 "replace_decision",
-                'MERGE (d:Decision {id:"provider-c"}) SET d.title="Use Razorpay",d.approved=true MERGE (src:Document {id:"adr-c"}) SET src.title="ADR-043: Razorpay",src.body="Approved demo change: Razorpay replaces Adyen." WITH d,src MATCH (old:Decision {id:"provider-b"}),(s:Service {id:"checkout-service"}) MERGE (d)-[:SUPERSEDES {weight:1}]->(old) MERGE (d)-[:SUPPORTED_BY {weight:1}]->(src) MERGE (d)-[:APPLIES_TO {weight:1}]->(s)',
+                'MERGE (d:Decision {id:"provider-c"}) SET d.title="Use Razorpay",d.approved=true MERGE (src:Document {id:"adr-c"}) SET src.title="ADR-043: Razorpay",src.body="Priya approved Razorpay to replace Adyen for the checkout change. Review the saved plan with Leo before starting." WITH d,src MATCH (old:Decision {id:"provider-b"}),(s:Service {id:"checkout-service"}) MERGE (d)-[:SUPERSEDES {weight:1}]->(old) MERGE (d)-[:SUPPORTED_BY {weight:1}]->(src) MERGE (d)-[:APPLIES_TO {weight:1}]->(s)',
                 write=True,
             )
             self.q(
                 "record_replacement_approval",
-                'MATCH (d:Decision {id:"provider-c"}),(owner:Employee {id:"leo"}) SET d.approvedAt=coalesce(d.approvedAt,$now),d.effectiveAt=coalesce(d.effectiveAt,$now) MERGE (d)-[:APPROVED_BY]->(owner) MERGE (m:Meeting {id:"replacement-approval"}) SET m.title="Checkout decision review",m.starts=coalesce(m.starts,$starts),m.body="Approve the replacement provider decision." MERGE (m)-[:APPROVED]->(d)',
+                'MATCH (d:Decision {id:"provider-c"}),(owner:Employee {id:"priya"}) SET d.approvedAt=coalesce(d.approvedAt,$now),d.effectiveAt=coalesce(d.effectiveAt,$now) MERGE (d)-[:APPROVED_BY]->(owner) MERGE (m:Meeting {id:"replacement-approval"}) SET m.title="Checkout decision review",m.starts=coalesce(m.starts,$starts),m.body="Approve the replacement provider decision." MERGE (m)-[:APPROVED]->(d)',
                 {
                     "now": int(time.time() * 1000),
                     "starts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

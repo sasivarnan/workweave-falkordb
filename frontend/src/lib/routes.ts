@@ -11,7 +11,6 @@ export const viewPaths: Record<string, string> = {
   people: "/people",
   proof: "/demo-controls",
   evidence: "/demo-controls/evidence",
-  demo: "/demo-controls/walkthrough",
 }
 export function readRoute(pathname = "/", search = "") {
   const query = readSearchQuery(search)

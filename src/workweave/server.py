@@ -17,7 +17,7 @@ from workweave.agent import run, provider
 from workweave.access import authorized, reserve, BudgetExceeded
 from workweave.config import load
 from workweave.impact import run as run_impact
-from workweave.workspace import APP_NAME, DEMO_ASSIGNMENT, DEMO_STEPS
+from workweave.workspace import APP_NAME, DEMO_ASSIGNMENT, DEMO_SCENARIO
 
 ROOT = FRONTEND_DIR
 LOCKS = {}
@@ -60,7 +60,7 @@ class Handler(BaseHTTPRequestHandler):
                 {
                     "appName": APP_NAME,
                     "defaultAssignment": DEMO_ASSIGNMENT,
-                    "demo": {"assignment": DEMO_ASSIGNMENT, "steps": DEMO_STEPS},
+                    "demo": {"assignment": DEMO_ASSIGNMENT, "scenario": DEMO_SCENARIO},
                 },
             )
         if self.path == "/api/access":
@@ -96,7 +96,6 @@ class Handler(BaseHTTPRequestHandler):
             "/impact",
             "/demo-controls",
             "/demo-controls/evidence",
-            "/demo-controls/walkthrough",
         ] or bool(re.fullmatch(r"/(tasks|calendar|knowledge)/[a-zA-Z0-9_-]{1,100}", urlpath))
         if (
             not app_route
@@ -127,6 +126,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.respond(403, {"error": "Use the Workweave portal"})
         if self.path not in [
             "/api/reset",
+            "/api/demo/setup",
             "/api/action",
             "/api/context",
             "/api/agent",
@@ -170,7 +170,7 @@ class Handler(BaseHTTPRequestHandler):
                 s = Store(
                     token,
                     DEMO_ASSIGNMENT
-                    if self.path == "/api/impact"
+                    if self.path in ["/api/impact", "/api/demo/setup"]
                     else body.get("assignment") or "checkout",
                 )
                 s.seed()
@@ -184,7 +184,13 @@ class Handler(BaseHTTPRequestHandler):
                         },
                         cookie,
                     )
-                if self.path == "/api/reset":
+                if self.path == "/api/demo/setup":
+                    s.reset()
+                    s.action("review")
+                    s.action("complete")
+                    s.action("accept", DEMO_SCENARIO["note"])
+                    run_impact(s, "import")
+                elif self.path == "/api/reset":
                     s.reset()
                 elif self.path == "/api/action":
                     s.action(body.get("name"), str(body.get("note", "")))

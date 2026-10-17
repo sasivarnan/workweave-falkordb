@@ -18,7 +18,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 34.35,
+      "ms": 27.63,
       "detail": "Current assignment guidance resolved."
     },
     {
@@ -30,7 +30,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 32.63,
+      "ms": 27.36,
       "detail": "Current assignment guidance resolved."
     },
     {
@@ -42,7 +42,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 24.49,
+      "ms": 33.37,
       "detail": "Current assignment guidance resolved."
     },
     {
@@ -54,7 +54,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 31.29,
+      "ms": 33.74,
       "detail": "Abstained because evidence was incomplete or conflicting."
     },
     {
@@ -66,7 +66,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 26.98,
+      "ms": 35.08,
       "detail": "Abstained because evidence was incomplete or conflicting."
     },
     {
@@ -78,7 +78,7 @@
       "lexicalSource": "Refund test policy",
       "passed": true,
       "lexicalPassed": true,
-      "ms": 30.14,
+      "ms": 33.6,
       "detail": "Current assignment guidance resolved."
     },
     {
@@ -90,7 +90,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 29.41,
+      "ms": 35.54,
       "detail": "Reviewer absence detected; no substitute inferred."
     },
     {
@@ -102,7 +102,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 28.49,
+      "ms": 29.02,
       "detail": "Saved plan flagged for review."
     }
   ],
@@ -568,20 +568,20 @@
     "results": [
       {
         "case": "Remove the replacement link",
-        "before": "Use Provider B",
+        "before": "Use Adyen",
         "after": "Clarification required",
         "documentsUnchanged": true,
-        "documentHash": "9a9b171c3f9b29d9d2b14b8f8f7671a9c18771b4634105715425222de35532ee",
+        "documentHash": "02378f0a3b1b96fef6ddef589bb828c9dfb782bf29c5700ef15150526c4fcae5",
         "acceptanceBlocked": true,
         "passed": true,
         "query": "MATCH (:Decision {id:\"provider-b\"})-[r:SUPERSEDES]->() DELETE r"
       },
       {
         "case": "Remove the current source link",
-        "before": "Use Provider B",
+        "before": "Use Adyen",
         "after": "Clarification required",
         "documentsUnchanged": true,
-        "documentHash": "9a9b171c3f9b29d9d2b14b8f8f7671a9c18771b4634105715425222de35532ee",
+        "documentHash": "02378f0a3b1b96fef6ddef589bb828c9dfb782bf29c5700ef15150526c4fcae5",
         "acceptanceBlocked": true,
         "passed": true,
         "query": "MATCH (:Decision {id:\"provider-b\"})-[r:SUPPORTED_BY]->() DELETE r"
@@ -591,17 +591,17 @@
         "before": "Leo Martin",
         "after": "Noah Williams",
         "documentsUnchanged": true,
-        "documentHash": "9a9b171c3f9b29d9d2b14b8f8f7671a9c18771b4634105715425222de35532ee",
+        "documentHash": "02378f0a3b1b96fef6ddef589bb828c9dfb782bf29c5700ef15150526c4fcae5",
         "acceptanceBlocked": null,
         "passed": true,
         "query": "MATCH (:Employee {id:\"leo\"})-[r:REVIEWER_FOR]->(:Service {id:\"checkout-service\"}) DELETE r WITH count(*) AS removed MATCH (n:Employee {id:\"noah\"}),(s:Service {id:\"checkout-service\"}) MERGE (n)-[:REVIEWER_FOR]->(s)"
       },
       {
         "case": "Disconnect the task from its service",
-        "before": "Use Provider B",
+        "before": "Use Adyen",
         "after": "Task context unavailable",
         "documentsUnchanged": true,
-        "documentHash": "9a9b171c3f9b29d9d2b14b8f8f7671a9c18771b4634105715425222de35532ee",
+        "documentHash": "02378f0a3b1b96fef6ddef589bb828c9dfb782bf29c5700ef15150526c4fcae5",
         "acceptanceBlocked": null,
         "passed": true,
         "query": "MATCH (:Assignment {id:\"checkout\"})-[r:TOUCHES]->() DELETE r"

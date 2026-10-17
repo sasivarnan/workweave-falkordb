@@ -8,7 +8,13 @@ export type Context = {
     synthetic: boolean
     demo: {
       assignment: string
-      steps: { label: string; path: string; body: Record<string, unknown> }[]
+      scenario: {
+        title: string
+        employee: string
+        approver: string
+        reviewer: string
+        note: string
+      }
     }
   }
   changeReview: {
@@ -158,7 +164,12 @@ export function decode(result: Result) {
       profile.timezone,
     ].every((value) => typeof value === "string" && value.length > 0) ||
     !profile.demo ||
-    !Array.isArray(profile.demo.steps)
+    !profile.demo.scenario ||
+    typeof profile.demo.scenario.employee !== "string" ||
+    typeof profile.demo.scenario.approver !== "string" ||
+    typeof profile.demo.scenario.reviewer !== "string" ||
+    typeof profile.demo.scenario.title !== "string" ||
+    typeof profile.demo.scenario.note !== "string"
   )
     throw Error("Invalid workspace identity")
   try {

@@ -4,19 +4,20 @@ All responses use the server's same-origin API. Credentials stay on the server. 
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| GET | `/api/workspace` | Public startup settings: product name, default assignment, and demonstration workflow. No provider secrets or invite code. |
+| GET | `/api/workspace` | Public startup settings: product name, default assignment, and recording scenario. No provider secrets or invite code. |
 | POST | `/api/context` | Current graph-backed workspace profile, employee, team, time zone, tasks, meetings, notes, people, sources, and action prerequisites. |
 | POST | `/api/search` | Full-text company document lookup; accepts `query`. |
 | POST | `/api/action` | Validated graph action; accepts `name`, optional `note`, and optional `assignment`. Includes saving a workspace note. |
 | POST | `/api/agent` | Protected provider tool call and allowlisted layout selection; requires `X-AI-Access`. |
 | POST | `/api/impact` | Import the bundled sample, analyze dependencies, or remove/restore the defined test link. |
+| POST | `/api/demo/setup` | Reset and prepare Maya’s fixed recording scenario; no AI calls. |
 | POST | `/api/reset` | Reset only the visitor's synthetic workspace. |
 | GET | `/api/health` | Database reachability and provider configuration status. |
 | GET | `/api/access` | Whether protected AI access is configured; no code disclosure. |
 
 POST requests require `Content-Type: application/json` and `X-Workweave: portal`. A body may specify an assignment ID received from the server. Omitted or empty assignment values use the server's default. The HttpOnly workspace cookie selects the isolated graph; clients cannot choose a graph name.
 
-Context, search, actions, agent operations, and reset return `{messages, trace, mode}`. `messages` contains the validated A2UI context. The `workspace` property includes company and employee IDs/names, team name/department, time zone, sample-data status, and the server-defined walkthrough. Company identity is read from FalkorDB on each context response. Startup settings and sample workflow definitions live in `src/workweave/workspace.py`.
+Context, search, actions, agent operations, and reset return `{messages, trace, mode}`. `messages` contains the validated A2UI context. The `workspace` property includes company and employee IDs/names, team name/department, time zone, sample-data status, and the server-defined recording scenario. Company identity is read from FalkorDB on each context response. Startup settings and recording scenario definitions live in `src/workweave/workspace.py`.
 
 The UI computes initials and formats server dates. It retains static UI labels and help text. It does not substitute company names, people, tasks, or source records on failure. A missing graph identity causes an error; it does not fall back to a local fixture.
 
@@ -37,3 +38,5 @@ See [validation results](../EVALUATION.md) for tests and known gaps.
 `POST /api/impact` accepts `operation`: `import`, `analyze`, `remove`, or `restore`. It reads the same isolated workspace and returns `{analysis, trace}`. The changed service scope and experiment edge are server-owned. It imports only the bundled normalized synthetic fixture. No model calls or vendor account access occur. See [cross-team impact](CROSS-TEAM-IMPACT.md).
 
 The context includes `projectContacts`: graph-derived employee ID, name, description, relationship type, assignment ID and assignment title. People groups these current assignment and service links. It does not infer historical contributions or supply contact channels.
+
+`POST /api/demo/setup` resets only the cookie-selected visitor graph, selects the server-owned checkout scenario, records sample reading/training, saves its initial plan and imports source records. It requires the same portal header and request limits as other writes. It accepts no user-defined scenario, actor or query and makes no AI calls. This fixture control does not authenticate a company approver.
