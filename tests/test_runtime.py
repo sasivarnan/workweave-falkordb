@@ -1,5 +1,7 @@
 """Package and entry-point checks that do not call a provider or database."""
 
+import contextlib
+import io
 import json
 import os
 from pathlib import Path
@@ -48,3 +50,25 @@ class RuntimeTests(unittest.TestCase):
         self.assertIn("--host", result.stdout)
         self.assertIn("--port", result.stdout)
         self.assertTrue((PROJECT_ROOT / "pyproject.toml").is_file())
+
+    def test_api_mode_does_not_require_static_assets(self):
+        from workweave import server
+
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch.object(server, "ROOT", Path(directory)),
+            patch.object(server, "load"),
+            patch("sys.argv", ["workweave"]),
+        ):
+            with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                server.main()
+            with (
+                patch("sys.argv", ["workweave", "--api-only"]),
+                patch.object(server, "ThreadingHTTPServer") as http,
+            ):
+                running = http.return_value.__enter__.return_value
+                running.serve_forever.side_effect = KeyboardInterrupt
+                with contextlib.redirect_stdout(io.StringIO()):
+                    server.main()
+                self.assertFalse(running.serve_frontend)
+                running.serve_forever.assert_called_once()

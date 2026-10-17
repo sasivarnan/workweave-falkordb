@@ -10,7 +10,9 @@ npm test --prefix frontend
 npm run build --prefix frontend
 ```
 
-The Python server serves `frontend/dist`. See the [root README](../README.md) for setup and architecture.
+For development, run `npm run dev --prefix frontend` and open http://localhost:5173. Vite proxies `/api` to the separate backend on port 8081; see the root README for its watch command.
+
+For a built application, the Python server serves `frontend/dist`. See the [root README](../README.md) for setup and architecture.
 
 - `src/App.tsx`: workspace, onboarding tour and technical proof views.
 - `src/lib/workspace.ts`: response types and A2UI subset validation.

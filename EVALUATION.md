@@ -4,7 +4,7 @@ These checks use small, builder-authored synthetic fixtures. They are not produc
 
 | Check | Last recorded result | Reproduce |
 | --- | --- | --- |
-| Backend, graph and provider contracts | 63 tests passed | `uv run --locked python -m unittest discover -s tests -v` |
+| Backend, graph and provider contracts | 64 tests passed | `uv run --locked python -m unittest discover -s tests -v` |
 | Frontend state and graph-proof validation | 4 tests passed | `npm test --prefix frontend` |
 | Cross-team impact | 7 cases passed | `uv run --locked python scripts/evaluate_impact.py` |
 | Relationship changes with identical source text | 4 cases passed | `uv run --locked python scripts/evaluate_relationships.py` |
@@ -27,7 +27,7 @@ Public HTTPS deployment, hosted storage after restart, full mobile/keyboard revi
 
 ## uv package and container checks
 
-Python code is installed from src/workweave with a committed uv.lock. The 63 backend tests include package fixture loading, configuration priority and the module entry point from another directory. A second clean, non-editable uv environment passed fixture and CLI checks. Source and wheel builds passed.
+Python code is installed from src/workweave with a committed uv.lock. The 64 backend tests include package fixture loading, configuration priority and the module entry point from another directory. A second clean, non-editable uv environment passed fixture and CLI checks. Source and wheel builds passed.
 
 The Docker image was built and tested as UID 10001: frontend, database health, context API, packaged fixture, writable usage directory and SIGTERM shutdown passed. No local secrets or internal notes were copied into the runtime. This does not establish hosted persistence, production authentication or a full security audit.
 

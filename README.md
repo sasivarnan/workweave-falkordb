@@ -38,6 +38,24 @@ For either option, open [localhost:8080](http://localhost:8080). Start tour expl
 
 `uv sync --locked` rebuilds `.venv` from `uv.lock`. Keep `.env` and `.data/` when removing `.venv`. Optional AI uses [.env.example](.env.example) and a separate invite code. Graph workflows need no AI key.
 
+## Development: frontend and backend separately
+
+Install dependencies once with `uv sync --locked` and `npm ci --prefix frontend`. Keep FalkorDB running at `127.0.0.1:6381`; reuse an existing instance or start the database with the development Compose command above.
+
+**Terminal 1 — backend with automatic restart:**
+
+```sh
+uv run --locked watchfiles 'workweave --api-only --port 8081' src/workweave
+```
+
+**Terminal 2 — frontend with hot reload:**
+
+```sh
+npm run dev --prefix frontend
+```
+
+Open [http://localhost:5173](http://localhost:5173). Vite forwards `/api` requests to the backend at `127.0.0.1:8081`. A frontend build is not required in this mode. Restart the backend after changing `.env`; only source files are watched. These servers do not use port 8080.
+
 ## Project layout
 
 ```text

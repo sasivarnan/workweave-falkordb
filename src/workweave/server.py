@@ -81,6 +81,8 @@ class Handler(BaseHTTPRequestHandler):
                 )
             except Exception:
                 return self.respond(503, {"status": "unavailable", "database": "unreachable"})
+        if not getattr(self.server, "serve_frontend", True):
+            return self.respond(404, {"error": "Use the frontend development server"})
         urlpath = urlsplit(self.path).path
         if (
             urlpath not in ["/", "/judge"]
@@ -215,12 +217,16 @@ def main():
     parser = argparse.ArgumentParser(description="Run the Workweave employee workspace.")
     parser.add_argument("--host", default=os.getenv("WORKWEAVE_HOST", "127.0.0.1"))
     parser.add_argument("--port", type=int, default=int(os.getenv("PORT", "8080")))
+    parser.add_argument(
+        "--api-only", action="store_true", help="Run APIs without requiring a frontend build"
+    )
     args = parser.parse_args()
-    if not (ROOT / "index.html").is_file():
+    if not args.api_only and not (ROOT / "index.html").is_file():
         parser.error(
             "Frontend build missing. Run npm ci --prefix frontend and npm run build --prefix frontend."
         )
     with ThreadingHTTPServer((args.host, args.port), Handler) as server:
+        server.serve_frontend = not args.api_only
         print(f"Workweave listening on http://{args.host}:{server.server_port}", flush=True)
 
         def stop_server(signum, frame):

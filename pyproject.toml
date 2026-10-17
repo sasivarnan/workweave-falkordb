@@ -11,7 +11,10 @@ dependencies = ["falkordb==1.2.0"]
 workweave = "workweave.server:main"
 
 [dependency-groups]
-dev = ["ruff==0.14.0"]
+dev = [
+    "ruff==0.14.0",
+    "watchfiles==1.1.1",
+]
 
 [build-system]
 requires = ["hatchling==1.27.0"]
