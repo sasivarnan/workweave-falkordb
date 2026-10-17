@@ -6,6 +6,7 @@ All responses use the server's same-origin API. Credentials stay on the server. 
 | --- | --- | --- |
 | GET | `/api/workspace` | Public startup settings: product name, default assignment, and recording scenario. No provider secrets. |
 | POST | `/api/context` | Current graph-backed workspace profile, employee, team, time zone, tasks, meetings, notes, people, sources, and action prerequisites. |
+| POST | `/api/person` | Person profile and linked records; accepts `personId`. Returns `{person, trace}`; missing people return 404. |
 | POST | `/api/search` | Full-text company document lookup; accepts `query`. |
 | POST | `/api/action` | Validated graph action; accepts `name`, optional `note`, and optional `assignment`. Includes saving a workspace note. |
 | POST | `/api/agent` | Backend-enabled provider tool call and allowlisted layout selection. Requires a configured provider key and AI not disabled; no user credential header. |
@@ -40,3 +41,5 @@ See [validation results](../EVALUATION.md) for tests and known gaps.
 The context includes `projectContacts`: graph-derived employee ID, name, description, relationship type, assignment ID and assignment title. People groups these current assignment and service links. It does not infer historical contributions or supply contact channels.
 
 `POST /api/demo/setup` resets only the cookie-selected visitor graph, selects the server-owned checkout scenario, records sample reading/training, saves its initial plan and imports source records. It requires the same portal header and request limits as other writes. It accepts no user-defined scenario, actor or query and makes no AI calls. This fixture control does not authenticate a company approver.
+
+Context also includes `directory`, the workspace’s employee IDs, names and descriptions. Person details include all direct recorded links and tasks connected through a service reviewer role; they do not infer a full history of contributions.

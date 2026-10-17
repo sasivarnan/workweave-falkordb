@@ -603,6 +603,10 @@ class Store:
             "MATCH (:Employee {id:$employee})-[:ASSIGNED_TO]->(:Assignment)-[:TOUCHES]->(s:Service)<-[r:REVIEWER_FOR|BACKUP_REVIEWER_FOR]-(p:Employee) RETURN DISTINCT p.id,p.title,p.body,type(r) ORDER BY p.title",
             {"employee": "maya"},
         )
+        directory = self.q(
+            "get_people_directory",
+            "MATCH (p:Employee) RETURN p.id,p.title,p.body ORDER BY p.title,p.id",
+        )
         project_contacts = self.q(
             "get_assignment_contacts",
             "MATCH (a:Assignment)-[:TOUCHES]->(s:Service) MATCH (p:Employee)-[r:ASSIGNED_TO|REVIEWER_FOR|BACKUP_REVIEWER_FOR]->(target) WHERE target=a OR target=s RETURN DISTINCT p.id,p.title,p.body,type(r),a.id,a.title ORDER BY a.title,p.title",
@@ -662,6 +666,7 @@ class Store:
             "week": week,
             "colleagues": colleagues,
             "projectContacts": project_contacts,
+            "directory": directory,
             "guidanceRead": bool(read),
             "assignment": self.assignment,
             "assignments": assignments,
@@ -813,6 +818,106 @@ class Store:
             )
         else:
             raise ValueError("Unknown action")
+
+    def person_profile(self, person_id):
+        if not isinstance(person_id, str) or not re.fullmatch(r"[a-zA-Z0-9_-]{1,100}", person_id):
+            raise ValueError("Invalid person ID")
+        person = self.q(
+            "get_person",
+            "MATCH (p:Employee {id:$id}) RETURN p.id,p.title,p.body",
+            {"id": person_id},
+        )
+        if not person:
+            return None
+        rows = self.q(
+            "get_person_links",
+            "MATCH (p:Employee {id:$id})-[r]-(n) WHERE NOT n:Meta OPTIONAL MATCH (n:Decision)-[:SUPPORTED_BY]->(source:Document) RETURN DISTINCT n.id,n.title,labels(n)[0],type(r),n.body,source.id",
+            {"id": person_id},
+        )
+        reviewed = self.q(
+            "get_person_review_work",
+            "MATCH (p:Employee {id:$id})-[r:REVIEWER_FOR|BACKUP_REVIEWER_FOR]->(s:Service)<-[:TOUCHES]-(a) WHERE a:Assignment OR a:WorkItem RETURN DISTINCT a.id,a.title,labels(a)[0],type(r),s.title",
+            {"id": person_id},
+        )
+        roles = {
+            "ASSIGNED_TO": "Assigned work",
+            "REVIEWER_FOR": "Service reviewer",
+            "BACKUP_REVIEWER_FOR": "Alternate reviewer",
+            "APPROVED_BY": "Approved decision",
+            "ATTENDS": "Attends meeting",
+            "MEMBER_OF": "Team member",
+            "WORKS_AT": "Company member",
+            "READ_GUIDANCE": "Read guidance",
+            "COMPLETED": "Completed training",
+            "HAS_PLAN": "Saved plan",
+            "CREATED": "Created record",
+            "ASSIGNED_REVIEWER": "Requested reviewer",
+            "ACKNOWLEDGED": "Read decision change",
+            "HAS_WEEK_STEP": "Scheduled work",
+        }
+        kinds = {
+            "Assignment": "Tasks",
+            "WorkItem": "Tasks",
+            "Service": "Services",
+            "Decision": "Decisions",
+            "Meeting": "Meetings",
+            "ExternalEvent": "Meetings",
+            "Document": "Documents",
+            "ImportedNote": "Documents",
+            "Team": "Teams",
+            "Organization": "Company",
+            "Training": "Training",
+            "LearningPlan": "Plans",
+            "ReviewRequest": "Review requests",
+            "DecisionReview": "Decision receipts",
+            "WeekStep": "Schedule",
+            "Employee": "People",
+        }
+        items = []
+        for row, indirect in [(row, False) for row in rows] + [(row, True) for row in reviewed]:
+            target, title, label, relation, detail = row[:5]
+            source = row[5] if len(row) > 5 else None
+            if not target:
+                continue
+            url = {
+                "Assignment": "/tasks/",
+                "Meeting": "/calendar/",
+                "Document": "/knowledge/",
+                "Employee": "/people/",
+            }.get(label)
+            url = (
+                url + target
+                if url
+                else "/knowledge/" + source
+                if label == "Decision" and source
+                else None
+            )
+            reason = roles.get(relation, "Linked record")
+            if indirect:
+                reason = (
+                    "Alternate review through "
+                    if relation == "BACKUP_REVIEWER_FOR"
+                    else "Reviews work through "
+                ) + detail
+            items.append(
+                {
+                    "id": target,
+                    "title": title or kinds.get(label, "Record"),
+                    "kind": kinds.get(label, "Other records"),
+                    "relation": reason,
+                    "description": "" if indirect else detail or "",
+                    "url": url,
+                }
+            )
+        unique = {(item["id"], item["kind"], item["relation"]): item for item in items}
+        return {
+            "id": person[0][0],
+            "name": person[0][1],
+            "description": person[0][2] or "",
+            "items": sorted(
+                unique.values(), key=lambda item: (item["kind"], item["title"], item["relation"])
+            ),
+        }
 
     def reset(self):
         self.g.delete()

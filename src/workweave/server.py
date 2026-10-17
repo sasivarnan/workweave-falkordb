@@ -99,7 +99,9 @@ class Handler(BaseHTTPRequestHandler):
                 "/demo-controls",
                 "/demo-controls/evidence",
             ]
-            or bool(re.fullmatch(r"/(tasks|calendar|knowledge)/[a-zA-Z0-9_-]{1,100}", urlpath))
+            or bool(
+                re.fullmatch(r"/(tasks|calendar|knowledge|people)/[a-zA-Z0-9_-]{1,100}", urlpath)
+            )
             or bool(re.fullmatch(r"/tasks/[a-zA-Z0-9_-]{1,100}/people", urlpath))
         )
         if (
@@ -134,6 +136,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/demo/setup",
             "/api/action",
             "/api/context",
+            "/api/person",
             "/api/agent",
             "/api/search",
             "/api/impact",
@@ -181,6 +184,13 @@ class Handler(BaseHTTPRequestHandler):
                     else body.get("assignment") or "checkout",
                 )
                 s.seed()
+                if self.path == "/api/person":
+                    profile = s.person_profile(body.get("personId"))
+                    if profile is None:
+                        return self.respond(
+                            404, {"error": "Person not found in this workspace"}, cookie
+                        )
+                    return self.respond(200, {"person": profile, "trace": s.trace}, cookie)
                 mode = "Graph tools · no model call"
                 if self.path == "/api/impact":
                     return self.respond(

@@ -143,6 +143,7 @@ class AccessTests(unittest.TestCase):
                     for path in [
                         "/tasks/checkout",
                         "/tasks/checkout/people",
+                        "/people/leo",
                         "/calendar/release-review",
                         "/knowledge/adr",
                         "/demo-controls/evidence",
@@ -158,6 +159,36 @@ class AccessTests(unittest.TestCase):
                     server.shutdown()
                     server.server_close()
                     thread.join()
+
+    def test_person_api_returns_profile_or_not_found(self):
+        with patch("workweave.server.Store") as store:
+            server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            store.return_value.trace = []
+            try:
+                request = urllib.request.Request(
+                    "http://127.0.0.1:" + str(server.server_port) + "/api/person",
+                    data=b'{"personId":"leo"}',
+                    headers={"Content-Type": "application/json", "X-Workweave": "portal"},
+                )
+                store.return_value.person_profile.return_value = {
+                    "id": "leo",
+                    "name": "Leo Martin",
+                    "description": "Reviewer",
+                    "items": [],
+                }
+                with urllib.request.urlopen(request) as response:
+                    self.assertEqual(json.load(response)["person"]["id"], "leo")
+                store.return_value.person_profile.assert_called_with("leo")
+                store.return_value.person_profile.return_value = None
+                with self.assertRaises(urllib.error.HTTPError) as error:
+                    urllib.request.urlopen(request)
+                self.assertEqual(error.exception.code, 404)
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join()
 
 
 if __name__ == "__main__":

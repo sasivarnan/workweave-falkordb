@@ -97,7 +97,9 @@ For an empty workspace, use **Reset demo data → Reset this demo workspace**. B
 
 ## Record links
 
-Task contacts open in a side panel at `/tasks/<assignment-id>/people`. Back closes the panel; a direct link or refresh restores it. `/people` is a deduplicated directory of people linked to the employee’s work. Contact details come from the graph; no email or chat action is shown without a configured channel.
+Person pages at `/people/<person-id>` show direct graph links and tasks reached through recorded service-review roles. The page groups work, services, decisions, meetings and other linked records, with a reason for each link. It does not infer a complete work history.
+
+Task contacts open in a side panel at `/tasks/<assignment-id>/people`. Back closes the panel; a direct link or refresh restores it. `/people` lists the people recorded in the current workspace, including decision approvers. Contact details come from the graph; no email or chat action is shown without a configured channel.
 
 Tasks, meetings and documents have direct links: `/tasks/checkout`, `/calendar/<event-id>` and `/knowledge/<document-id>`. Knowledge documents open on a dedicated reading page, separate from the list. Refresh restores the record; Back and Forward restore navigation. Closing a meeting opened from another page returns to that page. Search uses `/knowledge?q=...`. Record links use the current visitor workspace, not shared employee authentication.
 

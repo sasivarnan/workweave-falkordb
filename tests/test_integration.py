@@ -267,6 +267,40 @@ class GraphTests(unittest.TestCase):
         self.assertIn(("noah", "REVIEWER_FOR"), refunds)
         self.assertNotIn(("leo", "REVIEWER_FOR"), refunds)
 
+    def test_person_profile_links_work_and_decision_authority(self):
+        self.assertIn("priya", {row[0] for row in self.s.context()["directory"]})
+        profile = self.s.person_profile("leo")
+        self.assertEqual(profile["name"], "Leo Martin")
+        self.assertTrue(any(item["id"] == "checkout-service" for item in profile["items"]))
+        self.assertTrue(
+            any(
+                item["id"] == "checkout" and "through" in item["relation"]
+                for item in profile["items"]
+            )
+        )
+        self.assertFalse(any(item["id"] == "refunds" for item in profile["items"]))
+        self.s.action("replace")
+        self.assertTrue(
+            any(
+                item["id"] == "provider-c" and item["relation"] == "Approved decision"
+                for item in self.s.person_profile("priya")["items"]
+            )
+        )
+        self.assertIsNone(self.s.person_profile("missing-person"))
+        with self.assertRaises(ValueError):
+            self.s.person_profile("leo MATCH (n) DELETE n")
+        other = Store(secrets.token_hex(16))
+        other.seed()
+        try:
+            other.q(
+                "other_person",
+                'CREATE (:Employee {id:"other-only",title:"Another visitor"})',
+                write=True,
+            )
+            self.assertIsNone(self.s.person_profile("other-only"))
+        finally:
+            other.g.delete()
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

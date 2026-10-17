@@ -1,5 +1,6 @@
 import { readRoute } from "./routes.ts"
 import { readSearchQuery } from "./search-url.ts"
+import type { PersonProfile } from "./people"
 import { createStore } from "@xstate/store"
 import type { ImpactAnalysis, ImpactResult } from "./impact"
 import type { Evaluation, Result } from "./workspace"
@@ -15,6 +16,7 @@ export type AppState = {
   theme: string
   sidebarOpen: boolean
   mobileSidebarOpen: boolean
+  personProfile: PersonProfile | null
   peopleTask: string | null
   meeting: string[] | null
   workspaceNote: string
@@ -33,6 +35,7 @@ export type AppState = {
     assignment?: string
     meetingId?: string
     sourceId?: string
+    personId?: string
   } | null
   searchQuery: string
   evaluation: Evaluation | null
@@ -59,6 +62,7 @@ const initial: AppState = {
       : "light"),
   sidebarOpen: localStorage.getItem("workweave-sidebar") !== "collapsed",
   mobileSidebarOpen: false,
+  personProfile: null,
   peopleTask: initialRoute.peopleTask || null,
   meeting: null,
   workspaceNote: "",

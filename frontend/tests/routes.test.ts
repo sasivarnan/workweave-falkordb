@@ -31,3 +31,9 @@ test("task people links keep the task behind the panel", () => {
   assert.equal(readRoute("/tasks/refunds/people").peopleTask, "refunds")
   assert.equal(readRoute("/people").peopleTask, "")
 })
+
+test("person links select the detail page", () => {
+  assert.equal(readRoute("/people/leo").view, "person")
+  assert.equal(readRoute("/people/leo").personId, "leo")
+  assert.equal(readRoute("/people/leo/extra").view, "workspace")
+})

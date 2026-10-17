@@ -43,6 +43,7 @@ export type Context = {
   reviewRequest: string[][]
   findings: string[][]
   week: [number, string, string, string, string][]
+  directory?: string[][]
   projectContacts?: string[][]
   colleagues: string[][]
   assignment: string

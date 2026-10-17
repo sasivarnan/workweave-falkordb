@@ -24,9 +24,10 @@ export function readRoute(pathname = "/", search = "") {
       meetingId: "",
       sourceId: "",
     }
-  const match = /^\/(tasks|calendar|knowledge)\/([a-zA-Z0-9_-]{1,100})$/.exec(
-    pathname
-  )
+  const match =
+    /^\/(tasks|calendar|knowledge|people)\/([a-zA-Z0-9_-]{1,100})$/.exec(
+      pathname
+    )
   if (match)
     return {
       view:
@@ -34,12 +35,15 @@ export function readRoute(pathname = "/", search = "") {
           ? "assignment"
           : match[1] === "calendar"
             ? "calendar"
-            : "document",
+            : match[1] === "people"
+              ? "person"
+              : "document",
       peopleTask: "",
       query: "",
       assignment: match[1] === "tasks" ? match[2] : "",
       meetingId: match[1] === "calendar" ? match[2] : "",
       sourceId: match[1] === "knowledge" ? match[2] : "",
+      personId: match[1] === "people" ? match[2] : "",
     }
   return {
     view: query

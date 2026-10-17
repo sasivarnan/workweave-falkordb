@@ -1,3 +1,4 @@
+import { decodePerson } from "@/lib/people"
 import { Spinner } from "@/components/ui/spinner"
 import { useOnboardingTour } from "@/hooks/use-onboarding-tour"
 import { useEffect, useLayoutEffect, useRef } from "react"
@@ -94,6 +95,7 @@ export default function App() {
     theme,
     meeting,
     peopleTask,
+    personProfile,
     workspaceNote,
     assignment,
     sidebarOpen,
@@ -234,6 +236,7 @@ export default function App() {
         searchQuery: route.query,
         searchNavigation: { ...route, revision },
         meeting: null,
+        personProfile: null,
         peopleTask: route.peopleTask || null,
         openSources: [],
         readingOpen: false,
@@ -363,6 +366,37 @@ export default function App() {
     if (!searchNavigation || busy || !context) return
     const queued = searchNavigation
     updateField("searchNavigation", null)
+    if (queued.personId) {
+      appStore.trigger.requestStarted()
+      void fetch("/api/person", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Workweave": "portal",
+        },
+        body: JSON.stringify({ personId: queued.personId }),
+      })
+        .then(async (response) => {
+          const data = await response.json()
+          if (!response.ok)
+            throw Error(data.error || "Person details are unavailable")
+          return decodePerson(data)
+        })
+        .then((person) => {
+          if (queued.revision === searchRevision.current)
+            updateField("personProfile", person)
+        })
+        .catch((error) => {
+          if (queued.revision === searchRevision.current)
+            setError(
+              error instanceof Error
+                ? error.message
+                : "Person details are unavailable"
+            )
+        })
+        .finally(() => appStore.trigger.requestFinished())
+      return
+    }
     void request(
       queued.query ? "/api/search" : "/api/context",
       {
@@ -617,6 +651,7 @@ export default function App() {
       {
         assignment: "Task",
         document: "Knowledge document",
+        person: personProfile?.name || "Person",
         proof: "Demo controls",
         evidence: "Evidence & tools",
       } as Record<string, string>
@@ -694,6 +729,7 @@ export default function App() {
                 aria-current={
                   tab === id ||
                   (id === "sources" && tab === "document") ||
+                  (id === "people" && tab === "person") ||
                   (id === "home" && tab === "assignment")
                     ? "page"
                     : undefined
@@ -703,6 +739,7 @@ export default function App() {
                   "h-11 w-full justify-start gap-3 rounded-lg px-3 " +
                   (tab === id ||
                   (id === "sources" && tab === "document") ||
+                  (id === "people" && tab === "person") ||
                   (id === "home" && tab === "assignment")
                     ? "bg-primary/10 text-primary"
                     : "")
@@ -941,6 +978,7 @@ export default function App() {
               <TabsTrigger value="sources">Documents</TabsTrigger>
               <TabsTrigger value="document">Knowledge document</TabsTrigger>
               <TabsTrigger value="people">People</TabsTrigger>
+              <TabsTrigger value="person">Person</TabsTrigger>
               <TabsTrigger value="evidence">Evidence & tools</TabsTrigger>
             </TabsList>
             <TabsContent value="workspace" className="space-y-9">
@@ -1400,7 +1438,15 @@ export default function App() {
                       <div className="divide-y border-y">
                         {context.changeReview.meetings.map((row) => (
                           <div key={row[0]} className="space-y-2 py-4">
-                            <p className="text-sm font-medium">{row[1]}</p>
+                            <Button
+                              variant="link"
+                              className="h-auto p-0 text-sm font-medium"
+                              onClick={() =>
+                                goToURL("/people/" + encodeURIComponent(row[0]))
+                              }
+                            >
+                              {row[1]}
+                            </Button>
                             <p className="text-xs leading-6 text-muted-foreground">
                               {row[4].join(" → ")}
                             </p>
@@ -2882,33 +2928,115 @@ export default function App() {
               <p className="text-sm text-muted-foreground">People directory.</p>
               <Card className="shadow-none">
                 <CardContent className="divide-y px-5">
-                  {Array.from(
-                    new Map(
-                      (context?.projectContacts || []).map((row) => [
-                        row[0],
-                        row,
-                      ])
-                    ).values()
-                  ).map((row) => (
+                  {(context?.directory || []).map((row) => (
                     <div key={row[0]} className="flex items-start gap-3 py-5">
                       <Avatar>
                         <AvatarFallback>{initials(row[1])}</AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="text-sm font-medium">{row[1]}</p>
+                        <Button
+                          variant="link"
+                          className="h-auto p-0 text-sm font-medium"
+                          onClick={() =>
+                            goToURL("/people/" + encodeURIComponent(row[0]))
+                          }
+                        >
+                          {row[1]}
+                        </Button>
                         <p className="text-sm text-muted-foreground">
                           {row[2]}
                         </p>
                       </div>
                     </div>
                   ))}
-                  {context && !context.projectContacts?.length && (
+                  {context && !context.directory?.length && (
                     <p className="py-5 text-sm text-muted-foreground">
-                      No people are linked to your work yet.
+                      No people are available in this workspace.
                     </p>
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+            <TabsContent value="person" className="mx-auto max-w-4xl space-y-8">
+              <Button variant="ghost" onClick={() => navigate("people")}>
+                ← People directory
+              </Button>
+              {!personProfile ? (
+                busy ? (
+                  <Skeleton className="h-64 w-full" />
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Person details are unavailable.
+                  </p>
+                )
+              ) : (
+                <>
+                  <section className="flex items-center gap-4">
+                    <Avatar className="size-14">
+                      <AvatarFallback>
+                        {initials(personProfile.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h1 className="font-heading text-3xl font-semibold tracking-tight">
+                        {personProfile.name}
+                      </h1>
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        {personProfile.description}
+                      </p>
+                    </div>
+                  </section>
+                  <div className="space-y-7">
+                    {Array.from(
+                      new Set(personProfile.items.map((item) => item.kind))
+                    ).map((kind) => (
+                      <section key={kind} className="space-y-3">
+                        <h2 className="text-sm font-medium">{kind}</h2>
+                        <Card className="shadow-none">
+                          <CardContent className="divide-y px-5">
+                            {personProfile.items
+                              .filter((item) => item.kind === kind)
+                              .map((item) => (
+                                <div
+                                  key={item.id + item.relation}
+                                  className="space-y-1 py-4"
+                                >
+                                  {item.url ? (
+                                    <Button
+                                      variant="link"
+                                      className="h-auto max-w-full justify-start p-0 text-left whitespace-normal"
+                                      onClick={() => goToURL(item.url!)}
+                                    >
+                                      {item.title}
+                                      <RiArrowRightSLine className="size-4 shrink-0" />
+                                    </Button>
+                                  ) : (
+                                    <p className="text-sm font-medium">
+                                      {item.title}
+                                    </p>
+                                  )}
+                                  <p className="text-xs text-muted-foreground">
+                                    {item.relation}
+                                  </p>
+                                  {item.description && (
+                                    <p className="line-clamp-2 text-sm text-muted-foreground">
+                                      {item.description}
+                                    </p>
+                                  )}
+                                </div>
+                              ))}
+                          </CardContent>
+                        </Card>
+                      </section>
+                    ))}
+                    {!personProfile.items.length && (
+                      <p className="text-sm text-muted-foreground">
+                        No linked records are available.
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
             </TabsContent>
             {judgeMode && (
               <TabsContent value="evidence" className="space-y-5 pt-5">
@@ -3112,7 +3240,15 @@ export default function App() {
                           <AvatarFallback>{initials(row[1])}</AvatarFallback>
                         </Avatar>
                         <div className="space-y-1">
-                          <p className="text-sm font-medium">{row[1]}</p>
+                          <Button
+                            variant="link"
+                            className="h-auto p-0 text-sm font-medium"
+                            onClick={() =>
+                              goToURL("/people/" + encodeURIComponent(row[0]))
+                            }
+                          >
+                            {row[1]}
+                          </Button>
                           <p className="text-sm text-muted-foreground">
                             {row[2]}
                           </p>
