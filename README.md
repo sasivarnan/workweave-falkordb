@@ -2,7 +2,7 @@
 
 An employee workspace that connects tasks, meetings, notes, people and approved decisions through **FalkorDB**. Built for the **Company Brain** hackathon track.
 
-**Live demo:** [Open Workweave](https://workweave-falkordb.onrender.com/) · [Demo controls](https://workweave-falkordb.onrender.com/external-trigger)
+**Live demo:** [Open Workweave](https://workweave-falkordb.onrender.com/) · [Demo controls](https://workweave-falkordb.onrender.com/demo-controls)
 
 Hosted on Render with FalkorDB Cloud. Synthetic data only. Stripe, Adyen, Razorpay and PayPal appear in a fictional payment-provider scenario; no real company decisions or integrations are implied. Final demo video is pending.
 
@@ -12,7 +12,7 @@ Choose **one** option. Run commands from the repository root.
 
 **Open the application:** [http://localhost:8080](http://localhost:8080) after startup.
 
-**Demo controls (optional):** [http://localhost:8080/external-trigger](http://localhost:8080/external-trigger).
+**Demo controls (optional):** [http://localhost:8080/demo-controls](http://localhost:8080/demo-controls).
 
 ### Option 1: Docker — application and database
 
@@ -36,7 +36,7 @@ uv run --locked workweave
 
 If FalkorDB already runs at `127.0.0.1:6381`, skip the database command. Do not run the local app while the full Docker stack uses port 8080. To switch from Option 1, run `docker compose down` first; this retains named volumes. Avoid `down -v`, which deletes them.
 
-For either option, open [localhost:8080](http://localhost:8080). Start tour explains the application; [/external-trigger](http://localhost:8080/external-trigger) provides optional graph and query evidence.
+For either option, open [localhost:8080](http://localhost:8080). Start tour explains the application; [/demo-controls](http://localhost:8080/demo-controls) provides optional graph and query evidence.
 
 `uv sync --locked` rebuilds `.venv` from `uv.lock`. Keep `.env` and `.data/` when removing `.venv`. Optional AI uses [.env.example](.env.example) and a separate invite code. Graph workflows need no AI key.
 
@@ -47,7 +47,7 @@ For either option, open [localhost:8080](http://localhost:8080). Start tour expl
 1. Create a FalkorDB Cloud instance with **TLS enabled** and a public endpoint reachable from Render. Copy its host, port, username and password from the connection panel. Use the supplied database port, not a browser-console URL.
 2. Push the tested source to GitHub. In Render, select **New → Blueprint** and connect this repository. Review the configuration before creating resources: it selects a **paid service and 1 GB persistent disk**. The default region is Singapore; change it before creation if another region is closer to your database.
 3. Enter `FALKORDB_HOST`, `FALKORDB_PORT`, `FALKORDB_USERNAME` and `FALKORDB_PASSWORD` when prompted. The Blueprint sets `FALKORDB_SSL=true`, `COOKIE_SECURE=true` and `WORKWEAVE_HOST=0.0.0.0`. Render supplies `PORT`; the server reads it automatically.
-4. Deploy, then open the assigned `https://<service>.onrender.com` URL. Demo controls are at `/external-trigger`; the health check is `/api/health`. Automatic deployments are off; deploy later source updates manually after checks pass.
+4. Deploy, then open the assigned `https://<service>.onrender.com` URL. Demo controls are at `/demo-controls`; the health check is `/api/health`. Automatic deployments are off; deploy later source updates manually after checks pass.
 5. Verify Home, search, the tour and the remove/restore dependency proof in a fresh browser. If the cloud instance restricts incoming connections, allow the service's Render outbound IP ranges. Never put database credentials in frontend variables or source files.
 
 **Optional AI:** graph workflows work without a provider key. To enable OpenAI, add `AI_PROVIDER=openai`, `OPENAI_API_KEY`, `OPENAI_MODEL` and a separate random `AI_ACCESS_CODE` of at least 16 characters in Render's environment settings. Choose a model supported by your API account. Do not use a `VITE_` variable for secrets. The disk retains `AI_USAGE_DB=/app/.data/ai-usage.sqlite3` across restarts; limits default to 5 operations/hour, 10/day and 30 total. Set provider spending controls too. Keep one app instance for this SQLite ledger. Confirm one successful invited call and that the ledger remains after a restart before sharing paid access.
@@ -87,7 +87,11 @@ Open [http://localhost:5173](http://localhost:5173). Vite forwards `/api` reques
 
 ## Demo controls
 
-Employee pages show work, guidance and source evidence. `/external-trigger` contains synthetic dependency and decision-change controls; optional validation details and query traces stay there. Use two tabs in the same browser session: trigger a change in one, then refresh the employee view in the other. This route separates presentation only; it is not an authentication boundary.
+Employee pages show work, guidance and source evidence. `/demo-controls` contains synthetic dependency and decision-change controls; optional validation details and query traces stay there. Use two tabs in the same browser session: trigger a change in one, then refresh the employee view in the other. This route separates presentation only; it is not an authentication boundary.
+
+### Reset demo data
+
+Open `/demo-controls` → **Reset demo data** → **Reset this demo workspace**. This resets only the current visitor graph, including notes, plans, progress, review requests and imported sample data. It does not reset other visitors or the paid AI usage ledger. Then select **Start dependency demo** to import the sample records again. Keep both recording tabs in the same browser session and refresh employee pages after resetting. A fresh private browser window creates a separate workspace without deleting the old one.
 
 ## Record links
 

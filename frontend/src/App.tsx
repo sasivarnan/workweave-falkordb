@@ -87,7 +87,7 @@ import { decode } from "@/lib/workspace"
 
 export default function App() {
   const searchRevision = useRef(0)
-  const judgeMode = window.location.pathname.startsWith("/external-trigger")
+  const judgeMode = window.location.pathname.startsWith("/demo-controls")
   const state = useSelector(appStore, (snapshot) => snapshot.context)
   const {
     impact,
@@ -559,7 +559,7 @@ export default function App() {
     stepRef.current = 0
     setDemoStep(0)
     setDemoLabel("Sample reset. Start the walkthrough or explore.")
-    await request("/api/reset")
+    await request("/api/reset", { assignment: workspace?.demo.assignment })
   }
   const required = context ? 1 + context.training.length : 1
   const finished = context
@@ -1002,7 +1002,6 @@ export default function App() {
               <section className="space-y-2">
                 <p className="text-xs text-muted-foreground">
                   {workspace?.company.name}
-                  {workspace?.synthetic && " · Sample workspace"}
                 </p>
                 <h1 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
                   {workspace
@@ -1013,13 +1012,11 @@ export default function App() {
                   Your work and the context behind it.
                 </p>
               </section>
-              <div className="flex items-center gap-6 border-b">
-                <span className="border-b-2 border-primary pb-3 text-sm font-medium text-primary">
-                  My day
-                </span>
-                <span className="pb-3 text-xs text-muted-foreground">
-                  {workspace?.team.name} · {workspace?.team.department}
-                </span>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-sm font-medium">My day</h2>
+                <p className="text-xs text-muted-foreground">
+                  Team: {workspace?.team.name} · {workspace?.team.department}
+                </p>
               </div>
               {!context ? (
                 <Skeleton className="h-72" />
@@ -2051,8 +2048,7 @@ export default function App() {
                     </Button>
                   </div>
                   <p className="text-xs leading-5 text-muted-foreground">
-                    Saved in your sample workspace. Do not enter private company
-                    information.
+                    Your notes are saved to this workspace.
                   </p>
                 </section>
               </div>
@@ -2213,6 +2209,31 @@ export default function App() {
                     </Button>
                   </CardContent>
                 </Card>
+                <Accordion>
+                  <AccordionItem value="reset">
+                    <AccordionTrigger>Reset demo data</AccordionTrigger>
+                    <AccordionContent className="space-y-3">
+                      <p className="text-sm text-muted-foreground">
+                        Reset only this browser workspace. This removes its
+                        saved notes, plans, reading and training progress,
+                        review requests, imported sample records and sample
+                        decision changes. Other visitors and the AI usage budget
+                        are unchanged.
+                      </p>
+                      <Button
+                        variant="destructive"
+                        disabled={busy}
+                        onClick={() => void reset()}
+                      >
+                        Reset this demo workspace
+                      </Button>
+                      <p className="text-xs text-muted-foreground">
+                        After reset, select Start dependency demo to reload the
+                        source records and restore the test link.
+                      </p>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
                 <Accordion>
                   <AccordionItem value="reference">
                     <AccordionTrigger>
@@ -2648,6 +2669,13 @@ export default function App() {
                       <span className="text-muted-foreground">Reviewer: </span>
                       {reviewer?.[1] || "Not assigned"}
                     </p>
+                    <Button
+                      variant="link"
+                      size="sm"
+                      onClick={() => navigate("people")}
+                    >
+                      People who can help
+                    </Button>
                   </div>
                   <Accordion multiple>
                     {decoded!.order
@@ -2880,39 +2908,57 @@ export default function App() {
                 People
               </h1>
               <p className="text-sm text-muted-foreground">
-                People who can help with your current assignment.
+                Find the assigned team members and reviewers connected to your
+                work.
               </p>
-              <Card>
-                <CardContent className="space-y-5 pt-6">
-                  {context?.people.map((r) => (
-                    <div key={r[0]} className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarFallback>
-                          {r[1]
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium">{r[1]}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {r[3] === "REVIEWER_FOR"
-                            ? "Current reviewer"
-                            : "Approved alternate"}
-                        </p>
-                        <p className="text-xs text-muted-foreground">{r[2]}</p>
-                      </div>
-                    </div>
-                  ))}
-                  {context && !context.people.length && (
-                    <p>
-                      Ask {workspace?.team.name || "your team"} to assign a
-                      reviewer.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
+              <div className="space-y-5">
+                {context?.assignments.map((task) => (
+                  <Card key={task[0]} className="shadow-none">
+                    <CardHeader>
+                      <CardTitle>{task[1]}</CardTitle>
+                      <CardDescription>
+                        People linked to this assignment and its service.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {context.projectContacts
+                        ?.filter((row) => row[4] === task[0])
+                        .map((row) => (
+                          <div
+                            key={row[0] + row[3]}
+                            className="flex items-start gap-3"
+                          >
+                            <Avatar>
+                              <AvatarFallback>
+                                {initials(row[1])}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="text-sm font-medium">{row[1]}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {row[3] === "REVIEWER_FOR"
+                                  ? "Service reviewer"
+                                  : row[3] === "BACKUP_REVIEWER_FOR"
+                                    ? "Alternate reviewer"
+                                    : "Assigned team member"}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {row[2]}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void openAssignment(task[0])}
+                      >
+                        Open assignment
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </TabsContent>
             {judgeMode && (
               <TabsContent value="evidence" className="space-y-5 pt-5">
@@ -3133,14 +3179,6 @@ export default function App() {
               </AccordionItem>
             </Accordion>
           )}
-          <Separator />
-          <footer className="text-xs text-muted-foreground">
-            {workspace?.company.name} ·{" "}
-            {workspace?.synthetic
-              ? "Fictional company scenario · Real provider names are illustrative"
-              : "Company records"}{" "}
-            · No calendar invitations are sent
-          </footer>
         </main>
         <Sheet
           open={!!meeting}

@@ -592,6 +592,10 @@ class Store:
             "MATCH (:Employee {id:$employee})-[:ASSIGNED_TO]->(:Assignment)-[:TOUCHES]->(s:Service)<-[r:REVIEWER_FOR|BACKUP_REVIEWER_FOR]-(p:Employee) RETURN DISTINCT p.id,p.title,p.body,type(r) ORDER BY p.title",
             {"employee": "maya"},
         )
+        project_contacts = self.q(
+            "get_assignment_contacts",
+            "MATCH (a:Assignment)-[:TOUCHES]->(s:Service) MATCH (p:Employee)-[r:ASSIGNED_TO|REVIEWER_FOR|BACKUP_REVIEWER_FOR]->(target) WHERE target=a OR target=s RETURN DISTINCT p.id,p.title,p.body,type(r),a.id,a.title ORDER BY a.title,p.title",
+        )
         findings = self.q(
             "find_changes_affecting_my_work",
             "MATCH (:Employee {id:$employee})-[:ASSIGNED_TO]->(a:Assignment)-[:TOUCHES]->(s:Service)<-[:APPLIES_TO]-(current:Decision)-[:SUPERSEDES*1..4]->(old:Decision)<-[:RECOMMENDS]-(doc:Document) MATCH (current)-[:SUPPORTED_BY]->(src:Document) WHERE current.approved=true AND NOT (:Decision {approved:true})-[:SUPERSEDES]->(current) RETURN DISTINCT a.id,a.title,doc.id,doc.title,old.title,current.title,src.id,src.title,src.body ORDER BY a.title",
@@ -646,6 +650,7 @@ class Store:
             "findings": findings,
             "week": week,
             "colleagues": colleagues,
+            "projectContacts": project_contacts,
             "guidanceRead": bool(read),
             "assignment": self.assignment,
             "assignments": assignments,

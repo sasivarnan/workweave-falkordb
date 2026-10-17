@@ -9,9 +9,9 @@ export const viewPaths: Record<string, string> = {
   notes: "/notes",
   sources: "/knowledge",
   people: "/people",
-  proof: "/external-trigger",
-  evidence: "/external-trigger/evidence",
-  demo: "/external-trigger/walkthrough",
+  proof: "/demo-controls",
+  evidence: "/demo-controls/evidence",
+  demo: "/demo-controls/walkthrough",
 }
 export function readRoute(pathname = "/", search = "") {
   const query = readSearchQuery(search)

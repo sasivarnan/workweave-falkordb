@@ -35,3 +35,5 @@ See [validation results](../EVALUATION.md) for tests and known gaps.
 ## Cross-team impact endpoint
 
 `POST /api/impact` accepts `operation`: `import`, `analyze`, `remove`, or `restore`. It reads the same isolated workspace and returns `{analysis, trace}`. The changed service scope and experiment edge are server-owned. It imports only the bundled normalized synthetic fixture. No model calls or vendor account access occur. See [cross-team impact](CROSS-TEAM-IMPACT.md).
+
+The context includes `projectContacts`: graph-derived employee ID, name, description, relationship type, assignment ID and assignment title. People groups these current assignment and service links. It does not infer historical contributions or supply contact channels.

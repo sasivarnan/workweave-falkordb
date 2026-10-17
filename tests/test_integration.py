@@ -257,6 +257,16 @@ class GraphTests(unittest.TestCase):
         self.s.seed()
         self.assertEqual(self.s.context()["plan"][0][2], "My original review notes")
 
+    def test_assignment_contacts_follow_recorded_service_links(self):
+        rows = self.s.context()["projectContacts"]
+        checkout = {(r[0], r[3]) for r in rows if r[4] == "checkout"}
+        refunds = {(r[0], r[3]) for r in rows if r[4] == "refunds"}
+        self.assertIn(("maya", "ASSIGNED_TO"), checkout)
+        self.assertIn(("leo", "REVIEWER_FOR"), checkout)
+        self.assertIn(("imani", "BACKUP_REVIEWER_FOR"), checkout)
+        self.assertIn(("noah", "REVIEWER_FOR"), refunds)
+        self.assertNotIn(("leo", "REVIEWER_FOR"), refunds)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

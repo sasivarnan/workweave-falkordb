@@ -282,43 +282,50 @@ Source: src/workweave/graph.py:590
 MATCH (:Employee {id:$employee})-[:ASSIGNED_TO]->(:Assignment)-[:TOUCHES]->(s:Service)<-[r:REVIEWER_FOR|BACKUP_REVIEWER_FOR]-(p:Employee) RETURN DISTINCT p.id,p.title,p.body,type(r) ORDER BY p.title
 ```
 
-## find_changes_affecting_my_work
+## get_assignment_contacts
 Source: src/workweave/graph.py:595
+
+```cypher
+MATCH (a:Assignment)-[:TOUCHES]->(s:Service) MATCH (p:Employee)-[r:ASSIGNED_TO|REVIEWER_FOR|BACKUP_REVIEWER_FOR]->(target) WHERE target=a OR target=s RETURN DISTINCT p.id,p.title,p.body,type(r),a.id,a.title ORDER BY a.title,p.title
+```
+
+## find_changes_affecting_my_work
+Source: src/workweave/graph.py:599
 
 ```cypher
 MATCH (:Employee {id:$employee})-[:ASSIGNED_TO]->(a:Assignment)-[:TOUCHES]->(s:Service)<-[:APPLIES_TO]-(current:Decision)-[:SUPERSEDES*1..4]->(old:Decision)<-[:RECOMMENDS]-(doc:Document) MATCH (current)-[:SUPPORTED_BY]->(src:Document) WHERE current.approved=true AND NOT (:Decision {approved:true})-[:SUPERSEDES]->(current) RETURN DISTINCT a.id,a.title,doc.id,doc.title,old.title,current.title,src.id,src.title,src.body ORDER BY a.title
 ```
 
 ## get_review_request
-Source: src/workweave/graph.py:600
+Source: src/workweave/graph.py:604
 
 ```cypher
 MATCH (:Employee {id:$employee})-[:CREATED]->(r:ReviewRequest)-[:FOR_ASSIGNMENT]->(:Assignment {id:$assignment}) MATCH (r)-[:ASSIGNED_REVIEWER]->(reviewer:Employee),(r)-[:BASED_ON]->(d:Decision) RETURN r.id,r.status,reviewer.title,d.id,r.note
 ```
 
 ## company_calendar
-Source: src/workweave/graph.py:605
+Source: src/workweave/graph.py:609
 
 ```cypher
 MATCH (:Employee {id:$employee})-[:ATTENDS]->(m:Meeting) OPTIONAL MATCH (m)-[:DISCUSSES]->(a:Assignment) OPTIONAL MATCH (n:Document)-[:NOTES_FOR]->(m) RETURN m.id,m.title,m.body,m.starts,a.id,n.id ORDER BY m.starts
 ```
 
 ## company_notes
-Source: src/workweave/graph.py:610
+Source: src/workweave/graph.py:614
 
 ```cypher
 MATCH (n:Document) WHERE (n)-[:NOTES_FOR]->(:Meeting) OR (:Employee {id:$employee})-[:CREATED]->(n) RETURN n.id,n.title,n.body ORDER BY n.title
 ```
 
 ## company_change_impact
-Source: src/workweave/graph.py:615
+Source: src/workweave/graph.py:619
 
 ```cypher
 MATCH (old:Decision)<-[:SUPERSEDES*1..4]-(current:Decision) WHERE current.approved=true AND NOT (:Decision {approved:true})-[:SUPERSEDES]->(current) MATCH (m:Meeting)-[:CONSIDERS]->(old) MATCH (n:Document)-[:NOTES_FOR]->(m) MATCH (m)-[:DISCUSSES]->(a:Assignment)-[:TOUCHES]->(s:Service)<-[:APPLIES_TO]-(current) RETURN DISTINCT current.title,m.title,n.title,a.title ORDER BY m.title
 ```
 
 ## workspace_identity
-Source: src/workweave/graph.py:619
+Source: src/workweave/graph.py:623
 
 ```cypher
 MATCH (e:Employee {id:$employee})-[:WORKS_AT]->(o:Organization),(e)-[:MEMBER_OF]->(t:Team) RETURN o.id,o.title,o.timezone,e.id,e.title,t.id,t.title,t.department
@@ -388,77 +395,77 @@ f'MATCH (a {{id:$a}}),(b {{id:$b}}) MERGE (a)-[:{r}]->(b)'
 ```
 
 ## replace_decision
-Source: src/workweave/graph.py:673
+Source: src/workweave/graph.py:678
 
 ```cypher
 MERGE (d:Decision {id:"provider-c"}) SET d.title="Use Razorpay",d.approved=true MERGE (src:Document {id:"adr-c"}) SET src.title="ADR-043: Razorpay",src.body="Approved demo change: Razorpay replaces Adyen." WITH d,src MATCH (old:Decision {id:"provider-b"}),(s:Service {id:"checkout-service"}) MERGE (d)-[:SUPERSEDES {weight:1}]->(old) MERGE (d)-[:SUPPORTED_BY {weight:1}]->(src) MERGE (d)-[:APPLIES_TO {weight:1}]->(s)
 ```
 
 ## record_replacement_approval
-Source: src/workweave/graph.py:678
+Source: src/workweave/graph.py:683
 
 ```cypher
 MATCH (d:Decision {id:"provider-c"}),(owner:Employee {id:"leo"}) SET d.approvedAt=coalesce(d.approvedAt,$now),d.effectiveAt=coalesce(d.effectiveAt,$now) MERGE (d)-[:APPROVED_BY]->(owner) MERGE (m:Meeting {id:"replacement-approval"}) SET m.title="Checkout decision review",m.starts=coalesce(m.starts,$starts),m.body="Approve the replacement provider decision." MERGE (m)-[:APPROVED]->(d)
 ```
 
 ## record_newer_proposal
-Source: src/workweave/graph.py:688
+Source: src/workweave/graph.py:693
 
 ```cypher
 MATCH (e:Employee {id:"maya"}),(s:Service {id:"checkout-service"}) MERGE (d:Decision {id:"provider-proposal"}) SET d.title="Consider PayPal",d.approved=false,d.proposedAt=$now MERGE (m:Meeting {id:"proposal-review"}) SET m.title="Explore another provider",m.starts=$starts,m.body="Discuss an alternative. No replacement has been approved." MERGE (src:Document {id:"proposal-notes"}) SET src.title="Provider exploration notes",src.body="PayPal was proposed for investigation. No approval was given." MERGE (d)-[:APPLIES_TO]->(s) MERGE (d)-[:SUPPORTED_BY]->(src) MERGE (m)-[:PROPOSED]->(d) MERGE (src)-[:NOTES_FOR]->(m) MERGE (e)-[:ATTENDS]->(m)
 ```
 
 ## acknowledge_decision_version
-Source: src/workweave/graph.py:703
+Source: src/workweave/graph.py:708
 
 ```cypher
 MATCH (e:Employee {id:$employee})-[:ASSIGNED_TO]->(a:Assignment {id:$assignment}),(d:Decision {id:$decision}) MERGE (r:DecisionReview {id:$id}) ON CREATE SET r.at=$now MERGE (e)-[:ACKNOWLEDGED]->(r) MERGE (r)-[:FOR_ASSIGNMENT]->(a) MERGE (r)-[:BASED_ON]->(d) MERGE (e)-[:READ_GUIDANCE]->(d)
 ```
 
 ## remove_owner
-Source: src/workweave/graph.py:716
+Source: src/workweave/graph.py:721
 
 ```cypher
 MATCH (:Employee)-[r:REVIEWER_FOR|BACKUP_REVIEWER_FOR]->(:Service {id:$id}) DELETE r
 ```
 
 ## complete_learning_step
-Source: src/workweave/graph.py:724
+Source: src/workweave/graph.py:729
 
 ```cypher
 MATCH (e:Employee {id:$employee})-[:ASSIGNED_TO]->(a:Assignment {id:$assignment})-[:REQUIRES]->(t:Training) MERGE (e)-[:COMPLETED]->(t)
 ```
 
 ## mark_guidance_read
-Source: src/workweave/graph.py:734
+Source: src/workweave/graph.py:739
 
 ```cypher
 MATCH (e:Employee {id:$employee}),(d:Decision {id:$decision}) MERGE (e)-[:READ_GUIDANCE]->(d)
 ```
 
 ## save_learning_plan
-Source: src/workweave/graph.py:744
+Source: src/workweave/graph.py:749
 
 ```cypher
 MATCH (e:Employee {id:$employee})-[:ASSIGNED_TO]->(a:Assignment {id:$assignment}) MERGE (p:LearningPlan {id:$plan}) SET p.title=a.title,p.guidance=$guidance,p.note=$note MERGE (e)-[:HAS_PLAN]->(p) MERGE (p)-[:FOR_ASSIGNMENT]->(a)
 ```
 
 ## save_plan_evidence
-Source: src/workweave/graph.py:756
+Source: src/workweave/graph.py:761
 
 ```cypher
 MATCH (p:LearningPlan {id:$plan}),(d:Decision {id:$decision}) WITH p,d OPTIONAL MATCH (p)-[old:SUPPORTED_BY]->() DELETE old MERGE (p)-[:SUPPORTED_BY]->(d)
 ```
 
 ## save_workspace_note
-Source: src/workweave/graph.py:763
+Source: src/workweave/graph.py:768
 
 ```cypher
 MATCH (e:Employee {id:"maya"}) MERGE (n:Document {id:"personal-note"}) SET n.title="My workspace note",n.body=$note MERGE (e)-[:CREATED]->(n)
 ```
 
 ## create_review_request
-Source: src/workweave/graph.py:785
+Source: src/workweave/graph.py:790
 
 ```cypher
 MATCH (e:Employee {id:$employee})-[:ASSIGNED_TO]->(a:Assignment {id:$assignment}),(reviewer:Employee {id:$reviewer}),(d:Decision {id:$decision}) MERGE (r:ReviewRequest {id:$id}) SET r.status="Awaiting review",r.note=$note MERGE (e)-[:CREATED]->(r) MERGE (r)-[:FOR_ASSIGNMENT]->(a) WITH r,reviewer,d OPTIONAL MATCH (r)-[old:BASED_ON|ASSIGNED_REVIEWER]->() DELETE old MERGE (r)-[:BASED_ON]->(d) MERGE (r)-[:ASSIGNED_REVIEWER]->(reviewer)
