@@ -102,6 +102,7 @@ export default function App() {
     readingOpen,
     editingNotes,
     aiEnabled,
+    aiFeedback,
     searchQuery,
     searchNavigation,
     evaluation,
@@ -227,6 +228,7 @@ export default function App() {
     const revision = ++searchRevision.current
     appStore.trigger.updated({
       patch: {
+        aiFeedback: "idle",
         searchQuery: route.query,
         searchNavigation: { ...route, revision },
         meeting: null,
@@ -254,6 +256,7 @@ export default function App() {
   ) {
     if (appStore.getSnapshot().context.busy) return false
     const navigationVersion = navigationRef.current
+    updateField("aiFeedback", path === "/api/agent" ? "working" : "idle")
     appStore.trigger.requestStarted()
     try {
       const response = await fetch(path, {
@@ -271,6 +274,7 @@ export default function App() {
       if (navigationRef.current !== navigationVersion) destination = undefined
       const commit = () => {
         setResult(data)
+        if (path === "/api/agent") updateField("aiFeedback", "success")
         if (
           path === "/api/action" ||
           path === "/api/reset" ||
@@ -302,6 +306,7 @@ export default function App() {
     } catch (e) {
       if (!isCurrent()) return false
       setError(e instanceof Error ? e.message : "Request failed")
+      if (path === "/api/agent") updateField("aiFeedback", "error")
       return false
     } finally {
       appStore.trigger.requestFinished()
@@ -2992,25 +2997,86 @@ export default function App() {
                       void request("/api/agent", { prompt })
                     }}
                   >
-                    <Label htmlFor="prompt">What would you like to know?</Label>
+                    <Label htmlFor="prompt">
+                      What do you want to focus on?
+                    </Label>
                     <div className="flex flex-col gap-2 sm:flex-row">
                       <Input
                         id="prompt"
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
                         maxLength={1000}
-                        placeholder="Ask about this assignment…"
+                        placeholder="For example: source evidence or review notes"
                         required
                       />
                       <Button type="submit" disabled={busy}>
-                        {busy ? "Working…" : "Ask about this task"}
+                        {aiFeedback === "working"
+                          ? "Updating guidance…"
+                          : "Update guidance"}
                       </Button>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      The workspace uses your assignment and company sources to
-                      organize the guidance above.
+                      Use current company sources to organize the task guidance.
+                      This updates the task sections above.
                     </p>
                   </form>
+                  {aiFeedback === "working" && (
+                    <p
+                      role="status"
+                      className="mt-4 text-sm text-muted-foreground"
+                    >
+                      Checking your task sources…
+                    </p>
+                  )}
+                  {aiFeedback === "success" && (
+                    <Card
+                      role="status"
+                      aria-live="polite"
+                      className="mt-4 shadow-none"
+                    >
+                      <CardHeader>
+                        <CardTitle>Guidance updated</CardTitle>
+                        <CardDescription>
+                          Your task guidance is ready. The source links and
+                          review notes above are available.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <p className="text-sm font-medium">
+                          Next step: {stageTitle}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {stageDescription}
+                        </p>
+                        {context?.current && (
+                          <p className="text-sm">
+                            Current guidance: {context.current}
+                          </p>
+                        )}
+                        {reviewer && (
+                          <p className="text-sm">Reviewer: {reviewer[1]}</p>
+                        )}
+                        {context?.decisions[0]?.[2] && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => showSource(context.decisions[0][2]!)}
+                          >
+                            Read source document
+                          </Button>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+                  {aiFeedback === "error" && (
+                    <Alert variant="destructive" role="alert" className="mt-4">
+                      <AlertTitle>Guidance was not updated</AlertTitle>
+                      <AlertDescription>
+                        {error ||
+                          "Try again later. Your saved work has not changed."}
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
