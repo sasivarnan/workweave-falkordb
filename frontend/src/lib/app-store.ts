@@ -1,8 +1,11 @@
 import { createStore } from "@xstate/store"
-import type { ImpactResult } from "./impact"
+import type { ImpactAnalysis, ImpactResult } from "./impact"
 import type { Evaluation, Result } from "./workspace"
 
 export type AppState = {
+  proofStage: "off" | "inspect" | "removed" | "restored"
+  proofBaseline: ImpactAnalysis | null
+  impactExpanded: string[]
   impact: ImpactResult | null
   theme: string
   sidebarOpen: boolean
@@ -29,6 +32,9 @@ export type AppState = {
 }
 const judgeMode = window.location.pathname === "/judge"
 const initial: AppState = {
+  proofStage: "off",
+  proofBaseline: null,
+  impactExpanded: [],
   impact: null,
   theme:
     localStorage.getItem("workweave-theme") ||

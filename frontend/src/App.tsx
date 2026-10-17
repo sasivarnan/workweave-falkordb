@@ -78,6 +78,8 @@ import {
   TraceCollapsibleContent,
 } from "@/components/ui/trace"
 
+import { removalEvidence, restorationVerified } from "@/lib/proof"
+import type { ImpactResult } from "@/lib/impact"
 import { decode } from "@/lib/workspace"
 
 export default function App() {
@@ -85,6 +87,9 @@ export default function App() {
   const state = useSelector(appStore, (snapshot) => snapshot.context)
   const {
     impact,
+    proofStage,
+    proofBaseline,
+    impactExpanded,
     theme,
     meeting,
     workspaceNote,
@@ -253,7 +258,14 @@ export default function App() {
       const commit = () => {
         setResult(data)
         if (path === "/api/action" || path === "/api/reset")
-          updateField("impact", null)
+          appStore.trigger.updated({
+            patch: {
+              impact: null,
+              proofStage: "off",
+              proofBaseline: null,
+              impactExpanded: [],
+            },
+          })
         document.title =
           decoded.context.workspace.appName + " · Company workspace"
         setAssignment(decoded.context.assignment)
@@ -330,8 +342,10 @@ export default function App() {
       })
     })
   }
-  async function analyzeImpact(operation = "analyze") {
-    if (appStore.getSnapshot().context.busy) return
+  async function analyzeImpact(
+    operation = "analyze"
+  ): Promise<ImpactResult | null> {
+    if (appStore.getSnapshot().context.busy) return null
     stop()
     appStore.trigger.requestStarted()
     try {
@@ -352,14 +366,75 @@ export default function App() {
       )
         throw Error("Invalid impact response")
       updateField("impact", data)
+      const baseline = appStore.getSnapshot().context.proofBaseline
+      if (baseline && appStore.getSnapshot().context.proofStage !== "off") {
+        if (operation === "remove") {
+          if (removalEvidence(baseline, data.analysis).verified)
+            updateField("proofStage", "removed")
+          else
+            setError(
+              "The expected relationship change was not verified. Inspect the results before continuing."
+            )
+        }
+        if (operation === "restore") {
+          if (restorationVerified(baseline, data.analysis))
+            updateField("proofStage", "restored")
+          else
+            setError(
+              "The original affected set was not fully restored. Inspect the results before continuing."
+            )
+        }
+      }
+      return data
     } catch (error) {
       setError(
         error instanceof Error ? error.message : "Impact analysis failed"
       )
+      return null
     } finally {
       appStore.trigger.requestFinished()
     }
   }
+  async function startImpactProof() {
+    const navigationVersion = navigationRef.current
+    appStore.trigger.updated({
+      patch: { proofStage: "off", proofBaseline: null, impactExpanded: [] },
+    })
+    let data = await analyzeImpact("import")
+    if (!data?.analysis.ready || data.analysis.blocked) {
+      if (data) navigate("impact")
+      return
+    }
+    if (!data.analysis.experimentLink?.connected)
+      data = await analyzeImpact("restore")
+    if (
+      !data?.analysis.ready ||
+      data.analysis.blocked ||
+      navigationRef.current !== navigationVersion
+    )
+      return
+    const alternate = data.analysis.items?.find((item) => item.routeCount > 1)
+    if (!alternate) {
+      setError(
+        "This sample no longer has an alternate route. Review its dependency links."
+      )
+      return
+    }
+    appStore.trigger.updated({
+      patch: {
+        proofStage: "inspect",
+        proofBaseline: data.analysis,
+        impactExpanded: [alternate.id],
+      },
+    })
+    navigate("impact")
+    window.scrollTo({ top: 0, behavior: "instant" })
+  }
+  const proofEvidence =
+    proofBaseline && impact
+      ? removalEvidence(proofBaseline, impact.analysis)
+      : null
+  const proofTarget = proofBaseline?.items?.find((item) => item.routeCount > 1)
   async function act(name: string) {
     stop()
     return await request("/api/action", { name, note })
@@ -800,6 +875,17 @@ export default function App() {
                 <p className="text-sm text-muted-foreground sm:text-base">
                   Your work and the context behind it.
                 </p>
+                {workspace?.synthetic && (
+                  <Button
+                    variant="link"
+                    className="h-auto px-0 text-xs"
+                    disabled={busy}
+                    onClick={() => void startImpactProof()}
+                  >
+                    See how one decision affects several teams{" "}
+                    <RiArrowRightLine />
+                  </Button>
+                )}
               </section>
               <div className="flex items-center gap-6 border-b">
                 <span className="border-b-2 border-primary pb-3 text-sm font-medium text-primary">
@@ -1406,27 +1492,117 @@ export default function App() {
                   Follow a shared service decision through team dependencies to
                   the tasks, meetings, and notes that rely on it.
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    disabled={busy}
-                    onClick={() =>
-                      void analyzeImpact(
-                        impact?.analysis.ready ? "analyze" : "import"
-                      )
-                    }
-                  >
-                    {busy
-                      ? "Analyzing…"
-                      : impact?.analysis.ready
-                        ? "Find affected work"
-                        : "Load synthetic source exports"}
-                  </Button>
-                </div>
+                {proofStage === "off" && (
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      disabled={busy}
+                      onClick={() =>
+                        void analyzeImpact(
+                          impact?.analysis.ready ? "analyze" : "import"
+                        )
+                      }
+                    >
+                      {busy
+                        ? "Analyzing…"
+                        : impact?.analysis.ready
+                          ? "Find affected work"
+                          : "Load synthetic source exports"}
+                    </Button>
+                  </div>
+                )}
                 <p className="text-xs text-muted-foreground">
                   Normalized synthetic Jira, Google Calendar, and Zoom exports.
                   No live accounts are connected.
                 </p>
               </section>
+              {proofStage !== "off" &&
+                proofBaseline &&
+                impact?.analysis.ready && (
+                  <Card className="border-primary/20 bg-primary/5 shadow-none">
+                    <CardHeader>
+                      <p className="text-xs font-medium text-primary">
+                        {proofStage === "inspect"
+                          ? "STEP 1 OF 3"
+                          : proofStage === "removed"
+                            ? "STEP 2 OF 3"
+                            : "STEP 3 OF 3"}
+                      </p>
+                      <CardTitle>
+                        {proofStage === "inspect"
+                          ? "Follow two routes to the same decision"
+                          : proofStage === "removed"
+                            ? "One task left. Another route remained."
+                            : "The original result is restored"}
+                      </CardTitle>
+                      <CardDescription className="leading-6">
+                        {proofStage === "inspect"
+                          ? `${proofTarget?.title} reaches ${proofBaseline.root} through more than one recorded route.`
+                          : proofStage === "removed"
+                            ? `No longer reached: ${proofEvidence?.removed.join(", ")}. Still reached through another route: ${proofEvidence?.alternate.join(", ")}.`
+                            : "The affected task IDs and route counts match the starting state. Source content hashes stayed equal."}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {proofStage === "inspect" ? (
+                        <>
+                          {proofTarget?.paths.map((path, index) => (
+                            <p key={index} className="text-sm leading-6">
+                              {path.join(" → ")}
+                            </p>
+                          ))}
+                          <p className="text-xs text-muted-foreground">
+                            Next, remove {proofBaseline.experimentLink?.from} →{" "}
+                            {proofBaseline.experimentLink?.to}.
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-sm">
+                          {impact.analysis.experiment?.documentsUnchanged
+                            ? "Verified: source text is unchanged."
+                            : "Source content changed; inspect the result."}
+                        </p>
+                      )}
+                    </CardContent>
+                    <CardFooter className="flex flex-wrap gap-2">
+                      {proofStage === "inspect" ? (
+                        <Button
+                          disabled={busy}
+                          onClick={() => void analyzeImpact("remove")}
+                        >
+                          Remove the test link
+                          <RiArrowRightLine />
+                        </Button>
+                      ) : proofStage === "removed" ? (
+                        <Button
+                          disabled={busy}
+                          onClick={() => void analyzeImpact("restore")}
+                        >
+                          Restore the link
+                          <RiArrowRightLine />
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          disabled={busy}
+                          onClick={() => void startImpactProof()}
+                        >
+                          Try again
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
+                          updateField("proofStage", "off")
+                          updateField("proofBaseline", null)
+                        }}
+                      >
+                        {proofStage === "restored"
+                          ? "Explore the workspace"
+                          : "Leave the guide"}
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                )}
               {impact?.analysis.blocked && (
                 <Alert variant="destructive">
                   <AlertTitle>
@@ -1563,7 +1739,20 @@ export default function App() {
                                     ? "Multiple owners recorded. Clarification required."
                                     : "Owner missing. Assign an owner before acting."}
                               </p>
-                              <Accordion>
+                              <Accordion
+                                value={
+                                  impactExpanded.includes(item.id)
+                                    ? ["why"]
+                                    : []
+                                }
+                                onValueChange={(value) =>
+                                  updateField("impactExpanded", (previous) =>
+                                    value.length
+                                      ? [...new Set([...previous, item.id])]
+                                      : previous.filter((id) => id !== item.id)
+                                  )
+                                }
+                              >
                                 <AccordionItem value="why">
                                   <AccordionTrigger className="py-2 text-xs">
                                     Why affected?
@@ -1868,49 +2057,48 @@ export default function App() {
             </TabsContent>
             {judgeMode && (
               <TabsContent value="proof" className="space-y-8">
-                <section className="max-w-3xl space-y-4">
-                  <Badge>{workspace?.appName} / Review in two minutes</Badge>
+                <section className="max-w-3xl space-y-5">
+                  <Badge variant="secondary">
+                    {workspace?.appName} · Company Brain
+                  </Badge>
                   <h1 className="font-heading text-3xl font-semibold tracking-tight lg:text-4xl">
-                    Keep company work connected to current decisions.
+                    One decision changes. Find the work that needs review.
                   </h1>
                   <p className="text-base leading-7 text-muted-foreground">
-                    An approved decision can replace advice in an older guide.
-                    This workspace connects the assignment to both sources,
-                    explains the conflict, and flags the saved plan when the
-                    decision changes again.
+                    Tasks live in one tool, meetings in another, and decisions
+                    in the notes. Workweave connects those records so employees
+                    can see what a changed service decision affects.
                   </p>
-                  <div className="flex flex-wrap gap-3">
-                    <Button
-                      disabled={busy || playing}
-                      onClick={() => void play()}
-                    >
-                      Run the evidence walkthrough
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => navigate("assignment")}
-                    >
-                      Try the employee task
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Real FalkorDB operations in your isolated sample workspace.
-                    No model credits required for this walkthrough.
+                  <Button
+                    size="lg"
+                    disabled={busy || !context}
+                    onClick={() => void startImpactProof()}
+                  >
+                    {busy
+                      ? "Preparing the sample…"
+                      : "Try the one-minute proof"}
+                    <RiArrowRightLine />
+                  </Button>
+                  <p className="text-xs leading-6 text-muted-foreground">
+                    An isolated synthetic workspace. Real FalkorDB queries. No
+                    login or AI credits needed for this flow. The sample
+                    dependency is restored before starting; saved notes are
+                    retained.
                   </p>
                 </section>
                 <div className="grid gap-5 md:grid-cols-3">
                   {[
                     [
-                      "Find the conflict",
-                      "Follow assignment → service → approved decision → superseded advice → original guide.",
+                      "Follow the routes",
+                      "See why work across teams depends on the same decision.",
                     ],
                     [
-                      "See what changes",
-                      "Replace the approved decision. The saved plan is flagged for review; new guidance becomes unread.",
+                      "Change one link",
+                      "Watch one task leave the affected set while another stays connected.",
                     ],
                     [
-                      "Refuse to guess",
-                      "Conflicting approvals or missing sources block plan acceptance. A missing reviewer stays missing.",
+                      "Check the evidence",
+                      "Confirm source text is unchanged, then restore the original result.",
                     ],
                   ].map(([title, body]) => (
                     <Card key={title} className="shadow-none">
@@ -1923,6 +2111,34 @@ export default function App() {
                     </Card>
                   ))}
                 </div>
+                <Accordion>
+                  <AccordionItem value="more">
+                    <AccordionTrigger>
+                      Explore the employee workflow
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-3">
+                      <p className="text-sm text-muted-foreground">
+                        Review a task, preserve its original plan, and
+                        acknowledge a changed decision.
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          variant="outline"
+                          disabled={busy || playing}
+                          onClick={() => void play()}
+                        >
+                          Run decision walkthrough
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          onClick={() => navigate("workspace")}
+                        >
+                          Open employee home
+                        </Button>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
                 {evaluation?.relationshipDiagnostic && (
                   <section className="space-y-4">
                     <h2 className="font-heading text-xl font-semibold">
