@@ -23,7 +23,7 @@ The paired model report records 16 live calls. Do not run `scripts/evaluate_mode
 
 ## Remaining release checks
 
-Public HTTPS deployment, hosted storage after restart, full mobile/keyboard review, participant technical review, independent user feedback and the final demo video remain pending. A passing local build does not establish any of these.
+The [public Render deployment](https://workweave-falkordb.onrender.com/) serves frontend HTML, and `/api/health` reports `status: ok` and `database: reachable`. The participant reports that it connects to FalkorDB Cloud. Hosted storage after restart, full mobile/keyboard review, participant technical review, independent user feedback and the final demo video remain pending. The health check does not verify these items or a successful AI response.
 
 ## uv package and container checks
 

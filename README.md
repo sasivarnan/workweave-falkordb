@@ -2,7 +2,9 @@
 
 An employee workspace that connects tasks, meetings, notes, people and approved decisions through **FalkorDB**. Built for the **Company Brain** hackathon track.
 
-**Status:** working local prototype with synthetic data. Public demo and final video are pending.
+**Live demo:** [Open Workweave](https://workweave-falkordb.onrender.com/) · [Technical proof](https://workweave-falkordb.onrender.com/judge)
+
+Hosted on Render with FalkorDB Cloud. Synthetic data only. Final demo video is pending.
 
 ## Run
 
