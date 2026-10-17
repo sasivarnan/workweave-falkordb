@@ -123,6 +123,36 @@ class AccessTests(unittest.TestCase):
                 server.server_close()
                 thread.join()
 
+    def test_record_routes_serve_app_and_unknown_paths_stay_404(self):
+        import tempfile
+        from pathlib import Path
+
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, "index.html").write_text("<html>workspace shell</html>")
+            with patch("workweave.server.ROOT", Path(directory)):
+                server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+                thread = threading.Thread(target=server.serve_forever, daemon=True)
+                thread.start()
+                base = "http://127.0.0.1:" + str(server.server_port)
+                try:
+                    for path in [
+                        "/tasks/checkout",
+                        "/calendar/release-review",
+                        "/knowledge/adr",
+                        "/judge/evidence",
+                        "/knowledge?q=payment",
+                    ]:
+                        with urllib.request.urlopen(base + path) as response:
+                            self.assertIn(b"workspace shell", response.read())
+                    for path in ["/api/unknown", "/private/file", "/tasks/extra/nested"]:
+                        with self.assertRaises(urllib.error.HTTPError) as error:
+                            urllib.request.urlopen(base + path)
+                        self.assertEqual(error.exception.code, 404)
+                finally:
+                    server.shutdown()
+                    server.server_close()
+                    thread.join()
+
 
 if __name__ == "__main__":
     unittest.main()

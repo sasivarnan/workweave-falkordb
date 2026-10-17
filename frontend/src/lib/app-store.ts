@@ -1,3 +1,4 @@
+import { readRoute } from "./routes.ts"
 import { readSearchQuery } from "./search-url.ts"
 import { createStore } from "@xstate/store"
 import type { ImpactAnalysis, ImpactResult } from "./impact"
@@ -22,7 +23,14 @@ export type AppState = {
   readingOpen: boolean
   editingNotes: boolean
   aiCode: string
-  searchNavigation: { query: string; view: string; revision: number } | null
+  searchNavigation: {
+    query: string
+    view: string
+    revision: number
+    assignment?: string
+    meetingId?: string
+    sourceId?: string
+  } | null
   searchQuery: string
   evaluation: Evaluation | null
   evaluationError: boolean
@@ -34,7 +42,8 @@ export type AppState = {
   playing: boolean
   openSources: string[]
 }
-const judgeMode = window.location.pathname === "/judge"
+const judgeMode = window.location.pathname.startsWith("/judge")
+const initialRoute = readRoute(window.location.pathname, window.location.search)
 const initial: AppState = {
   tourSidebarBefore: null,
   employeeGuide: 0,
@@ -51,9 +60,9 @@ const initial: AppState = {
   mobileSidebarOpen: false,
   meeting: null,
   workspaceNote: "",
-  assignment: judgeMode
-    ? ""
-    : localStorage.getItem("workweave-assignment") || "",
+  assignment:
+    initialRoute.assignment ||
+    (judgeMode ? "" : localStorage.getItem("workweave-assignment") || ""),
   result: null,
   error: "",
   busy: false,
@@ -61,20 +70,10 @@ const initial: AppState = {
   editingNotes: false,
   aiCode: "",
   searchQuery: readSearchQuery(window.location.search),
-  searchNavigation: readSearchQuery(window.location.search)
-    ? {
-        query: readSearchQuery(window.location.search),
-        view: "sources",
-        revision: 0,
-      }
-    : null,
+  searchNavigation: { ...initialRoute, revision: 0 },
   evaluation: null,
   evaluationError: false,
-  tab: readSearchQuery(window.location.search)
-    ? "sources"
-    : judgeMode
-      ? "proof"
-      : "workspace",
+  tab: initialRoute.view,
   prompt: "",
   note: "",
   demoStep: 0,

@@ -1,3 +1,4 @@
+import re
 import json
 import os
 import secrets
@@ -84,15 +85,26 @@ class Handler(BaseHTTPRequestHandler):
         if not getattr(self.server, "serve_frontend", True):
             return self.respond(404, {"error": "Use the frontend development server"})
         urlpath = urlsplit(self.path).path
+        app_route = urlpath in [
+            "/",
+            "/tasks",
+            "/calendar",
+            "/knowledge",
+            "/notes",
+            "/people",
+            "/decisions",
+            "/impact",
+            "/judge",
+            "/judge/evidence",
+            "/judge/walkthrough",
+        ] or bool(re.fullmatch(r"/(tasks|calendar|knowledge)/[a-zA-Z0-9_-]{1,100}", urlpath))
         if (
-            urlpath not in ["/", "/judge"]
+            not app_route
             and not urlpath.startswith("/assets/")
             and urlpath not in ["/catalog.json", "/evaluation.json"]
         ):
             return self.respond(404, {"error": "Not found"})
-        path = (
-            ROOT / ("index.html" if urlpath in ["/", "/judge"] else urlpath.lstrip("/"))
-        ).resolve()
+        path = (ROOT / ("index.html" if app_route else urlpath.lstrip("/"))).resolve()
         if ROOT.resolve() not in path.parents or not path.is_file():
             return self.respond(
                 404, {"error": "Build the frontend with npm run build --prefix frontend"}

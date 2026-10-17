@@ -1,4 +1,3 @@
-import { readSearchQuery, searchURL } from "@/lib/search-url"
 import { useOnboardingTour } from "@/hooks/use-onboarding-tour"
 import { useEffect, useLayoutEffect, useRef } from "react"
 import { useSelector } from "@xstate/store-react"
@@ -83,11 +82,14 @@ import {
 
 import { removalEvidence, restorationVerified } from "@/lib/proof"
 import type { ImpactResult } from "@/lib/impact"
+import { readRoute, viewPaths } from "@/lib/routes"
 import { decode } from "@/lib/workspace"
 
 export default function App() {
   const searchRevision = useRef(0)
-  const judgeMode = window.location.pathname === "/judge"
+  const judgeMode = useRef(
+    window.location.pathname.startsWith("/judge")
+  ).current
   const state = useSelector(appStore, (snapshot) => snapshot.context)
   const {
     impact,
@@ -120,8 +122,11 @@ export default function App() {
   } = state
   const setTheme = (value: Parameters<typeof updateField<"theme">>[1]) =>
     updateField("theme", value)
-  const setMeeting = (value: Parameters<typeof updateField<"meeting">>[1]) =>
-    updateField("meeting", value)
+  const setMeeting = (value: string[] | null) => {
+    if (value) goToURL("/calendar/" + encodeURIComponent(value[0]), true)
+    else if (window.history.state?.recordPanel) window.history.back()
+    else navigate("calendar")
+  }
   const setWorkspaceNote = (
     value: Parameters<typeof updateField<"workspaceNote">>[1]
   ) => updateField("workspaceNote", value)
@@ -224,18 +229,35 @@ export default function App() {
           activeTransition.current = null
       })
   }
-  function navigate(destination: string) {
-    if (destination === tab) return
+  function goToURL(path: string, recordPanel = false) {
+    if (path !== window.location.pathname + window.location.search)
+      window.history.pushState({ recordPanel }, "", path)
+    restoreRoute()
+  }
+  function restoreRoute() {
+    stop()
+    const route = readRoute(window.location.pathname, window.location.search)
+    const revision = ++searchRevision.current
+    appStore.trigger.updated({
+      patch: {
+        searchQuery: route.query,
+        searchNavigation: { ...route, revision },
+        meeting: null,
+        openSources: [],
+        readingOpen: false,
+        editingNotes: false,
+      },
+    })
     transition(() => {
-      setTab(destination)
+      setTab(route.view)
       window.scrollTo({ top: 0, behavior: "instant" })
     })
   }
+  function navigate(destination: string) {
+    goToURL(viewPaths[destination] || "/")
+  }
   async function openAssignment(id: string) {
-    stop()
-    setReadingOpen(false)
-    setEditingNotes(false)
-    await request("/api/context", { assignment: id }, "assignment")
+    goToURL("/tasks/" + encodeURIComponent(id))
   }
   async function request(
     path: string,
@@ -326,41 +348,13 @@ export default function App() {
       activeTransition.current?.skipTransition()
     }
   }, [])
-  function queueSearch(query: string, view = "sources") {
-    const revision = ++searchRevision.current
-    appStore.trigger.updated({
-      patch: {
-        searchQuery: query,
-        searchNavigation: { query, view, revision },
-        openSources: [],
-      },
-    })
-  }
   function submitSearch(value = searchQuery) {
-    stop()
     const query = value.trim().slice(0, 200)
-    const url = searchURL(window.location.href, query)
-    if (url !== window.location.href) {
-      window.history.replaceState(
-        { ...window.history.state, workweaveView: tab },
-        "",
-        window.location.href
-      )
-      window.history.pushState({ workweaveView: "sources" }, "", url)
-    }
-    queueSearch(query)
+    goToURL("/knowledge" + (query ? "?q=" + encodeURIComponent(query) : ""))
   }
   useEffect(() => {
-    const restore = () => {
-      const query = readSearchQuery(window.location.search)
-      const view = query
-        ? "sources"
-        : window.history.state?.workweaveView ||
-          (judgeMode ? "proof" : "workspace")
-      queueSearch(query, view)
-    }
-    window.addEventListener("popstate", restore)
-    return () => window.removeEventListener("popstate", restore)
+    window.addEventListener("popstate", restoreRoute)
+    return () => window.removeEventListener("popstate", restoreRoute)
   }, [])
   useEffect(() => {
     if (!searchNavigation || busy || !context) return
@@ -368,10 +362,28 @@ export default function App() {
     updateField("searchNavigation", null)
     void request(
       queued.query ? "/api/search" : "/api/context",
-      queued.query ? { query: queued.query } : {},
+      {
+        ...(queued.query ? { query: queued.query } : {}),
+        ...(queued.assignment ? { assignment: queued.assignment } : {}),
+      },
       queued.view,
       () => queued.revision === searchRevision.current
-    )
+    ).then((ok) => {
+      if (!ok || queued.revision !== searchRevision.current) return
+      const current = appStore.getSnapshot().context.result
+      if (!current) return
+      const data = decode(current).context
+      if (queued.meetingId) {
+        const item = data.meetings.find((row) => row[0] === queued.meetingId)
+        if (item) updateField("meeting", item)
+        else setError("This calendar item was not found in your workspace.")
+      }
+      if (queued.sourceId) {
+        if (data.sources.some((row) => row[0] === queued.sourceId))
+          setOpenSources([queued.sourceId])
+        else setError("This document was not found in your workspace.")
+      }
+    })
   }, [searchNavigation, busy, context])
   useEffect(() => {
     if (tab === "sources" && openSources[0])
@@ -384,18 +396,7 @@ export default function App() {
     setPlaying(false)
   }
   function showSource(id: string) {
-    stop()
-    transition(() => {
-      setOpenSources([id])
-      setTab("sources")
-      setResult((previous) => {
-        if (!previous) return previous
-        const next = structuredClone(previous)
-        const data = next.messages[2].updateDataModel?.value.context
-        if (data) delete data.searchResults
-        return next
-      })
-    })
+    goToURL("/knowledge/" + encodeURIComponent(id))
   }
   async function analyzeImpact(
     operation = "analyze"
@@ -2701,7 +2702,13 @@ export default function App() {
               )}
               <Accordion
                 value={openSources}
-                onValueChange={(v) => setOpenSources(v.map(String))}
+                onValueChange={(v) => {
+                  const id = v
+                    .map(String)
+                    .find((id) => !openSources.includes(id))
+                  if (id) showSource(id)
+                  else if (!v.length) navigate("sources")
+                }}
                 multiple
               >
                 {(context?.searchResults || context?.sources)?.map((r) => (
@@ -3028,7 +3035,6 @@ export default function App() {
                   className="w-full justify-between"
                   onClick={() => {
                     showSource(meeting[5])
-                    setMeeting(null)
                   }}
                 >
                   Open meeting notes
@@ -3042,7 +3048,6 @@ export default function App() {
                   disabled={busy}
                   onClick={() => {
                     void openAssignment(meeting[4])
-                    setMeeting(null)
                   }}
                 >
                   Open related task

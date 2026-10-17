@@ -85,6 +85,10 @@ npm run dev --prefix frontend
 
 Open [http://localhost:5173](http://localhost:5173). Vite forwards `/api` requests to the backend at `127.0.0.1:8081`. A frontend build is not required in this mode. Restart the backend after changing `.env`; only source files are watched. These servers do not use port 8080.
 
+## Record links
+
+Tasks, meetings and documents have direct links: `/tasks/checkout`, `/calendar/<event-id>` and `/knowledge/<document-id>`. Refresh restores the record; Back and Forward restore navigation. Closing a meeting opened from another page returns to that page. Search uses `/knowledge?q=...`. Record links use the current visitor workspace, not shared employee authentication.
+
 ## Project layout
 
 ```text
