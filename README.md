@@ -8,6 +8,10 @@ An employee workspace that connects tasks, meetings, notes, people and approved 
 
 Choose **one** option. Run commands from the repository root.
 
+**Open the application:** [http://localhost:8080](http://localhost:8080) after startup.
+
+**Judge view:** [http://localhost:8080/judge](http://localhost:8080/judge).
+
 ### Option 1: Docker — application and database
 
 Requires Docker with Compose. This builds and starts both services; no local uv or Node.js commands are needed.
