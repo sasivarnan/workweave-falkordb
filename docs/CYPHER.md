@@ -1,6 +1,6 @@
 # Cypher catalogue
 
-Generated from graph.py by scripts/export_queries.py. Dynamic templates use code-owned labels and relationship types. Parameters are passed separately by the official client.
+Generated from graph.py and impact.py by scripts/export_queries.py. Dynamic templates use code-owned labels and relationship types. Parameters are passed separately by the official client.
 
 ## workspace_check
 Source: graph.py:65
@@ -441,4 +441,179 @@ Source: graph.py:213
 
 ```cypher
 MATCH (e:Employee {id:$employee})-[:ASSIGNED_TO]->(a:Assignment {id:$assignment}),(reviewer:Employee {id:$reviewer}),(d:Decision {id:$decision}) MERGE (r:ReviewRequest {id:$id}) SET r.status="Awaiting review",r.note=$note MERGE (e)-[:CREATED]->(r) MERGE (r)-[:FOR_ASSIGNMENT]->(a) WITH r,reviewer,d OPTIONAL MATCH (r)-[old:BASED_ON|ASSIGNED_REVIEWER]->() DELETE old MERGE (r)-[:BASED_ON]->(d) MERGE (r)-[:ASSIGNED_REVIEWER]->(reviewer)
+```
+
+## match_exact_meeting_instance
+Source: impact.py:7
+
+```cypher
+MATCH (m:ExternalEvent {zoomMeetingId:$meeting}) RETURN m.id
+```
+
+## link_exact_meeting_id
+Source: impact.py:9
+
+```cypher
+MATCH (n:ImportedNote {id:$id}),(m:ExternalEvent {id:$event}) MERGE (n)-[r:NOTES_FOR]->(m) SET r.evidence=$meeting,r.method="exact meeting ID"
+```
+
+## imported_content_hash
+Source: impact.py:36
+
+```cypher
+MATCH (n) WHERE n:WorkItem OR n:ImportedNote OR n:ExternalEvent OR n:Document RETURN labels(n),n.id,n.title,n.body ORDER BY n.id
+```
+
+## bounded_dependency_impact
+Source: impact.py:46
+
+```cypher
+MATCH (w:WorkItem)-[:TOUCHES]->(s:Service) MATCH p=(s)-[:DEPENDS_ON*0..5]->(root:Service {id:$root}) WHERE all(node IN nodes(p) WHERE single(other IN nodes(p) WHERE other=node)) MATCH (t:Team)-[:RESPONSIBLE_FOR]->(w) OPTIONAL MATCH (owner:Employee)-[:ASSIGNED_TO]->(w) RETURN w.id,w.title,s.id,s.title,t.title,owner.title,[node IN nodes(p)|node.title],[edge IN relationships(p)|type(edge)],[node IN nodes(p)|node.id],w.source ORDER BY w.id
+```
+
+## all_imported_work
+Source: impact.py:64
+
+```cypher
+MATCH (w:WorkItem)-[:TOUCHES]->(s:Service) RETURN w.id,w.title,s.title ORDER BY w.id
+```
+
+## unresolved_calendar_links
+Source: impact.py:66
+
+```cypher
+MATCH (m:ExternalEvent) WHERE NOT (m)-[:DISCUSSES]->(:WorkItem) RETURN m.id,m.title ORDER BY m.id
+```
+
+## unresolved_source_links
+Source: impact.py:67
+
+```cypher
+MATCH (n:ImportedNote) WHERE NOT (n)-[:NOTES_FOR]->(:ExternalEvent) RETURN n.id,n.title,n.meetingId ORDER BY n.id
+```
+
+## dependency_links
+Source: impact.py:68
+
+```cypher
+MATCH (a:Service)-[:DEPENDS_ON]->(b:Service) RETURN a.id,a.title,b.id,b.title ORDER BY a.id,b.id
+```
+
+## experiment_dependency_identity
+Source: impact.py:70
+
+```cypher
+MATCH (a:Service {id:$a}),(b:Service {id:$b}) RETURN a.title,b.title
+```
+
+## import_version
+Source: impact.py:14
+
+```cypher
+MATCH (:Meta {id:"source-import-v1"}) RETURN true
+```
+
+## finish_source_import
+Source: impact.py:32
+
+```cypher
+MERGE (:Meta {id:"source-import-v1"})
+```
+
+## impact_import_ready
+Source: impact.py:40
+
+```cypher
+MATCH (:Meta {id:"source-import-v1"}) RETURN true
+```
+
+## affected_source_links
+Source: impact.py:63
+
+```cypher
+MATCH (m:ExternalEvent)-[link:DISCUSSES]->(:WorkItem {id:$id}) OPTIONAL MATCH (n:ImportedNote)-[notes:NOTES_FOR]->(m) RETURN m.id,m.title,m.source,link.method,link.evidence,n.id,n.title,n.body,notes.method,notes.evidence,n.source ORDER BY m.id,n.id
+```
+
+## import_service
+Source: impact.py:16
+
+```cypher
+MERGE (n:Service {id:$id}) SET n.title=$title
+```
+
+## import_team
+Source: impact.py:18
+
+```cypher
+MERGE (n:Team {id:$id}) SET n.title=$title
+```
+
+## import_person
+Source: impact.py:20
+
+```cypher
+MERGE (e:Employee {id:$id}) SET e.title=$title WITH e MATCH (t:Team {id:$team}) MERGE (e)-[:MEMBER_OF]->(t)
+```
+
+## import_dependency
+Source: impact.py:22
+
+```cypher
+MATCH (a:Service {id:$a}),(b:Service {id:$b}) MERGE (a)-[r:DEPENDS_ON]->(b) SET r.weight=1,r.source="Service registry export"
+```
+
+## import_jira_issue
+Source: impact.py:24
+
+```cypher
+MATCH (s:Service {id:$service}),(t:Team {id:$team}) MERGE (w:WorkItem {id:$key}) SET w.title=$title,w.body=$body,w.source="Jira export",w.sourceId=$key MERGE (w)-[:TOUCHES]->(s) MERGE (t)-[:RESPONSIBLE_FOR]->(w)
+```
+
+## import_calendar_event
+Source: impact.py:27
+
+```cypher
+MERGE (m:ExternalEvent {id:$id}) SET m.title=$title,m.zoomMeetingId=$zoom,m.source="Google Calendar export",m.sourceId=$id
+```
+
+## import_zoom_note
+Source: impact.py:30
+
+```cypher
+MERGE (n:ImportedNote {id:$id}) SET n.title=$title,n.body=$body,n.meetingId=$meeting,n.source="Zoom export",n.sourceId=$id
+```
+
+## remove_sample_dependency
+Source: impact.py:83
+
+```cypher
+MATCH (a:Service {id:$a})-[r:DEPENDS_ON]->(b:Service {id:$b}) DELETE r
+```
+
+## restore_sample_dependency
+Source: impact.py:84
+
+```cypher
+MATCH (a:Service {id:$a}),(b:Service {id:$b}) MERGE (a)-[r:DEPENDS_ON]->(b) SET r.weight=1,r.source="Service registry export"
+```
+
+## import_issue_owner
+Source: impact.py:25
+
+```cypher
+MATCH (e:Employee {id:$owner}),(w:WorkItem {id:$key}) MERGE (e)-[:ASSIGNED_TO]->(w)
+```
+
+## link_exact_issue_key
+Source: impact.py:28
+
+```cypher
+MATCH (m:ExternalEvent {id:$event}),(w:WorkItem {id:$key}) MERGE (m)-[r:DISCUSSES]->(w) SET r.evidence=$key,r.method="exact issue key"
+```
+
+## native_dependency_explanation
+Source: impact.py:57
+
+```cypher
+MATCH (s:Service {id:$service}),(root:Service {id:$root}) CALL algo.SPpaths({sourceNode:s,targetNode:root,relTypes:["DEPENDS_ON"],relDirection:"outgoing",weightProp:"weight",maxLen:5,pathCount:1}) YIELD path RETURN [node IN nodes(path)|node.title]
 ```

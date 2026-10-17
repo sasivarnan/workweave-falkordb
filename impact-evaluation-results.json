@@ -1,0 +1,136 @@
+{
+  "method": "Builder-authored normalized synthetic exports. Fixed expected IDs. Bounded directed simple-path traversal (up to five service links), native algo.SPpaths explanations, one removed/restored dependency. No AI calls. This is a correctness demonstration, not a performance or retrieval benchmark.",
+  "results": [
+    {
+      "case": "Cross-team affected set",
+      "passed": true
+    },
+    {
+      "case": "Unrelated service stays outside scope",
+      "passed": true
+    },
+    {
+      "case": "Edge removal excludes Billing but keeps alternate Support routes",
+      "passed": true
+    },
+    {
+      "case": "Source content stays byte-for-byte equal",
+      "passed": true
+    },
+    {
+      "case": "Restoring the edge recovers Billing",
+      "passed": true
+    },
+    {
+      "case": "Missing owner and unmatched notes stay unresolved",
+      "passed": true
+    },
+    {
+      "case": "Native shortest-path procedure supplies indirect explanations",
+      "passed": true
+    }
+  ],
+  "before": [
+    {
+      "id": "BILL-204",
+      "team": "Billing",
+      "routes": 1,
+      "path": [
+        "Verify invoice reconciliation",
+        "Billing API",
+        "Checkout service",
+        "Use Provider B"
+      ]
+    },
+    {
+      "id": "PAY-108",
+      "team": "Payments",
+      "routes": 1,
+      "path": [
+        "Release checkout status update",
+        "Checkout service",
+        "Use Provider B"
+      ]
+    },
+    {
+      "id": "SUP-310",
+      "team": "Support",
+      "routes": 2,
+      "path": [
+        "Update support payment guidance",
+        "Support console",
+        "Checkout service",
+        "Use Provider B"
+      ]
+    },
+    {
+      "id": "SUP-311",
+      "team": "Support",
+      "routes": 2,
+      "path": [
+        "Review escalated payment cases",
+        "Support console",
+        "Checkout service",
+        "Use Provider B"
+      ]
+    }
+  ],
+  "experiment": {
+    "operation": "remove",
+    "removed": [
+      "BILL-204"
+    ],
+    "added": [],
+    "retained": [
+      "PAY-108",
+      "SUP-310",
+      "SUP-311"
+    ],
+    "documentsUnchanged": true,
+    "beforeHash": "89535a9ea932af47301c73a516edcecad5d3497c59ea60605a6f12b1afe35d6d",
+    "afterHash": "89535a9ea932af47301c73a516edcecad5d3497c59ea60605a6f12b1afe35d6d",
+    "beforeRoutes": {
+      "BILL-204": 1,
+      "PAY-108": 1,
+      "SUP-310": 2,
+      "SUP-311": 2
+    },
+    "afterRoutes": {
+      "PAY-108": 1,
+      "SUP-310": 1,
+      "SUP-311": 1
+    }
+  },
+  "restored": {
+    "operation": "restore",
+    "removed": [],
+    "added": [
+      "BILL-204"
+    ],
+    "retained": [
+      "PAY-108",
+      "SUP-310",
+      "SUP-311"
+    ],
+    "documentsUnchanged": true,
+    "beforeHash": "89535a9ea932af47301c73a516edcecad5d3497c59ea60605a6f12b1afe35d6d",
+    "afterHash": "89535a9ea932af47301c73a516edcecad5d3497c59ea60605a6f12b1afe35d6d",
+    "beforeRoutes": {
+      "PAY-108": 1,
+      "SUP-310": 1,
+      "SUP-311": 1
+    },
+    "afterRoutes": {
+      "BILL-204": 1,
+      "PAY-108": 1,
+      "SUP-310": 2,
+      "SUP-311": 2
+    }
+  },
+  "limitations": [
+    "Small curated fixture; not independent external data.",
+    "Identifiers and explicit service dependency references are supplied, not extracted from prose.",
+    "No live OAuth connectors, incremental synchronization, or production permission model.",
+    "No path within five links does not prove absence of impact beyond that bound."
+  ]
+}

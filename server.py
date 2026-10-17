@@ -8,6 +8,7 @@ from ui import compose
 from agent import run,provider
 from access import authorized,reserve,BudgetExceeded
 from config import load
+from impact import run as run_impact
 from workspace import APP_NAME,DEMO_ASSIGNMENT,DEMO_STEPS
 ROOT=Path(__file__).parent/'frontend'/'dist'
 LOCKS={};LIMITS={};GUARD=threading.Lock()
@@ -41,7 +42,7 @@ class Handler(BaseHTTPRequestHandler):
  def do_POST(self):
   # All writes require the same-origin UI header. No cross-origin CORS is enabled.
   if self.headers.get('X-Workweave')!='portal':return self.respond(403,{'error':'Use the Workweave portal'})
-  if self.path not in ['/api/reset','/api/action','/api/context','/api/agent','/api/search']:return self.respond(404,{'error':'Not found'})
+  if self.path not in ['/api/reset','/api/action','/api/context','/api/agent','/api/search','/api/impact']:return self.respond(404,{'error':'Not found'})
   try:
    length=int(self.headers.get('Content-Length','0'))
    if length<0 or length>4096:raise ValueError('Request too large')
@@ -58,10 +59,12 @@ class Handler(BaseHTTPRequestHandler):
     GLOBAL.append(now)
     LIMITS[token]=recent+[now];lock=LOCKS.setdefault(token,threading.Lock())
    with lock:
-    s=Store(token,body.get('assignment') or 'checkout');s.seed();mode='Graph tools · no model call'
+    s=Store(token,DEMO_ASSIGNMENT if self.path=='/api/impact' else body.get('assignment') or 'checkout');s.seed();mode='Graph tools · no model call'
+    if self.path=='/api/impact':
+     return self.respond(200,{'analysis':run_impact(s,body.get('operation','analyze')),'trace':s.trace},cookie)
     if self.path=='/api/reset':s.reset()
     elif self.path=='/api/action':s.action(body.get('name'),str(body.get('note','')))
-    elif self.path not in ['/api/context','/api/agent','/api/search']:return self.respond(404,{'error':'Not found'},cookie)
+    elif self.path not in ['/api/context','/api/agent','/api/search','/api/impact']:return self.respond(404,{'error':'Not found'},cookie)
     if self.path=='/api/agent':
      if not AGENT_SLOTS.acquire(blocking=False):return self.respond(429,{'error':'The agent is busy. Try again shortly.'},cookie)
      try:

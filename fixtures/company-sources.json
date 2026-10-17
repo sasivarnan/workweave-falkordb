@@ -1,0 +1,25 @@
+{
+  "synthetic": true,
+  "services": [{"id":"checkout-service","name":"Checkout service"},{"id":"billing-api","name":"Billing API"},{"id":"support-console","name":"Support console"},{"id":"people-api","name":"People API"}],
+  "dependencies": [{"from":"billing-api","to":"checkout-service"},{"from":"support-console","to":"billing-api"},{"from":"support-console","to":"checkout-service"}],
+  "teams": [{"id":"payments","name":"Payments"},{"id":"billing","name":"Billing"},{"id":"support","name":"Support"},{"id":"people-ops","name":"People operations"}],
+  "people": [{"id":"maya","name":"Maya Chen","team":"payments"},{"id":"ravi","name":"Ravi Patel","team":"billing"},{"id":"elena","name":"Elena Garcia","team":"support"},{"id":"asha","name":"Asha Rao","team":"people-ops"}],
+  "jira": [
+    {"key":"PAY-108","title":"Release checkout status update","body":"Review provider status handling before release.","service":"checkout-service","team":"payments","owner":"maya"},
+    {"key":"BILL-204","title":"Verify invoice reconciliation","body":"Check billing after the payment provider change.","service":"billing-api","team":"billing","owner":"ravi"},
+    {"key":"SUP-310","title":"Update support payment guidance","body":"Review the payment status guidance used by support.","service":"support-console","team":"support","owner":"elena"},
+    {"key":"SUP-311","title":"Review escalated payment cases","body":"Assign an owner before reviewing the updated support workflow.","service":"support-console","team":"support","owner":null},
+    {"key":"HR-12","title":"Review leave policy wording","body":"Check the employee leave request instructions.","service":"people-api","team":"people-ops","owner":"asha"}
+  ],
+  "calendar": [
+    {"uid":"billing-review","title":"Invoice release review","issueKeys":["BILL-204"],"zoomMeetingId":"zoom-billing"},
+    {"uid":"support-review","title":"Support readiness","issueKeys":["SUP-310","SUP-311"],"zoomMeetingId":"zoom-support"},
+    {"uid":"unlinked-sync","title":"Team sync","issueKeys":[],"zoomMeetingId":null}
+  ],
+  "zoom": [
+    {"id":"notes-billing","meetingId":"zoom-billing","title":"Invoice review notes","body":"Confirm the downstream invoice checks after Payments approves a replacement."},
+    {"id":"notes-support","meetingId":"zoom-support","title":"Support readiness notes","body":"Check payment status wording and escalation ownership before publishing guidance."},
+    {"id":"notes-unmatched","meetingId":"zoom-unknown","title":"Unmatched meeting notes","body":"No exact calendar meeting identifier is available. Do not guess a link."}
+  ],
+  "experiment":{"from":"billing-api","to":"checkout-service"}
+}

@@ -1,7 +1,9 @@
 import { createStore } from "@xstate/store"
+import type { ImpactResult } from "./impact"
 import type { Evaluation, Result } from "./workspace"
 
 export type AppState = {
+  impact: ImpactResult | null
   theme: string
   sidebarOpen: boolean
   mobileSidebarOpen: boolean
@@ -27,6 +29,7 @@ export type AppState = {
 }
 const judgeMode = window.location.pathname === "/judge"
 const initial: AppState = {
+  impact: null,
   theme:
     localStorage.getItem("workweave-theme") ||
     (window.matchMedia("(prefers-color-scheme: dark)").matches

@@ -84,6 +84,7 @@ export default function App() {
   const judgeMode = window.location.pathname === "/judge"
   const state = useSelector(appStore, (snapshot) => snapshot.context)
   const {
+    impact,
     theme,
     meeting,
     workspaceNote,
@@ -251,6 +252,7 @@ export default function App() {
       if (navigationRef.current !== navigationVersion) destination = undefined
       const commit = () => {
         setResult(data)
+        if(path==="/api/action"||path==="/api/reset")updateField("impact",null)
         document.title =
           decoded.context.workspace.appName + " · Company workspace"
         setAssignment(decoded.context.assignment)
@@ -326,6 +328,36 @@ export default function App() {
         return next
       })
     })
+  }
+  async function analyzeImpact(operation = "analyze") {
+    if (appStore.getSnapshot().context.busy) return
+    stop()
+    appStore.trigger.requestStarted()
+    try {
+      const response = await fetch("/api/impact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Workweave": "portal",
+        },
+        body: JSON.stringify({ operation }),
+      })
+      const data = await response.json()
+      if (!response.ok) throw Error(data.error || "Impact analysis failed")
+      if (
+        !data.analysis ||
+        typeof data.analysis.ready !== "boolean" ||
+        !Array.isArray(data.trace)
+      )
+        throw Error("Invalid impact response")
+      updateField("impact", data)
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : "Impact analysis failed"
+      )
+    } finally {
+      appStore.trigger.requestFinished()
+    }
   }
   async function act(name: string) {
     stop()
@@ -480,6 +512,7 @@ export default function App() {
     ["workspace", "Today", RiHome5Line],
     ["home", "Tasks", RiCheckboxCircleLine],
     ["changes", "Decision review", RiInformationLine],
+    ["impact", "Cross-team impact", RiTeamLine],
     ["calendar", "Calendar", RiCalendarLine],
     ["notes", "Notes", RiFileTextLine],
     ["sources", "Knowledge", RiBookOpenLine],
@@ -740,6 +773,7 @@ export default function App() {
           <Tabs value={tab} onValueChange={(v) => navigate(String(v))}>
             <TabsList className="hidden">
               <TabsTrigger value="workspace">Today</TabsTrigger>
+              <TabsTrigger value="impact">Cross-team impact</TabsTrigger>
               <TabsTrigger value="changes">Decision review</TabsTrigger>
               <TabsTrigger value="calendar">Calendar</TabsTrigger>
               <TabsTrigger value="notes">Notes</TabsTrigger>
@@ -1356,6 +1390,380 @@ export default function App() {
                       </AccordionItem>
                     </Accordion>
                   )}
+                </>
+              )}
+            </TabsContent>
+            <TabsContent value="impact" className="space-y-8">
+              <section className="space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  Company work · Connected across tools
+                </p>
+                <h1 className="font-heading text-3xl font-semibold tracking-tight">
+                  What needs review?
+                </h1>
+                <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+                  Follow a shared service decision through team dependencies to
+                  the tasks, meetings, and notes that rely on it.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    disabled={busy}
+                    onClick={() =>
+                      void analyzeImpact(
+                        impact?.analysis.ready ? "analyze" : "import"
+                      )
+                    }
+                  >
+                    {busy
+                      ? "Analyzing…"
+                      : impact?.analysis.ready
+                        ? "Find affected work"
+                        : "Load synthetic source exports"}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Normalized synthetic Jira, Google Calendar, and Zoom exports.
+                  No live accounts are connected.
+                </p>
+              </section>
+              {impact?.analysis.blocked && (
+                <Alert variant="destructive">
+                  <AlertTitle>
+                    Decision authority needs clarification
+                  </AlertTitle>
+                  <AlertDescription>
+                    {impact.analysis.issues?.map((issue) => (
+                      <p key={issue}>{issue}</p>
+                    ))}
+                  </AlertDescription>
+                </Alert>
+              )}
+              {impact?.analysis.ready && !impact.analysis.blocked && (
+                <>
+                  <Card className="shadow-none">
+                    <CardHeader>
+                      <CardTitle>{impact.analysis.decision?.title}</CardTitle>
+                      <CardDescription>
+                        Applies to {impact.analysis.root}. Analysis follows up
+                        to {impact.analysis.depthLimit} service dependency
+                        links.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex flex-wrap gap-x-8 gap-y-3 text-sm">
+                      <p>
+                        <span className="font-semibold">
+                          {impact.analysis.items?.length}
+                        </span>{" "}
+                        affected tasks
+                      </p>
+                      <p>
+                        <span className="font-semibold">
+                          {
+                            new Set(
+                              impact.analysis.items?.map((item) => item.team)
+                            ).size
+                          }
+                        </span>{" "}
+                        teams
+                      </p>
+                      <p>
+                        <span className="font-semibold">
+                          {
+                            impact.analysis.items?.filter(
+                              (item) => item.owners.length !== 1
+                            ).length
+                          }
+                        </span>{" "}
+                        owners to clarify
+                      </p>
+                    </CardContent>
+                    <CardFooter>
+                      <Button
+                        variant="link"
+                        className="h-auto px-0"
+                        onClick={() =>
+                          void request("/api/context").then((ok) => {
+                            if (ok)
+                              showSource(impact.analysis.decision!.sourceId)
+                          })
+                        }
+                      >
+                        Read approved source
+                        <RiArrowRightLine />
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                  {impact.analysis.experiment && (
+                    <Alert>
+                      <AlertTitle>
+                        {impact.analysis.experiment.documentsUnchanged
+                          ? "Source text unchanged. Dependency results changed."
+                          : "Source content changed during this experiment."}
+                      </AlertTitle>
+                      <AlertDescription className="space-y-2">
+                        <p>
+                          {impact.analysis.experiment.removed.length
+                            ? `No longer reached: ${impact.analysis.experiment.removed.join(", ")}.`
+                            : impact.analysis.experiment.added.length
+                              ? `Reached again: ${impact.analysis.experiment.added.join(", ")}.`
+                              : "The affected set stayed the same."}
+                        </p>
+                        <p>
+                          Still reached:{" "}
+                          {impact.analysis.experiment.retained.join(", ") ||
+                            "None"}
+                          .
+                        </p>
+                        <p>
+                          Alternate routes are checked before a task leaves the
+                          affected set.
+                        </p>
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  {[
+                    ...new Set(impact.analysis.items?.map((item) => item.team)),
+                  ].map((team) => (
+                    <section key={team} className="space-y-3">
+                      <h2 className="text-lg font-semibold">{team}</h2>
+                      <div className="divide-y border-y">
+                        {impact.analysis.items
+                          ?.filter((item) => item.team === team)
+                          .map((item) => (
+                            <div key={item.id} className="space-y-3 py-5">
+                              <div className="flex flex-wrap items-center justify-between gap-3">
+                                <div className="space-y-1">
+                                  <p className="text-sm font-medium">
+                                    {item.title}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {item.source} · {item.id} · {item.service}
+                                  </p>
+                                </div>
+                                <Badge variant="outline">
+                                  {item.routeCount} route
+                                  {item.routeCount === 1 ? "" : "s"}
+                                </Badge>
+                              </div>
+                              <p
+                                className={
+                                  item.owners.length !== 1
+                                    ? "text-xs text-destructive"
+                                    : "text-xs text-muted-foreground"
+                                }
+                              >
+                                {item.owners.length === 1
+                                  ? `Assigned owner: ${item.owners[0]}`
+                                  : item.owners.length
+                                    ? "Multiple owners recorded. Clarification required."
+                                    : "Owner missing. Assign an owner before acting."}
+                              </p>
+                              <Accordion>
+                                <AccordionItem value="why">
+                                  <AccordionTrigger className="py-2 text-xs">
+                                    Why affected?
+                                  </AccordionTrigger>
+                                  <AccordionContent className="space-y-4">
+                                    <p className="text-sm leading-7">
+                                      {item.explanation.join(" → ")}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {item.algorithm === "Direct service link"
+                                        ? "The task directly touches the decision’s service."
+                                        : "Shortest verified dependency path. Other recorded routes are listed below."}
+                                    </p>
+                                    <div className="space-y-2">
+                                      {item.paths.map((path, index) => (
+                                        <p
+                                          key={index}
+                                          className="text-xs leading-6 text-muted-foreground"
+                                        >
+                                          {path.join(" → ")}
+                                        </p>
+                                      ))}
+                                    </div>
+                                    {item.links.length > 0 && (
+                                      <div className="space-y-4 border-t pt-4">
+                                        {item.links.map((link, index) => (
+                                          <div
+                                            key={index}
+                                            className="space-y-2"
+                                          >
+                                            <p className="text-sm font-medium">
+                                              {link[1]}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                              {link[2]} · {link[3]}: {link[4]}
+                                            </p>
+                                            {link[5] ? (
+                                              <>
+                                                <p className="text-sm">
+                                                  {link[6]}
+                                                </p>
+                                                <p className="text-xs leading-6 text-muted-foreground">
+                                                  {link[7]}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">
+                                                  {link[10]} · {link[8]}:{" "}
+                                                  {link[9]}
+                                                </p>
+                                              </>
+                                            ) : (
+                                              <p className="text-xs text-muted-foreground">
+                                                No notes linked to this meeting.
+                                              </p>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </AccordionContent>
+                                </AccordionItem>
+                              </Accordion>
+                            </div>
+                          ))}
+                      </div>
+                    </section>
+                  ))}
+                  <section className="space-y-3">
+                    <h2 className="text-lg font-semibold">
+                      Not reached within scope
+                    </h2>
+                    <div className="divide-y border-y">
+                      {impact.analysis.excluded?.map((item) => (
+                        <div key={item.id} className="space-y-1 py-4">
+                          <p className="text-sm">{item.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {item.id} · {item.service}. No dependency path found
+                            within the analysis limit.
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Missing or unimported relationships can hide impact. This
+                      is not a guarantee that other work is safe.
+                    </p>
+                  </section>
+                  <Accordion>
+                    <AccordionItem value="link-quality">
+                      <AccordionTrigger>
+                        Source links that need review
+                      </AccordionTrigger>
+                      <AccordionContent className="space-y-3">
+                        {impact.analysis.unresolved?.map((row) => (
+                          <p key={row[0]} className="text-sm">
+                            {row[1]} — no unique calendar meeting match for{" "}
+                            {row[2]}.
+                          </p>
+                        ))}
+                        {impact.analysis.unresolvedEvents?.map((row) => (
+                          <p key={row[0]} className="text-sm">
+                            {row[1]} — no explicit task reference. No link was
+                            inferred from the title.
+                          </p>
+                        ))}
+                      </AccordionContent>
+                    </AccordionItem>
+                    <AccordionItem value="experiment">
+                      <AccordionTrigger>
+                        Test one dependency link
+                      </AccordionTrigger>
+                      <AccordionContent className="space-y-4">
+                        <p className="text-xs leading-6 text-muted-foreground">
+                          Remove the sample dependency below. Tasks with another
+                          route should stay affected. Source documents stay
+                          intact. Restore the link to recover the original
+                          result.
+                        </p>
+                        <p className="text-sm font-medium">
+                          Test link: {impact.analysis.experimentLink?.from} →{" "}
+                          {impact.analysis.experimentLink?.to}
+                        </p>
+                        {impact.analysis.dependencies?.map((row) => (
+                          <p
+                            key={row[0] + row[2]}
+                            className="text-xs text-muted-foreground"
+                          >
+                            {row[1]} → {row[3]}
+                          </p>
+                        ))}
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            variant="outline"
+                            disabled={
+                              busy || !impact.analysis.experimentLink?.connected
+                            }
+                            onClick={() => void analyzeImpact("remove")}
+                          >
+                            Remove sample dependency
+                          </Button>
+                          <Button
+                            variant="outline"
+                            disabled={
+                              busy || impact.analysis.experimentLink?.connected
+                            }
+                            onClick={() => void analyzeImpact("restore")}
+                          >
+                            Restore dependency
+                          </Button>
+                        </div>
+                        {impact.analysis.experiment && (
+                          <div className="space-y-2">
+                            <p className="text-xs break-all text-muted-foreground">
+                              Before: {impact.analysis.experiment.beforeHash}
+                            </p>
+                            <p className="text-xs break-all text-muted-foreground">
+                              After: {impact.analysis.experiment.afterHash}
+                            </p>
+                          </div>
+                        )}
+                      </AccordionContent>
+                    </AccordionItem>
+                    <AccordionItem value="queries">
+                      <AccordionTrigger>
+                        How the analysis was computed
+                      </AccordionTrigger>
+                      <AccordionContent className="space-y-4">
+                        <p className="text-xs leading-6 text-muted-foreground">
+                          Bounded Cypher finds the affected set and alternative
+                          simple paths. FalkorDB’s native shortest-path
+                          procedure explains indirect dependencies. Direct links
+                          need no pathfinding. This analysis uses no model
+                          calls.
+                        </p>
+                        <Trace>
+                          {impact.trace
+                            .filter((row) =>
+                              [
+                                "bounded_dependency_impact",
+                                "native_dependency_explanation",
+                                "affected_source_links",
+                              ].includes(row.tool)
+                            )
+                            .map((row, index) => (
+                              <TraceCollapsible key={index}>
+                                <TraceCollapsibleTrigger>
+                                  <TraceLine>
+                                    <TraceTitle>{row.tool}</TraceTitle>
+                                    <TraceDescription>
+                                      {row.rows} rows · {row.ms} ms
+                                    </TraceDescription>
+                                  </TraceLine>
+                                </TraceCollapsibleTrigger>
+                                <TraceCollapsibleContent>
+                                  <pre className="overflow-auto text-xs break-words whitespace-pre-wrap">
+                                    {row.query +
+                                      "\n" +
+                                      JSON.stringify(row.arguments, null, 2)}
+                                  </pre>
+                                </TraceCollapsibleContent>
+                              </TraceCollapsible>
+                            ))}
+                        </Trace>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
                 </>
               )}
             </TabsContent>
