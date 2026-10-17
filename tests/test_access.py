@@ -43,4 +43,17 @@ class AccessTests(unittest.TestCase):
     with patch('server.reserve',side_effect=OSError('storage unavailable')):
      self.assertEqual(send('test-invite-code-only')[0],503);self.assertEqual(agent.call_count,1)
    finally:server.shutdown();server.server_close();thread.join()
+ def test_workspace_settings_api_contains_no_secrets(self):
+  with patch('server.Store') as store:
+   server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
+   thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
+   try:
+    with urllib.request.urlopen('http://127.0.0.1:'+str(server.server_port)+'/api/workspace') as response:
+     self.assertEqual(response.headers['Cache-Control'],'no-store');data=json.load(response)
+    self.assertEqual(set(data),{'appName','defaultAssignment','demo'})
+    self.assertEqual(data['appName'],'Workweave')
+    self.assertTrue(data['demo']['steps'])
+    self.assertEqual(data['defaultAssignment'],data['demo']['assignment'])
+    store.assert_not_called()
+   finally:server.shutdown();server.server_close();thread.join()
 if __name__=='__main__':unittest.main()

@@ -59,6 +59,8 @@ const initial: AppState = {
 export const appStore = createStore({
   context: initial,
   on: {
+    requestStarted: (context) => ({ ...context, busy: true, error: "" }),
+    requestFinished: (context) => ({ ...context, busy: false }),
     updated: (context, event: { patch: Partial<AppState> }) => ({
       ...context,
       ...event.patch,

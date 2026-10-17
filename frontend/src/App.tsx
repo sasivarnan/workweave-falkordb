@@ -68,7 +68,6 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
-import { TooltipProvider } from "@/components/ui/tooltip"
 import {
   Trace,
   TraceLine,
@@ -128,8 +127,6 @@ export default function App() {
     updateField("result", value)
   const setError = (value: Parameters<typeof updateField<"error">>[1]) =>
     updateField("error", value)
-  const setBusy = (value: Parameters<typeof updateField<"busy">>[1]) =>
-    updateField("busy", value)
   const setReadingOpen = (
     value: Parameters<typeof updateField<"readingOpen">>[1]
   ) => updateField("readingOpen", value)
@@ -175,8 +172,7 @@ export default function App() {
       sidebarOpen ? "expanded" : "collapsed"
     )
   }, [sidebarOpen])
-  const busyRef = useRef(false),
-    playRef = useRef(0),
+  const playRef = useRef(0),
     stepRef = useRef(0)
   const decoded = result ? decode(result) : null,
     context = decoded?.context
@@ -235,11 +231,9 @@ export default function App() {
     body: Record<string, unknown> = {},
     destination?: string
   ) {
-    if (busyRef.current) return false
+    if (appStore.getSnapshot().context.busy) return false
     const navigationVersion = navigationRef.current
-    busyRef.current = true
-    setBusy(true)
-    setError("")
+    appStore.trigger.requestStarted()
     try {
       const response = await fetch(path, {
         method: "POST",
@@ -257,7 +251,8 @@ export default function App() {
       if (navigationRef.current !== navigationVersion) destination = undefined
       const commit = () => {
         setResult(data)
-        document.title=decoded.context.workspace.appName+" · Company workspace"
+        document.title =
+          decoded.context.workspace.appName + " · Company workspace"
         setAssignment(decoded.context.assignment)
         setNote(decoded.context.plan[0]?.[2] || "")
         if (destination) {
@@ -274,8 +269,7 @@ export default function App() {
       setError(e instanceof Error ? e.message : "Request failed")
       return false
     } finally {
-      busyRef.current = false
-      setBusy(false)
+      appStore.trigger.requestFinished()
     }
   }
   useEffect(() => {
@@ -337,14 +331,19 @@ export default function App() {
     stop()
     return await request("/api/action", { name, note })
   }
-  useEffect(()=>{
-    const onKey=(event:KeyboardEvent)=>{if(event.key==='b'&&(event.ctrlKey||event.metaKey)){event.preventDefault();setSidebarOpen(open=>!open)}}
-    window.addEventListener('keydown',onKey)
-    return ()=>window.removeEventListener('keydown',onKey)
-  },[])
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "b" && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault()
+        setSidebarOpen((open) => !open)
+      }
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [])
   const steps = workspace?.demo.steps || []
   async function next() {
-    if (!workspace || !steps.length)return false
+    if (!workspace || !steps.length) return false
     if (stepRef.current >= steps.length) {
       stop()
       setDemoLabel("Walkthrough complete. Change a fact to explore.")
@@ -496,1505 +495,1489 @@ export default function App() {
       } as Record<string, string>
     )[tab]
   return (
-    <TooltipProvider>
-      <div className="flex min-h-svh w-full">
-        <aside
-          aria-label="Workspace navigation"
+    <div className="flex min-h-svh w-full">
+      <aside
+        aria-label="Workspace navigation"
+        className={
+          "sticky top-0 hidden h-svh shrink-0 flex-col border-r bg-sidebar transition-[width] duration-200 motion-reduce:transition-none md:flex " +
+          (sidebarOpen ? "w-60" : "w-16")
+        }
+      >
+        <div
           className={
-            "sticky top-0 hidden h-svh shrink-0 flex-col border-r bg-sidebar transition-[width] duration-200 motion-reduce:transition-none md:flex " +
-            (sidebarOpen ? "w-60" : "w-16")
+            sidebarOpen ? "space-y-6 px-5 py-7" : "space-y-6 px-3 py-7"
           }
         >
-          <div
-            className={
-              sidebarOpen ? "space-y-6 px-5 py-7" : "space-y-6 px-3 py-7"
-            }
-          >
-            <div className="flex items-center gap-2.5">
-              <RiBuildingLine className="size-6 shrink-0 text-primary" />
-              {sidebarOpen && (
-                <span className="font-heading text-xl font-semibold tracking-tight">
-                  {workspace?.appName}
-                </span>
-              )}
-            </div>
+          <div className="flex items-center gap-2.5">
+            <RiBuildingLine className="size-6 shrink-0 text-primary" />
             {sidebarOpen && (
-              <div className="flex items-center gap-2 rounded-lg border bg-background px-3 py-2.5 text-sm">
-                <Avatar className="size-6 rounded-md">
-                  <AvatarFallback className="rounded-md text-xs">
-                    {initials(workspace?.company.name)}
-                  </AvatarFallback>
-                </Avatar>
-                {workspace?.company.name}
-              </div>
+              <span className="font-heading text-xl font-semibold tracking-tight">
+                {workspace?.appName}
+              </span>
             )}
           </div>
-          <nav className="flex-1 space-y-1 overflow-y-auto px-2">
+          {sidebarOpen && (
+            <div className="flex items-center gap-2 rounded-lg border bg-background px-3 py-2.5 text-sm">
+              <Avatar className="size-6 rounded-md">
+                <AvatarFallback className="rounded-md text-xs">
+                  {initials(workspace?.company.name)}
+                </AvatarFallback>
+              </Avatar>
+              {workspace?.company.name}
+            </div>
+          )}
+        </div>
+        <nav className="flex-1 space-y-1 overflow-y-auto px-2">
+          {navItems.map(([id, label, Icon]) => (
+            <Button
+              key={id}
+              variant="ghost"
+              aria-label={label}
+              title={sidebarOpen ? undefined : label}
+              aria-current={tab === id ? "page" : undefined}
+              onClick={() => navigate(id)}
+              className={
+                "h-11 w-full justify-start gap-3 rounded-lg px-3 " +
+                (tab === id ? "bg-primary/10 text-primary" : "")
+              }
+            >
+              <Icon className="size-4 shrink-0" />
+              {sidebarOpen && <span>{label}</span>}
+            </Button>
+          ))}
+          {judgeMode && (
+            <>
+              <Separator className="my-5" />
+              {[
+                ["proof", "Proof & evaluation"],
+                ["evidence", "Evidence & tools"],
+                ["demo", "Walkthrough"],
+              ].map(([id, label]) => (
+                <Button
+                  key={id}
+                  variant="ghost"
+                  aria-label={label}
+                  title={label}
+                  onClick={() => navigate(id)}
+                  className="w-full justify-start overflow-hidden"
+                >
+                  {sidebarOpen ? label : label[0]}
+                </Button>
+              ))}
+            </>
+          )}
+        </nav>
+        <div className={"space-y-4 " + (sidebarOpen ? "p-5" : "p-3")}>
+          <Separator />
+          <div
+            className={
+              "flex items-center gap-3 " + (!sidebarOpen ? "flex-col" : "")
+            }
+          >
+            <Avatar className="size-9">
+              <AvatarFallback className="bg-primary/10 text-xs text-primary">
+                {initials(workspace?.employee.name)}
+              </AvatarFallback>
+            </Avatar>
+            {sidebarOpen && (
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">
+                  {workspace?.employee.name}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {workspace?.team.name}
+                </p>
+              </div>
+            )}
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={
+                theme === "dark"
+                  ? "Switch to light mode"
+                  : "Switch to dark mode"
+              }
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            >
+              {theme === "dark" ? <RiSunLine /> : <RiMoonLine />}
+            </Button>
+          </div>
+        </div>
+      </aside>
+      <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
+        <SheetContent side="left" className="w-72">
+          <SheetHeader>
+            <SheetTitle>{workspace?.appName || "Workspace"}</SheetTitle>
+            <SheetDescription>{workspace?.company.name}</SheetDescription>
+          </SheetHeader>
+          <nav
+            aria-label="Mobile workspace navigation"
+            className="space-y-1 px-4"
+          >
             {navItems.map(([id, label, Icon]) => (
               <Button
                 key={id}
                 variant="ghost"
-                aria-label={label}
-                title={sidebarOpen ? undefined : label}
-                aria-current={tab === id ? "page" : undefined}
-                onClick={() => navigate(id)}
-                className={
-                  "h-11 w-full justify-start gap-3 rounded-lg px-3 " +
-                  (tab === id ? "bg-primary/10 text-primary" : "")
-                }
+                className="w-full justify-start gap-3"
+                onClick={() => {
+                  navigate(id)
+                  setMobileSidebarOpen(false)
+                }}
               >
-                <Icon className="size-4 shrink-0" />
-                {sidebarOpen && <span>{label}</span>}
+                <Icon />
+                {label}
               </Button>
             ))}
-            {judgeMode && (
-              <>
-                <Separator className="my-5" />
-                {[
-                  ["proof", "Proof & evaluation"],
-                  ["evidence", "Evidence & tools"],
-                  ["demo", "Walkthrough"],
-                ].map(([id, label]) => (
-                  <Button
-                    key={id}
-                    variant="ghost"
-                    aria-label={label}
-                    title={label}
-                    onClick={() => navigate(id)}
-                    className="w-full justify-start overflow-hidden"
-                  >
-                    {sidebarOpen ? label : label[0]}
-                  </Button>
-                ))}
-              </>
-            )}
-          </nav>
-          <div className={"space-y-4 " + (sidebarOpen ? "p-5" : "p-3")}>
-            <Separator />
-            <div
-              className={
-                "flex items-center gap-3 " + (!sidebarOpen ? "flex-col" : "")
-              }
-            >
-              <Avatar className="size-9">
-                <AvatarFallback className="bg-primary/10 text-xs text-primary">
-                  {initials(workspace?.employee.name)}
-                </AvatarFallback>
-              </Avatar>
-              {sidebarOpen && (
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">
-                    {workspace?.employee.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {workspace?.team.name}
-                  </p>
-                </div>
-              )}
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label={
-                  theme === "dark"
-                    ? "Switch to light mode"
-                    : "Switch to dark mode"
-                }
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              >
-                {theme === "dark" ? <RiSunLine /> : <RiMoonLine />}
-              </Button>
-            </div>
-          </div>
-        </aside>
-        <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
-          <SheetContent side="left" className="w-72">
-            <SheetHeader>
-              <SheetTitle>{workspace?.appName || "Workspace"}</SheetTitle>
-              <SheetDescription>{workspace?.company.name}</SheetDescription>
-            </SheetHeader>
-            <nav
-              aria-label="Mobile workspace navigation"
-              className="space-y-1 px-4"
-            >
-              {navItems.map(([id, label, Icon]) => (
+            {judgeMode &&
+              [
+                ["proof", "Proof & evaluation"],
+                ["evidence", "Evidence & tools"],
+                ["demo", "Walkthrough"],
+              ].map(([id, label]) => (
                 <Button
                   key={id}
                   variant="ghost"
-                  className="w-full justify-start gap-3"
+                  className="w-full justify-start"
                   onClick={() => {
                     navigate(id)
                     setMobileSidebarOpen(false)
                   }}
                 >
-                  <Icon />
                   {label}
                 </Button>
               ))}
-              {judgeMode &&
-                [
-                  ["proof", "Proof & evaluation"],
-                  ["evidence", "Evidence & tools"],
-                  ["demo", "Walkthrough"],
-                ].map(([id, label]) => (
-                  <Button
-                    key={id}
-                    variant="ghost"
-                    className="w-full justify-start"
-                    onClick={() => {
-                      navigate(id)
-                      setMobileSidebarOpen(false)
-                    }}
-                  >
-                    {label}
-                  </Button>
-                ))}
-            </nav>
-          </SheetContent>
-        </Sheet>
-        <div className="min-w-0 flex-1">
-          <header className="flex min-h-16 flex-wrap items-center justify-between gap-3 border-b px-5 py-3 lg:px-10">
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="hidden md:inline-flex"
-                aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
-                aria-expanded={sidebarOpen}
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-              >
-                <RiSideBarLine />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="md:hidden"
-                aria-label="Open navigation"
-                onClick={() => setMobileSidebarOpen(true)}
-              >
-                <RiMenuLine />
-              </Button>
-              <span className="text-sm text-muted-foreground">Workspace</span>
-              <span className="text-muted-foreground">/</span>
-              <span className="text-sm font-medium">{pageTitle}</span>
-            </div>
-            <form
-              className="flex w-full items-center gap-2 sm:w-72"
-              onSubmit={(e) => {
-                e.preventDefault()
-                stop()
-                void request("/api/search", { query: searchQuery }, "sources")
-              }}
+          </nav>
+        </SheetContent>
+      </Sheet>
+      <div className="min-w-0 flex-1">
+        <header className="flex min-h-16 flex-wrap items-center justify-between gap-3 border-b px-5 py-3 lg:px-10">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="hidden md:inline-flex"
+              aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+              aria-expanded={sidebarOpen}
+              onClick={() => setSidebarOpen(!sidebarOpen)}
             >
-              <Label htmlFor="workspace-search" className="sr-only">
-                Search your company
-              </Label>
-              <div className="relative flex-1">
-                <RiSearchLine className="pointer-events-none absolute top-2.5 left-3 size-4 text-muted-foreground" />
-                <Input
-                  id="workspace-search"
-                  className="h-9 bg-muted/30 pl-9"
-                  placeholder="Search your company"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  maxLength={200}
-                  required
-                />
-              </div>
-              <Button
-                type="submit"
-                variant="ghost"
-                size="icon-sm"
-                aria-label="Search"
-                disabled={busy}
-              >
-                <RiArrowRightLine />
-              </Button>
-            </form>
-          </header>
-          <main
-            className={
-              "mx-auto flex w-full flex-col gap-7 px-5 py-8 [view-transition-name:work-area] md:px-9 lg:px-12 lg:py-10 " +
-              (tab === "assignment" ? "max-w-3xl" : "max-w-7xl")
-            }
+              <RiSideBarLine />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="md:hidden"
+              aria-label="Open navigation"
+              onClick={() => setMobileSidebarOpen(true)}
+            >
+              <RiMenuLine />
+            </Button>
+            <span className="text-sm text-muted-foreground">Workspace</span>
+            <span className="text-muted-foreground">/</span>
+            <span className="text-sm font-medium">{pageTitle}</span>
+          </div>
+          <form
+            className="flex w-full items-center gap-2 sm:w-72"
+            onSubmit={(e) => {
+              e.preventDefault()
+              stop()
+              void request("/api/search", { query: searchQuery }, "sources")
+            }}
           >
-            {error && (
-              <Alert variant="destructive" role="alert">
-                <AlertTitle>Operation could not finish</AlertTitle>
-                <AlertDescription>
-                  {error} Previous results can be out of date.
-                </AlertDescription>
-              </Alert>
-            )}
-            {playing && (
-              <Alert>
-                <AlertTitle>
-                  Walkthrough · {demoStep} of {steps.length}
-                </AlertTitle>
-                <AlertDescription>
-                  {demoLabel}
-                  <Button variant="link" onClick={stop}>
-                    Pause walkthrough
-                  </Button>
-                </AlertDescription>
-              </Alert>
-            )}
-            <Tabs value={tab} onValueChange={(v) => navigate(String(v))}>
-              <TabsList className="hidden">
-                <TabsTrigger value="workspace">Today</TabsTrigger>
-                <TabsTrigger value="calendar">Calendar</TabsTrigger>
-                <TabsTrigger value="notes">Notes</TabsTrigger>
-                <TabsTrigger value="proof">Proof & evaluation</TabsTrigger>
-                <TabsTrigger value="home">Tasks</TabsTrigger>
-                <TabsTrigger value="assignment">My task</TabsTrigger>
-                <TabsTrigger value="sources">Documents</TabsTrigger>
-                <TabsTrigger value="people">People</TabsTrigger>
-                <TabsTrigger value="evidence">Evidence & tools</TabsTrigger>
-                <TabsTrigger value="demo">Walkthrough</TabsTrigger>
-              </TabsList>
-              <TabsContent value="workspace" className="space-y-9">
-                <section className="space-y-2">
-                  <p className="text-xs text-muted-foreground">
-                    {workspace?.company.name}
-                    {workspace?.synthetic && " · Sample workspace"}
-                  </p>
-                  <h1 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
-                    {workspace
-                      ? `Hello, ${workspace.employee.name.split(" ")[0]}`
-                      : "Loading workspace…"}
-                  </h1>
-                  <p className="text-sm text-muted-foreground sm:text-base">
-                    Your work and the context behind it.
-                  </p>
-                </section>
-                <div className="flex items-center gap-6 border-b">
-                  <span className="border-b-2 border-primary pb-3 text-sm font-medium text-primary">
-                    My day
-                  </span>
-                  <span className="pb-3 text-xs text-muted-foreground">
-                    {workspace?.team.name} · {workspace?.team.department}
-                  </span>
-                </div>
-                {!context ? (
-                  <Skeleton className="h-72" />
-                ) : (
-                  <div className="grid gap-10 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
-                    <div className="space-y-9">
-                      <section className="space-y-4">
-                        <h2 className="font-heading text-lg font-semibold">
-                          Up next
-                        </h2>
-                        {firstMeeting ? (
-                          <Card className="gap-0 rounded-xl py-0 shadow-none">
-                            <CardContent className="space-y-4 p-5 sm:p-6">
-                              <div className="flex flex-wrap items-start gap-4">
-                                <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/5 text-primary">
-                                  <RiCalendarLine className="size-5" />
-                                </div>
-                                <div className="min-w-0 flex-1 space-y-2">
-                                  <h3 className="font-medium">
-                                    {firstMeeting[1]}
-                                  </h3>
-                                  <Badge
-                                    variant="secondary"
-                                    className="bg-primary/5 text-primary"
-                                  >
-                                    {workspace?.team.name}
-                                  </Badge>
-                                  <p className="text-xs text-muted-foreground">
-                                    {meetingDate(firstMeeting[3])} ·{" "}
-                                    {meetingTime(firstMeeting[3])}{" "}
-                                    {timezoneLabel}
-                                  </p>
-                                </div>
-                                <Button
-                                  size="sm"
-                                  onClick={() => setMeeting(firstMeeting)}
+            <Label htmlFor="workspace-search" className="sr-only">
+              Search your company
+            </Label>
+            <div className="relative flex-1">
+              <RiSearchLine className="pointer-events-none absolute top-2.5 left-3 size-4 text-muted-foreground" />
+              <Input
+                id="workspace-search"
+                className="h-9 bg-muted/30 pl-9"
+                placeholder="Search your company"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                maxLength={200}
+                required
+              />
+            </div>
+            <Button
+              type="submit"
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Search"
+              disabled={busy}
+            >
+              <RiArrowRightLine />
+            </Button>
+          </form>
+        </header>
+        <main
+          className={
+            "mx-auto flex w-full flex-col gap-7 px-5 py-8 [view-transition-name:work-area] md:px-9 lg:px-12 lg:py-10 " +
+            (tab === "assignment" ? "max-w-3xl" : "max-w-7xl")
+          }
+        >
+          {error && (
+            <Alert variant="destructive" role="alert">
+              <AlertTitle>Operation could not finish</AlertTitle>
+              <AlertDescription>
+                {error} Previous results can be out of date.
+              </AlertDescription>
+            </Alert>
+          )}
+          {playing && (
+            <Alert>
+              <AlertTitle>
+                Walkthrough · {demoStep} of {steps.length}
+              </AlertTitle>
+              <AlertDescription>
+                {demoLabel}
+                <Button variant="link" onClick={stop}>
+                  Pause walkthrough
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+          <Tabs value={tab} onValueChange={(v) => navigate(String(v))}>
+            <TabsList className="hidden">
+              <TabsTrigger value="workspace">Today</TabsTrigger>
+              <TabsTrigger value="calendar">Calendar</TabsTrigger>
+              <TabsTrigger value="notes">Notes</TabsTrigger>
+              <TabsTrigger value="proof">Proof & evaluation</TabsTrigger>
+              <TabsTrigger value="home">Tasks</TabsTrigger>
+              <TabsTrigger value="assignment">My task</TabsTrigger>
+              <TabsTrigger value="sources">Documents</TabsTrigger>
+              <TabsTrigger value="people">People</TabsTrigger>
+              <TabsTrigger value="evidence">Evidence & tools</TabsTrigger>
+              <TabsTrigger value="demo">Walkthrough</TabsTrigger>
+            </TabsList>
+            <TabsContent value="workspace" className="space-y-9">
+              <section className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  {workspace?.company.name}
+                  {workspace?.synthetic && " · Sample workspace"}
+                </p>
+                <h1 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
+                  {workspace
+                    ? `Hello, ${workspace.employee.name.split(" ")[0]}`
+                    : "Loading workspace…"}
+                </h1>
+                <p className="text-sm text-muted-foreground sm:text-base">
+                  Your work and the context behind it.
+                </p>
+              </section>
+              <div className="flex items-center gap-6 border-b">
+                <span className="border-b-2 border-primary pb-3 text-sm font-medium text-primary">
+                  My day
+                </span>
+                <span className="pb-3 text-xs text-muted-foreground">
+                  {workspace?.team.name} · {workspace?.team.department}
+                </span>
+              </div>
+              {!context ? (
+                <Skeleton className="h-72" />
+              ) : (
+                <div className="grid gap-10 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
+                  <div className="space-y-9">
+                    <section className="space-y-4">
+                      <h2 className="font-heading text-lg font-semibold">
+                        Up next
+                      </h2>
+                      {firstMeeting ? (
+                        <Card className="gap-0 rounded-xl py-0 shadow-none">
+                          <CardContent className="space-y-4 p-5 sm:p-6">
+                            <div className="flex flex-wrap items-start gap-4">
+                              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/5 text-primary">
+                                <RiCalendarLine className="size-5" />
+                              </div>
+                              <div className="min-w-0 flex-1 space-y-2">
+                                <h3 className="font-medium">
+                                  {firstMeeting[1]}
+                                </h3>
+                                <Badge
+                                  variant="secondary"
+                                  className="bg-primary/5 text-primary"
                                 >
-                                  Open meeting brief
+                                  {workspace?.team.name}
+                                </Badge>
+                                <p className="text-xs text-muted-foreground">
+                                  {meetingDate(firstMeeting[3])} ·{" "}
+                                  {meetingTime(firstMeeting[3])} {timezoneLabel}
+                                </p>
+                              </div>
+                              <Button
+                                size="sm"
+                                onClick={() => setMeeting(firstMeeting)}
+                              >
+                                Open meeting brief
+                              </Button>
+                            </div>
+                            {context.impact.length > 0 && (
+                              <div className="flex items-center gap-3 rounded-lg bg-primary/5 px-3 py-2">
+                                <RiInformationLine className="size-4 shrink-0 text-primary" />
+                                <p className="flex-1 text-xs">
+                                  Company guidance changed
+                                </p>
+                                <Button
+                                  variant="link"
+                                  size="sm"
+                                  className="h-auto px-0 text-xs"
+                                  disabled={busy}
+                                  onClick={() =>
+                                    void openAssignment(
+                                      context.findings[0]?.[0] ||
+                                        context.assignment
+                                    )
+                                  }
+                                >
+                                  Review update <RiArrowRightLine />
                                 </Button>
                               </div>
-                              {context.impact.length > 0 && (
-                                <div className="flex items-center gap-3 rounded-lg bg-primary/5 px-3 py-2">
-                                  <RiInformationLine className="size-4 shrink-0 text-primary" />
-                                  <p className="flex-1 text-xs">
-                                    Company guidance changed
-                                  </p>
+                            )}
+                            <Collapsible>
+                              <CollapsibleTrigger className="flex w-full items-center justify-between border-t pt-4 text-left text-xs font-medium">
+                                Connected context
+                                <RiArrowRightSLine className="size-4" />
+                              </CollapsibleTrigger>
+                              <CollapsibleContent className="space-y-1 pt-3">
+                                <p className="pb-2 text-xs text-muted-foreground">
+                                  Related records for this meeting
+                                </p>
+                                {firstMeeting[5] && (
                                   <Button
-                                    variant="link"
-                                    size="sm"
-                                    className="h-auto px-0 text-xs"
+                                    variant="ghost"
+                                    className="h-auto w-full justify-start py-3 text-left text-xs whitespace-normal"
+                                    onClick={() => showSource(firstMeeting[5])}
+                                  >
+                                    <RiFileTextLine />
+                                    Meeting notes
+                                    <RiArrowRightSLine className="ml-auto" />
+                                  </Button>
+                                )}
+                                {firstMeeting[4] && (
+                                  <Button
+                                    variant="ghost"
+                                    className="h-auto w-full justify-start py-3 text-left text-xs whitespace-normal"
                                     disabled={busy}
                                     onClick={() =>
-                                      void openAssignment(
-                                        context.findings[0]?.[0] ||
-                                          context.assignment
-                                      )
+                                      void openAssignment(firstMeeting[4])
                                     }
                                   >
-                                    Review update <RiArrowRightLine />
+                                    <RiCheckboxCircleLine />
+                                    Related task and approved guidance
+                                    <RiArrowRightSLine className="ml-auto" />
                                   </Button>
-                                </div>
-                              )}
-                              <Collapsible>
-                                <CollapsibleTrigger className="flex w-full items-center justify-between border-t pt-4 text-left text-xs font-medium">
-                                  Connected context
-                                  <RiArrowRightSLine className="size-4" />
-                                </CollapsibleTrigger>
-                                <CollapsibleContent className="space-y-1 pt-3">
-                                  <p className="pb-2 text-xs text-muted-foreground">
-                                    Related records for this meeting
-                                  </p>
-                                  {firstMeeting[5] && (
-                                    <Button
-                                      variant="ghost"
-                                      className="h-auto w-full justify-start py-3 text-left text-xs whitespace-normal"
-                                      onClick={() =>
-                                        showSource(firstMeeting[5])
-                                      }
-                                    >
-                                      <RiFileTextLine />
-                                      Meeting notes
-                                      <RiArrowRightSLine className="ml-auto" />
-                                    </Button>
-                                  )}
-                                  {firstMeeting[4] && (
-                                    <Button
-                                      variant="ghost"
-                                      className="h-auto w-full justify-start py-3 text-left text-xs whitespace-normal"
-                                      disabled={busy}
-                                      onClick={() =>
-                                        void openAssignment(firstMeeting[4])
-                                      }
-                                    >
-                                      <RiCheckboxCircleLine />
-                                      Related task and approved guidance
-                                      <RiArrowRightSLine className="ml-auto" />
-                                    </Button>
-                                  )}
-                                </CollapsibleContent>
-                              </Collapsible>
-                            </CardContent>
-                          </Card>
-                        ) : (
-                          <p className="text-sm text-muted-foreground">
-                            No meetings scheduled.
-                          </p>
-                        )}
-                      </section>
-                      <section className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <h2 className="font-heading text-lg font-semibold">
-                            Your tasks
-                          </h2>
+                                )}
+                              </CollapsibleContent>
+                            </Collapsible>
+                          </CardContent>
+                        </Card>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          No meetings scheduled.
+                        </p>
+                      )}
+                    </section>
+                    <section className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h2 className="font-heading text-lg font-semibold">
+                          Your tasks
+                        </h2>
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="text-xs"
+                          onClick={() => navigate("home")}
+                        >
+                          View all tasks <RiArrowRightLine />
+                        </Button>
+                      </div>
+                      <div className="divide-y border-t">
+                        {context.assignments.map((r) => (
                           <Button
-                            variant="link"
-                            size="sm"
-                            className="text-xs"
-                            onClick={() => navigate("home")}
+                            key={r[0]}
+                            variant="ghost"
+                            className="h-auto w-full justify-start gap-3 rounded-none px-0 py-5 text-left"
+                            disabled={busy}
+                            onClick={() => void openAssignment(r[0])}
                           >
-                            View all tasks <RiArrowRightLine />
-                          </Button>
-                        </div>
-                        <div className="divide-y border-t">
-                          {context.assignments.map((r) => (
-                            <Button
-                              key={r[0]}
-                              variant="ghost"
-                              className="h-auto w-full justify-start gap-3 rounded-none px-0 py-5 text-left"
-                              disabled={busy}
-                              onClick={() => void openAssignment(r[0])}
-                            >
-                              <RiCheckboxCircleLine className="size-5 shrink-0 text-muted-foreground" />
-                              <span className="min-w-0 flex-1 space-y-1 whitespace-normal">
-                                <span className="block text-sm font-medium">
-                                  {r[1]}
-                                </span>
-                                <span className="block text-xs font-normal text-muted-foreground">
-                                  {r[2]}
-                                </span>
+                            <RiCheckboxCircleLine className="size-5 shrink-0 text-muted-foreground" />
+                            <span className="min-w-0 flex-1 space-y-1 whitespace-normal">
+                              <span className="block text-sm font-medium">
+                                {r[1]}
                               </span>
-                              <RiArrowRightSLine className="size-4 shrink-0 text-muted-foreground" />
-                            </Button>
-                          ))}
-                        </div>
-                      </section>
-                    </div>
-                    <aside className="space-y-10">
-                      <section className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <h2 className="font-heading text-lg font-semibold">
-                            Schedule
-                          </h2>
-                          <Button
-                            variant="link"
-                            size="sm"
-                            className="text-xs"
-                            onClick={() => navigate("calendar")}
-                          >
-                            View calendar <RiArrowRightLine />
-                          </Button>
-                        </div>
-                        <div className="space-y-1 border-t pt-3">
-                          {context.meetings.map((r) => (
-                            <Button
-                              key={r[0]}
-                              variant="ghost"
-                              className="h-auto w-full items-start justify-start gap-4 px-0 py-4 text-left whitespace-normal"
-                              onClick={() => setMeeting(r)}
-                            >
-                              <span className="pt-0.5 text-xs font-normal text-muted-foreground">
-                                {meetingTime(r[3])}
+                              <span className="block text-xs font-normal text-muted-foreground">
+                                {r[2]}
                               </span>
-                              <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary/60" />
-                              <span className="space-y-1">
-                                <span className="block text-sm font-medium">
-                                  {r[1]}
-                                </span>
-                                <span className="block text-xs font-normal text-muted-foreground">
-                                  {meetingDate(r[3])} · {timezoneLabel}
-                                </span>
-                              </span>
-                            </Button>
-                          ))}
-                        </div>
-                      </section>
-                      <section className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <h2 className="font-heading text-lg font-semibold">
-                            Meeting notes
-                          </h2>
-                          <Button
-                            variant="link"
-                            size="sm"
-                            className="text-xs"
-                            onClick={() => navigate("notes")}
-                          >
-                            View all <RiArrowRightLine />
+                            </span>
+                            <RiArrowRightSLine className="size-4 shrink-0 text-muted-foreground" />
                           </Button>
-                        </div>
-                        <div className="divide-y border-t">
-                          {context.notes
-                            .filter((r) => context.meetings.some(meeting => meeting[5] === r[0]))
-                            .slice(0, 3)
-                            .map((r) => (
-                              <Button
-                                key={r[0]}
-                                variant="ghost"
-                                className="h-auto w-full justify-start gap-3 px-0 py-4 text-left whitespace-normal"
-                                onClick={() => showSource(r[0])}
-                              >
-                                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
-                                  <RiFileTextLine className="size-4 text-muted-foreground" />
-                                </span>
-                                <span className="flex-1 text-sm font-normal">
-                                  {r[1]}
-                                </span>
-                                <RiArrowRightSLine className="size-4 text-muted-foreground" />
-                              </Button>
-                            ))}
-                        </div>
-                      </section>
-                    </aside>
+                        ))}
+                      </div>
+                    </section>
                   </div>
-                )}
-              </TabsContent>
-              <TabsContent value="calendar" className="space-y-8">
-                <section className="space-y-2">
-                  <h1 className="font-heading text-3xl font-semibold tracking-tight">
-                    Calendar
-                  </h1>
-                  <p className="text-sm text-muted-foreground">
-                    Meetings, with the work and notes you need. All times are
-                    {timezoneLabel}.
+                  <aside className="space-y-10">
+                    <section className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h2 className="font-heading text-lg font-semibold">
+                          Schedule
+                        </h2>
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="text-xs"
+                          onClick={() => navigate("calendar")}
+                        >
+                          View calendar <RiArrowRightLine />
+                        </Button>
+                      </div>
+                      <div className="space-y-1 border-t pt-3">
+                        {context.meetings.map((r) => (
+                          <Button
+                            key={r[0]}
+                            variant="ghost"
+                            className="h-auto w-full items-start justify-start gap-4 px-0 py-4 text-left whitespace-normal"
+                            onClick={() => setMeeting(r)}
+                          >
+                            <span className="pt-0.5 text-xs font-normal text-muted-foreground">
+                              {meetingTime(r[3])}
+                            </span>
+                            <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary/60" />
+                            <span className="space-y-1">
+                              <span className="block text-sm font-medium">
+                                {r[1]}
+                              </span>
+                              <span className="block text-xs font-normal text-muted-foreground">
+                                {meetingDate(r[3])} · {timezoneLabel}
+                              </span>
+                            </span>
+                          </Button>
+                        ))}
+                      </div>
+                    </section>
+                    <section className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h2 className="font-heading text-lg font-semibold">
+                          Meeting notes
+                        </h2>
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="text-xs"
+                          onClick={() => navigate("notes")}
+                        >
+                          View all <RiArrowRightLine />
+                        </Button>
+                      </div>
+                      <div className="divide-y border-t">
+                        {context.notes
+                          .filter((r) =>
+                            context.meetings.some(
+                              (meeting) => meeting[5] === r[0]
+                            )
+                          )
+                          .slice(0, 3)
+                          .map((r) => (
+                            <Button
+                              key={r[0]}
+                              variant="ghost"
+                              className="h-auto w-full justify-start gap-3 px-0 py-4 text-left whitespace-normal"
+                              onClick={() => showSource(r[0])}
+                            >
+                              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+                                <RiFileTextLine className="size-4 text-muted-foreground" />
+                              </span>
+                              <span className="flex-1 text-sm font-normal">
+                                {r[1]}
+                              </span>
+                              <RiArrowRightSLine className="size-4 text-muted-foreground" />
+                            </Button>
+                          ))}
+                      </div>
+                    </section>
+                  </aside>
+                </div>
+              )}
+            </TabsContent>
+            <TabsContent value="calendar" className="space-y-8">
+              <section className="space-y-2">
+                <h1 className="font-heading text-3xl font-semibold tracking-tight">
+                  Calendar
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  Meetings, with the work and notes you need. All times are
+                  {timezoneLabel}.
+                </p>
+              </section>
+              <div className="divide-y border-y">
+                {context?.meetings.map((r) => (
+                  <Button
+                    key={r[0]}
+                    variant="ghost"
+                    className="h-auto w-full items-start justify-start gap-5 rounded-none px-0 py-6 text-left"
+                    onClick={() => setMeeting(r)}
+                  >
+                    <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/5 text-primary">
+                      <RiCalendarLine className="size-5" />
+                    </span>
+                    <span className="min-w-0 flex-1 space-y-2 whitespace-normal">
+                      <span className="block text-xs font-normal text-muted-foreground">
+                        {meetingDate(r[3])} · {meetingTime(r[3])}{" "}
+                        {timezoneLabel}
+                      </span>
+                      <span className="block text-base font-medium">
+                        {r[1]}
+                      </span>
+                      <span className="block text-sm font-normal text-muted-foreground">
+                        {r[2]}
+                      </span>
+                    </span>
+                    <RiArrowRightSLine className="mt-3 size-4 shrink-0 text-muted-foreground" />
+                  </Button>
+                ))}
+              </div>
+            </TabsContent>
+            <TabsContent value="notes" className="space-y-8">
+              <section className="space-y-2">
+                <h1 className="font-heading text-3xl font-semibold tracking-tight">
+                  Notes
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  Meeting records and your workspace note.
+                </p>
+              </section>
+              <div className="grid items-start gap-10 lg:grid-cols-[1.3fr_1fr]">
+                <section className="space-y-4">
+                  <h2 className="text-sm font-medium">Saved notes</h2>
+                  <Accordion>
+                    {context?.notes.map((r) => (
+                      <AccordionItem key={r[0]} value={r[0]}>
+                        <AccordionTrigger>{r[1]}</AccordionTrigger>
+                        <AccordionContent className="leading-7 whitespace-pre-wrap">
+                          {r[2]}
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                </section>
+                <section className="space-y-4 rounded-xl border bg-muted/20 p-5">
+                  <Label htmlFor="workspace-note">Your workspace note</Label>
+                  <Textarea
+                    id="workspace-note"
+                    className="min-h-40 bg-background"
+                    value={workspaceNote}
+                    onChange={(e) => setWorkspaceNote(e.target.value)}
+                    maxLength={500}
+                    placeholder="Keep a question or follow-up here…"
+                  />
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">
+                      {workspaceNote.length} / 500
+                    </p>
+                    <Button
+                      disabled={busy || !workspaceNote.trim()}
+                      onClick={() =>
+                        void request("/api/action", {
+                          name: "save-note",
+                          note: workspaceNote,
+                        })
+                      }
+                    >
+                      {busy ? "Saving…" : "Save note"}
+                    </Button>
+                  </div>
+                  <p className="text-xs leading-5 text-muted-foreground">
+                    Saved in your sample workspace. Do not enter private company
+                    information.
                   </p>
                 </section>
-                <div className="divide-y border-y">
-                  {context?.meetings.map((r) => (
+              </div>
+            </TabsContent>
+            {judgeMode && (
+              <TabsContent value="proof" className="space-y-8">
+                <section className="max-w-3xl space-y-4">
+                  <Badge>{workspace?.appName} / Review in two minutes</Badge>
+                  <h1 className="font-heading text-3xl font-semibold tracking-tight lg:text-4xl">
+                    Keep company work connected to current decisions.
+                  </h1>
+                  <p className="text-base leading-7 text-muted-foreground">
+                    An approved decision can replace advice in an older guide.
+                    This workspace connects the assignment to both sources,
+                    explains the conflict, and flags the saved plan when the
+                    decision changes again.
+                  </p>
+                  <div className="flex flex-wrap gap-3">
                     <Button
-                      key={r[0]}
-                      variant="ghost"
-                      className="h-auto w-full items-start justify-start gap-5 rounded-none px-0 py-6 text-left"
-                      onClick={() => setMeeting(r)}
+                      disabled={busy || playing}
+                      onClick={() => void play()}
                     >
-                      <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/5 text-primary">
-                        <RiCalendarLine className="size-5" />
-                      </span>
-                      <span className="min-w-0 flex-1 space-y-2 whitespace-normal">
-                        <span className="block text-xs font-normal text-muted-foreground">
-                          {meetingDate(r[3])} · {meetingTime(r[3])}{" "}
-                          {timezoneLabel}
-                        </span>
-                        <span className="block text-base font-medium">
-                          {r[1]}
-                        </span>
-                        <span className="block text-sm font-normal text-muted-foreground">
-                          {r[2]}
-                        </span>
-                      </span>
-                      <RiArrowRightSLine className="mt-3 size-4 shrink-0 text-muted-foreground" />
+                      Run the evidence walkthrough
                     </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => navigate("assignment")}
+                    >
+                      Try the employee task
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Real FalkorDB operations in your isolated sample workspace.
+                    No model credits required for this walkthrough.
+                  </p>
+                </section>
+                <div className="grid gap-5 md:grid-cols-3">
+                  {[
+                    [
+                      "Find the conflict",
+                      "Follow assignment → service → approved decision → superseded advice → original guide.",
+                    ],
+                    [
+                      "See what changes",
+                      "Replace the approved decision. The saved plan is flagged for review; new guidance becomes unread.",
+                    ],
+                    [
+                      "Refuse to guess",
+                      "Conflicting approvals or missing sources block plan acceptance. A missing reviewer stays missing.",
+                    ],
+                  ].map(([title, body]) => (
+                    <Card key={title} className="shadow-none">
+                      <CardHeader>
+                        <CardTitle>{title}</CardTitle>
+                        <CardDescription className="leading-6">
+                          {body}
+                        </CardDescription>
+                      </CardHeader>
+                    </Card>
                   ))}
                 </div>
-              </TabsContent>
-              <TabsContent value="notes" className="space-y-8">
-                <section className="space-y-2">
-                  <h1 className="font-heading text-3xl font-semibold tracking-tight">
-                    Notes
-                  </h1>
-                  <p className="text-sm text-muted-foreground">
-                    Meeting records and your workspace note.
-                  </p>
-                </section>
-                <div className="grid items-start gap-10 lg:grid-cols-[1.3fr_1fr]">
+                {evaluation?.relationshipDiagnostic && (
                   <section className="space-y-4">
-                    <h2 className="text-sm font-medium">Saved notes</h2>
+                    <h2 className="font-heading text-xl font-semibold">
+                      Same documents. Different company state.
+                    </h2>
+                    <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
+                      We changed only graph relationships. Every source document
+                      kept the same ID, title, and body. The correct guidance or
+                      reviewer still changed.
+                    </p>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Relationship change</TableHead>
+                          <TableHead>Before</TableHead>
+                          <TableHead>After</TableHead>
+                          <TableHead>Documents</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {evaluation.relationshipDiagnostic.results.map((r) => (
+                          <TableRow key={r.case}>
+                            <TableCell>{r.case}</TableCell>
+                            <TableCell>{r.before}</TableCell>
+                            <TableCell>{r.after}</TableCell>
+                            <TableCell>
+                              {r.documentsUnchanged ? "Identical" : "Changed"}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                     <Accordion>
-                      {context?.notes.map((r) => (
-                        <AccordionItem key={r[0]} value={r[0]}>
-                          <AccordionTrigger>{r[1]}</AccordionTrigger>
-                          <AccordionContent className="leading-7 whitespace-pre-wrap">
-                            {r[2]}
-                          </AccordionContent>
-                        </AccordionItem>
-                      ))}
+                      <AccordionItem value="relationship-method">
+                        <AccordionTrigger>
+                          What this proves—and what it does not
+                        </AccordionTrigger>
+                        <AccordionContent className="space-y-3">
+                          <p>{evaluation.relationshipDiagnostic.method}</p>
+                          <p>{evaluation.relationshipDiagnostic.claim}</p>
+                          {evaluation.relationshipDiagnostic.results.map(
+                            (r) => (
+                              <section key={r.case}>
+                                <p className="font-medium">{r.case}</p>
+                                <pre className="overflow-auto text-xs whitespace-pre-wrap">
+                                  {r.query}
+                                </pre>
+                              </section>
+                            )
+                          )}
+                        </AccordionContent>
+                      </AccordionItem>
                     </Accordion>
                   </section>
-                  <section className="space-y-4 rounded-xl border bg-muted/20 p-5">
-                    <Label htmlFor="workspace-note">Your workspace note</Label>
-                    <Textarea
-                      id="workspace-note"
-                      className="min-h-40 bg-background"
-                      value={workspaceNote}
-                      onChange={(e) => setWorkspaceNote(e.target.value)}
-                      maxLength={500}
-                      placeholder="Keep a question or follow-up here…"
-                    />
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs text-muted-foreground">
-                        {workspaceNote.length} / 500
-                      </p>
-                      <Button
-                        disabled={busy || !workspaceNote.trim()}
-                        onClick={() =>
-                          void request("/api/action", {
-                            name: "save-note",
-                            note: workspaceNote,
-                          })
-                        }
-                      >
-                        {busy ? "Saving…" : "Save note"}
-                      </Button>
-                    </div>
-                    <p className="text-xs leading-5 text-muted-foreground">
-                      Saved in your sample workspace. Do not enter private
-                      company information.
-                    </p>
-                  </section>
-                </div>
-              </TabsContent>
-              {judgeMode && (
-                <TabsContent value="proof" className="space-y-8">
-                  <section className="max-w-3xl space-y-4">
-                    <Badge>{workspace?.appName} / Review in two minutes</Badge>
-                    <h1 className="font-heading text-3xl font-semibold tracking-tight lg:text-4xl">
-                      Keep company work connected to current decisions.
-                    </h1>
-                    <p className="text-base leading-7 text-muted-foreground">
-                      An approved decision can replace advice in an older guide.
-                      This workspace connects the assignment to both sources,
-                      explains the conflict, and flags the saved plan when the
-                      decision changes again.
-                    </p>
-                    <div className="flex flex-wrap gap-3">
-                      <Button
-                        disabled={busy || playing}
-                        onClick={() => void play()}
-                      >
-                        Run the evidence walkthrough
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => navigate("assignment")}
-                      >
-                        Try the employee task
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Real FalkorDB operations in your isolated sample
-                      workspace. No model credits required for this walkthrough.
-                    </p>
-                  </section>
-                  <div className="grid gap-5 md:grid-cols-3">
-                    {[
-                      [
-                        "Find the conflict",
-                        "Follow assignment → service → approved decision → superseded advice → original guide.",
-                      ],
-                      [
-                        "See what changes",
-                        "Replace the approved decision. The saved plan is flagged for review; new guidance becomes unread.",
-                      ],
-                      [
-                        "Refuse to guess",
-                        "Conflicting approvals or missing sources block plan acceptance. A missing reviewer stays missing.",
-                      ],
-                    ].map(([title, body]) => (
-                      <Card key={title} className="shadow-none">
-                        <CardHeader>
-                          <CardTitle>{title}</CardTitle>
-                          <CardDescription className="leading-6">
-                            {body}
-                          </CardDescription>
-                        </CardHeader>
-                      </Card>
-                    ))}
+                )}
+                <section className="space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h2 className="font-heading text-xl font-semibold">
+                      Reproducible evidence checks
+                    </h2>
+                    {evaluation && (
+                      <Badge variant="secondary">
+                        {evaluation.results.filter((r) => r.passed).length} /{" "}
+                        {evaluation.results.length} graph checks passed
+                      </Badge>
+                    )}
                   </div>
-                  {evaluation?.relationshipDiagnostic && (
-                    <section className="space-y-4">
-                      <h2 className="font-heading text-xl font-semibold">
-                        Same documents. Different company state.
-                      </h2>
-                      <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
-                        We changed only graph relationships. Every source
-                        document kept the same ID, title, and body. The correct
-                        guidance or reviewer still changed.
+                  {evaluationError && (
+                    <Alert variant="destructive">
+                      <AlertTitle>Evaluation report unavailable</AlertTitle>
+                      <AlertDescription>
+                        Run scripts/evaluate.py and rebuild the frontend.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  {!evaluation && !evaluationError && (
+                    <Skeleton className="h-48" />
+                  )}
+                  {evaluation && (
+                    <>
+                      <p className="text-sm leading-6 text-muted-foreground">
+                        {evaluation.dataset} Results below are a saved local
+                        run, not a live benchmark.
                       </p>
+                      {evaluation.modelDiagnostic && (
+                        <Alert>
+                          <AlertTitle>
+                            Graph context alone did not make the model safe
+                          </AlertTitle>
+                          <AlertDescription className="space-y-2">
+                            <p>
+                              Paired {evaluation.modelDiagnostic.model} check:
+                              document-only guidance{" "}
+                              {
+                                evaluation.modelDiagnostic.results.filter(
+                                  (r) => r.documents.correct
+                                ).length
+                              }
+                              /8; graph-context guidance{" "}
+                              {
+                                evaluation.modelDiagnostic.results.filter(
+                                  (r) => r.graph.correct
+                                ).length
+                              }
+                              /8. The model still failed to abstain on
+                              conflicting approval and missing source evidence.
+                              Some correct answers also used invalid citation
+                              IDs.
+                            </p>
+                            <p>
+                              The workspace does not let generated factual
+                              answers control review requests. The tested graph
+                              gates decide whether an action is allowed.
+                            </p>
+                            <Accordion>
+                              <AccordionItem value="model-method">
+                                <AccordionTrigger>
+                                  Paired model method
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                  {evaluation.modelDiagnostic.method}
+                                </AccordionContent>
+                              </AccordionItem>
+                            </Accordion>
+                          </AlertDescription>
+                        </Alert>
+                      )}
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Relationship change</TableHead>
-                            <TableHead>Before</TableHead>
-                            <TableHead>After</TableHead>
-                            <TableHead>Documents</TableHead>
+                            <TableHead>Case</TableHead>
+                            <TableHead>Expected</TableHead>
+                            <TableHead>{workspace?.appName}</TableHead>
+                            <TableHead>Keyword top result</TableHead>
+                            <TableHead>Check</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {evaluation.relationshipDiagnostic.results.map(
-                            (r) => (
-                              <TableRow key={r.case}>
-                                <TableCell>{r.case}</TableCell>
-                                <TableCell>{r.before}</TableCell>
-                                <TableCell>{r.after}</TableCell>
-                                <TableCell>
-                                  {r.documentsUnchanged
-                                    ? "Identical"
-                                    : "Changed"}
-                                </TableCell>
-                              </TableRow>
-                            )
-                          )}
+                          {evaluation.results.map((r) => (
+                            <TableRow key={r.case}>
+                              <TableCell className="max-w-64 whitespace-normal">
+                                <p className="font-medium">{r.case}</p>
+                                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                                  {r.detail}
+                                </p>
+                              </TableCell>
+                              <TableCell>{r.expected || "Abstain"}</TableCell>
+                              <TableCell>{r.graph || "Abstained"}</TableCell>
+                              <TableCell className="max-w-52 whitespace-normal">
+                                <p>{r.lexical || "No extracted answer"}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {r.lexicalSource}
+                                </p>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant={
+                                    r.passed ? "secondary" : "destructive"
+                                  }
+                                >
+                                  {r.passed ? "Pass" : "Fail"}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          ))}
                         </TableBody>
                       </Table>
                       <Accordion>
-                        <AccordionItem value="relationship-method">
+                        <AccordionItem value="method">
                           <AccordionTrigger>
-                            What this proves—and what it does not
+                            Method, limits, and how to reproduce
                           </AccordionTrigger>
-                          <AccordionContent className="space-y-3">
-                            <p>{evaluation.relationshipDiagnostic.method}</p>
-                            <p>{evaluation.relationshipDiagnostic.claim}</p>
-                            {evaluation.relationshipDiagnostic.results.map(
-                              (r) => (
-                                <section key={r.case}>
-                                  <p className="font-medium">{r.case}</p>
-                                  <pre className="overflow-auto text-xs whitespace-pre-wrap">
-                                    {r.query}
-                                  </pre>
-                                </section>
-                              )
-                            )}
+                          <AccordionContent className="space-y-4">
+                            <p>{evaluation.method}</p>
+                            <ul className="list-disc space-y-2 pl-5">
+                              {evaluation.limitations.map((r) => (
+                                <li key={r}>{r}</li>
+                              ))}
+                            </ul>
+                            <p>
+                              Reproduce: start FalkorDB, then run python
+                              scripts/evaluate.py. Each case uses a fresh graph
+                              that is deleted after the run.
+                            </p>
                           </AccordionContent>
                         </AccordionItem>
                       </Accordion>
-                    </section>
+                    </>
                   )}
-                  <section className="space-y-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <h2 className="font-heading text-xl font-semibold">
-                        Reproducible evidence checks
-                      </h2>
-                      {evaluation && (
-                        <Badge variant="secondary">
-                          {evaluation.results.filter((r) => r.passed).length} /{" "}
-                          {evaluation.results.length} graph checks passed
-                        </Badge>
-                      )}
-                    </div>
-                    {evaluationError && (
-                      <Alert variant="destructive">
-                        <AlertTitle>Evaluation report unavailable</AlertTitle>
-                        <AlertDescription>
-                          Run scripts/evaluate.py and rebuild the frontend.
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                    {!evaluation && !evaluationError && (
-                      <Skeleton className="h-48" />
-                    )}
-                    {evaluation && (
-                      <>
-                        <p className="text-sm leading-6 text-muted-foreground">
-                          {evaluation.dataset} Results below are a saved local
-                          run, not a live benchmark.
-                        </p>
-                        {evaluation.modelDiagnostic && (
-                          <Alert>
-                            <AlertTitle>
-                              Graph context alone did not make the model safe
-                            </AlertTitle>
-                            <AlertDescription className="space-y-2">
-                              <p>
-                                Paired {evaluation.modelDiagnostic.model} check:
-                                document-only guidance{" "}
-                                {
-                                  evaluation.modelDiagnostic.results.filter(
-                                    (r) => r.documents.correct
-                                  ).length
-                                }
-                                /8; graph-context guidance{" "}
-                                {
-                                  evaluation.modelDiagnostic.results.filter(
-                                    (r) => r.graph.correct
-                                  ).length
-                                }
-                                /8. The model still failed to abstain on
-                                conflicting approval and missing source
-                                evidence. Some correct answers also used invalid
-                                citation IDs.
-                              </p>
-                              <p>
-                                The workspace does not let generated factual answers
-                                control review requests. The tested graph gates
-                                decide whether an action is allowed.
-                              </p>
-                              <Accordion>
-                                <AccordionItem value="model-method">
-                                  <AccordionTrigger>
-                                    Paired model method
-                                  </AccordionTrigger>
-                                  <AccordionContent>
-                                    {evaluation.modelDiagnostic.method}
-                                  </AccordionContent>
-                                </AccordionItem>
-                              </Accordion>
-                            </AlertDescription>
-                          </Alert>
-                        )}
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Case</TableHead>
-                              <TableHead>Expected</TableHead>
-                              <TableHead>{workspace?.appName}</TableHead>
-                              <TableHead>Keyword top result</TableHead>
-                              <TableHead>Check</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {evaluation.results.map((r) => (
-                              <TableRow key={r.case}>
-                                <TableCell className="max-w-64 whitespace-normal">
-                                  <p className="font-medium">{r.case}</p>
-                                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                                    {r.detail}
-                                  </p>
-                                </TableCell>
-                                <TableCell>{r.expected || "Abstain"}</TableCell>
-                                <TableCell>{r.graph || "Abstained"}</TableCell>
-                                <TableCell className="max-w-52 whitespace-normal">
-                                  <p>{r.lexical || "No extracted answer"}</p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {r.lexicalSource}
-                                  </p>
-                                </TableCell>
-                                <TableCell>
-                                  <Badge
-                                    variant={
-                                      r.passed ? "secondary" : "destructive"
-                                    }
-                                  >
-                                    {r.passed ? "Pass" : "Fail"}
-                                  </Badge>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                        <Accordion>
-                          <AccordionItem value="method">
-                            <AccordionTrigger>
-                              Method, limits, and how to reproduce
-                            </AccordionTrigger>
-                            <AccordionContent className="space-y-4">
-                              <p>{evaluation.method}</p>
-                              <ul className="list-disc space-y-2 pl-5">
-                                {evaluation.limitations.map((r) => (
-                                  <li key={r}>{r}</li>
-                                ))}
-                              </ul>
-                              <p>
-                                Reproduce: start FalkorDB, then run python
-                                scripts/evaluate.py. Each case uses a fresh
-                                graph that is deleted after the run.
-                              </p>
-                            </AccordionContent>
-                          </AccordionItem>
-                        </Accordion>
-                      </>
-                    )}
-                  </section>
-                  <section className="space-y-3 border-t pt-6">
-                    <h2 className="font-heading text-lg font-semibold">
-                      What the prototype proves
-                    </h2>
-                    <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
-                      FalkorDB resolves approval and replacement relationships,
-                      stores assignment-specific progress, and runs a native
-                      shortest-path query. The optional OpenAI tool call reads
-                      that context and selects an allowlisted A2UI layout. Graph
-                      data supplies the facts.
-                    </p>
-                    <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
-                      The data is synthetic. There is no production login, HR
-                      integration, calendar booking, or automatic document
-                      ingestion. Public hosting and a recorded demo remain
-                      release tasks.
-                    </p>
-                    <Button
-                      variant="outline"
-                      onClick={() => navigate("evidence")}
-                    >
-                      Inspect the actual queries
-                    </Button>
-                  </section>
-                </TabsContent>
-              )}
-              <TabsContent value="home" className="space-y-6">
-                <h1 className="font-heading text-2xl font-semibold">
-                  Your tasks
-                </h1>
-                <div className="divide-y border-y">
-                  {context?.assignments.map((r) => (
-                    <div key={r[0]} className="flex items-center gap-4 py-5">
-                      <div className="min-w-0 flex-1 space-y-1">
-                        <p className="font-medium">{r[1]}</p>
-                        <p className="text-sm text-muted-foreground">{r[2]}</p>
-                      </div>
-                      <Button
-                        variant="outline"
-                        disabled={busy}
-                        onClick={() => void openAssignment(r[0])}
-                      >
-                        Open task
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </TabsContent>
-              <TabsContent
-                value="assignment"
-                className="mx-auto w-full max-w-2xl space-y-7"
-              >
-                <section className="space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    {workspace?.employee.name} / {workspace?.team.name}
-                  </p>
-                  <h1 className="font-heading text-3xl leading-tight font-semibold tracking-tight">
-                    {context?.task[0]?.[1] || "Loading your task…"}
-                  </h1>
-                  <p className="text-sm text-muted-foreground">
-                    Current task. One step at a time.
-                  </p>
                 </section>
-                {!context ? (
-                  <Skeleton className="h-64 w-full" />
-                ) : (
-                  <>
-                    <Card className="shadow-none">
-                      <CardHeader>
-                        <p className="text-xs font-medium text-primary">
-                          {stage === "done"
-                            ? "AWAITING REVIEW"
-                            : "YOUR NEXT STEP"}
-                        </p>
-                        <CardTitle className="pt-2 text-xl">
-                          {stageTitle}
-                        </CardTitle>
-                        <CardDescription className="leading-6">
-                          {stageDescription}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        {stage === "reading" && readingOpen && (
-                          <section className="space-y-3 rounded-lg border bg-muted/30 p-4">
-                            <p className="text-sm font-medium">
-                              {context.decisions[0]?.[3]}
-                            </p>
-                            <p className="text-sm leading-6">
-                              {context.decisions[0]?.[4]}
-                            </p>
-                          </section>
-                        )}
-                        {stage === "training" && (
-                          <p className="text-sm font-medium">
-                            {context.training.find((r) => !r[2])?.[1]}
-                          </p>
-                        )}
-                        {stage === "notes" && (
-                          <>
-                            <Label htmlFor="plan-note">
-                              What will you check with your reviewer?
-                            </Label>
-                            <Textarea
-                              id="plan-note"
-                              value={note}
-                              onChange={(e) => setNote(e.target.value)}
-                              maxLength={500}
-                              placeholder="For example: pending and failed payment states"
-                            />
-                            <p className="text-xs text-muted-foreground">
-                              Save these notes with the current approved
-                              guidance.
-                            </p>
-                          </>
-                        )}
-                        {stage === "done" && (
-                          <p className="text-sm">
-                            {context.reviewRequest[0][2]} ·{" "}
-                            {context.reviewRequest[0][1]}
-                          </p>
-                        )}
-                      </CardContent>
-                      <CardFooter>
-                        <Button
-                          disabled={
-                            busy ||
-                            stage === "blocked" ||
-                            (stage === "notes" && !note.trim())
-                          }
-                          onClick={() => void primaryAction()}
-                        >
-                          {busy
-                            ? "Saving…"
-                            : stage === "reading"
-                              ? readingOpen
-                                ? "I have read this guidance"
-                                : "Read current guidance"
-                              : stage === "training"
-                                ? "Record training complete"
-                                : stage === "notes"
-                                  ? "Save review notes"
-                                  : stage === "refresh"
-                                    ? "Accept updated guidance"
-                                    : stage === "review"
-                                      ? "Create review request"
-                                      : stage === "done"
-                                        ? "Edit review notes"
-                                        : "Clarification required"}
-                        </Button>
-                      </CardFooter>
-                    </Card>
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarFallback>
-                          {reviewer?.[1]
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("") || "?"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <p className="text-sm">
-                        <span className="text-muted-foreground">
-                          Reviewer:{" "}
-                        </span>
-                        {reviewer?.[1] || "Not assigned"}
-                      </p>
-                    </div>
-                    <Accordion multiple>
-                      {decoded!.order
-                        .filter((k) =>
-                          ["EvidenceComparison", "ProgressCard"].includes(k)
-                        )
-                        .map((kind) => (
-                          <AccordionItem key={kind} value={kind}>
-                            <AccordionTrigger>
-                              {kind === "EvidenceComparison"
-                                ? "Why this step?"
-                                : "My saved review notes"}
-                            </AccordionTrigger>
-                            <AccordionContent className="space-y-3">
-                              {kind === "EvidenceComparison" ? (
-                                <>
-                                  <p className="text-sm">
-                                    {context.conflicts.length
-                                      ? "Your starter guide points to a superseded decision. The workspace checked the replacement and its original source for this task."
-                                      : "This step follows the current guidance and prerequisites recorded for your task."}
-                                  </p>
-                                  <p className="text-sm font-medium">
-                                    {context.current ||
-                                      "No single source-backed approved decision is available."}
-                                  </p>
-                                  {context.decisions[0]?.[2] && (
-                                    <Button
-                                      variant="link"
-                                      className="h-auto p-0"
-                                      onClick={() =>
-                                        showSource(context.decisions[0][2]!)
-                                      }
-                                    >
-                                      Open source document
-                                    </Button>
-                                  )}
-                                  {context.conflicts.map((r) => (
-                                    <p
-                                      key={r[0]}
-                                      className="text-xs text-muted-foreground"
-                                    >
-                                      {r[5].join(" → ")}
-                                    </p>
-                                  ))}
-                                </>
-                              ) : (
-                                <>
-                                  <p className="text-sm">
-                                    {context.plan[0]?.[2] ||
-                                      "No review notes saved yet."}
-                                  </p>
-                                  {context.needsReview && (
-                                    <p className="text-sm text-destructive">
-                                      These notes use an older decision. Accept
-                                      the current guidance before requesting
-                                      review.
-                                    </p>
-                                  )}
-                                  <p className="text-xs text-muted-foreground">
-                                    Review requests stay in this sample
-                                    workspace. No message is sent.
-                                  </p>
-                                </>
-                              )}
-                            </AccordionContent>
-                          </AccordionItem>
-                        ))}
-                    </Accordion>
-                  </>
-                )}
-              </TabsContent>
-              <TabsContent value="sources" className="space-y-6">
-                <h1 className="font-heading text-3xl font-semibold tracking-tight">
-                  Knowledge
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  Company documents and the decisions behind your work.
-                </p>
-                <form
-                  className="flex gap-2"
-                  onSubmit={(e) => {
-                    e.preventDefault()
-                    void request("/api/search", { query: searchQuery })
-                  }}
-                >
-                  <Label htmlFor="document-search" className="sr-only">
-                    Search company documents
-                  </Label>
-                  <Input
-                    id="document-search"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search company documents…"
-                    maxLength={200}
-                    required
-                  />
-                  <Button type="submit" disabled={busy}>
-                    Search
+                <section className="space-y-3 border-t pt-6">
+                  <h2 className="font-heading text-lg font-semibold">
+                    What the prototype proves
+                  </h2>
+                  <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
+                    FalkorDB resolves approval and replacement relationships,
+                    stores assignment-specific progress, and runs a native
+                    shortest-path query. The optional OpenAI tool call reads
+                    that context and selects an allowlisted A2UI layout. Graph
+                    data supplies the facts.
+                  </p>
+                  <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
+                    The data is synthetic. There is no production login, HR
+                    integration, calendar booking, or automatic document
+                    ingestion. Public hosting and a recorded demo remain release
+                    tasks.
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate("evidence")}
+                  >
+                    Inspect the actual queries
                   </Button>
-                  {context?.searchResults && (
+                </section>
+              </TabsContent>
+            )}
+            <TabsContent value="home" className="space-y-6">
+              <h1 className="font-heading text-2xl font-semibold">
+                Your tasks
+              </h1>
+              <div className="divide-y border-y">
+                {context?.assignments.map((r) => (
+                  <div key={r[0]} className="flex items-center gap-4 py-5">
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <p className="font-medium">{r[1]}</p>
+                      <p className="text-sm text-muted-foreground">{r[2]}</p>
+                    </div>
                     <Button
                       variant="outline"
                       disabled={busy}
-                      onClick={() => {
-                        setSearchQuery("")
-                        void request("/api/context")
-                      }}
+                      onClick={() => void openAssignment(r[0])}
                     >
-                      Clear
+                      Open task
                     </Button>
-                  )}
-                </form>
-                {context?.searchResults && (
-                  <p role="status" className="text-xs text-muted-foreground">
-                    {context.searchResults.length} matching documents. Search
-                    relevance does not establish approval.
-                  </p>
-                )}
-                <Accordion
-                  value={openSources}
-                  onValueChange={(v) => setOpenSources(v.map(String))}
-                  multiple
-                >
-                  {(context?.searchResults || context?.sources)?.map((r) => (
-                    <AccordionItem
-                      id={"source-" + r[0]}
-                      key={r[0]}
-                      value={r[0]}
-                    >
-                      <AccordionTrigger>{r[1]}</AccordionTrigger>
-                      <AccordionContent>
-                        <p>{r[2]}</p>
-                        {context.decisions.some((d) => d[2] === r[0]) && (
-                          <Button
-                            variant="outline"
-                            disabled={
-                              busy || context.ambiguous || context.guidanceRead
-                            }
-                            onClick={() => void act("review")}
-                          >
-                            {context.guidanceRead
-                              ? "Marked as read"
-                              : "Mark current guidance as read"}
-                          </Button>
-                        )}
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-                {judgeMode && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => navigate("evidence")}
-                  >
-                    Technical inspector
-                  </Button>
-                )}
-              </TabsContent>
-              <TabsContent value="people" className="space-y-6">
-                <h1 className="font-heading text-3xl font-semibold tracking-tight">
-                  People
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+            <TabsContent
+              value="assignment"
+              className="mx-auto w-full max-w-2xl space-y-7"
+            >
+              <section className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  {workspace?.employee.name} / {workspace?.team.name}
+                </p>
+                <h1 className="font-heading text-3xl leading-tight font-semibold tracking-tight">
+                  {context?.task[0]?.[1] || "Loading your task…"}
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                  People who can help with your current assignment.
+                  Current task. One step at a time.
                 </p>
-                <Card>
-                  <CardContent className="space-y-5 pt-6">
-                    {context?.people.map((r) => (
-                      <div key={r[0]} className="flex items-center gap-3">
-                        <Avatar>
-                          <AvatarFallback>
-                            {r[1]
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium">{r[1]}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {r[3] === "REVIEWER_FOR"
-                              ? "Current reviewer"
-                              : "Approved alternate"}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {r[2]}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                    {context && !context.people.length && (
-                      <p>
-                        Ask {workspace?.team.name || "your team"} to assign a
-                        reviewer.
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              <TabsContent value="evidence" className="space-y-5 pt-5">
-                <Button variant="ghost" onClick={() => navigate("sources")}>
-                  Back to company knowledge
-                </Button>
-                <p className="text-sm text-muted-foreground">
-                  Completed graph operations for the latest successful request.
-                  These results are not streamed live.
-                </p>
-                {busy && (
-                  <Trace>
-                    <TraceLine status="running">
-                      <TraceTitle>Processing request</TraceTitle>
-                      <TraceDescription>
-                        Waiting for completed results
-                      </TraceDescription>
-                    </TraceLine>
-                  </Trace>
-                )}
-                {error && (
-                  <Trace>
-                    <TraceLine status="error">
-                      <TraceTitle>Request failed</TraceTitle>
-                    </TraceLine>
-                  </Trace>
-                )}
-                <Trace>
-                  {result?.trace.map((r, i) => (
-                    <TraceCollapsible key={i}>
-                      <TraceCollapsibleTrigger>
-                        <TraceLine>
-                          <TraceTitle>{r.tool}</TraceTitle>
-                          <TraceDescription>
-                            {r.executionPlan ? "Query plan" : `${r.rows} rows`}{" "}
-                            · {r.ms} ms
-                          </TraceDescription>
-                        </TraceLine>
-                      </TraceCollapsibleTrigger>
-                      <TraceCollapsibleContent>
-                        <pre className="overflow-auto text-xs break-words whitespace-pre-wrap">
-                          {r.query +
-                            "\n\n" +
-                            JSON.stringify(r.arguments, null, 2) +
-                            (r.executionPlan
-                              ? "\n\nExecution plan (not runtime profiling):\n" +
-                                r.executionPlan
-                              : "")}
-                        </pre>
-                      </TraceCollapsibleContent>
-                    </TraceCollapsible>
-                  ))}
-                </Trace>
-                <Accordion>
-                  <AccordionItem value="json">
-                    <AccordionTrigger>A2UI messages</AccordionTrigger>
-                    <AccordionContent>
-                      <pre className="max-h-96 overflow-auto text-xs break-words whitespace-pre-wrap">
-                        {JSON.stringify(result?.messages, null, 2)}
-                      </pre>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-              </TabsContent>
-              {judgeMode && (
-                <TabsContent value="demo" className="space-y-5 pt-5">
-                  <Card>
+              </section>
+              {!context ? (
+                <Skeleton className="h-64 w-full" />
+              ) : (
+                <>
+                  <Card className="shadow-none">
                     <CardHeader>
-                      <CardTitle>See the connected story</CardTitle>
-                      <CardDescription>{demoLabel}</CardDescription>
+                      <p className="text-xs font-medium text-primary">
+                        {stage === "done"
+                          ? "AWAITING REVIEW"
+                          : "YOUR NEXT STEP"}
+                      </p>
+                      <CardTitle className="pt-2 text-xl">
+                        {stageTitle}
+                      </CardTitle>
+                      <CardDescription className="leading-6">
+                        {stageDescription}
+                      </CardDescription>
                     </CardHeader>
-                    <CardContent>
-                      <Progress value={(demoStep / steps.length) * 100}>
-                        <ProgressLabel>Guided walkthrough</ProgressLabel>
-                        <ProgressValue>
-                          {() => `${demoStep} of ${steps.length}`}
-                        </ProgressValue>
-                      </Progress>
-                    </CardContent>
-                    <CardFooter className="flex flex-wrap gap-2">
-                      <Button
-                        onClick={() => void play()}
-                        disabled={busy || playing}
-                      >
-                        Play walkthrough
-                      </Button>
-                      {playing && (
-                        <Button variant="secondary" onClick={stop}>
-                          Pause
-                        </Button>
+                    <CardContent className="space-y-4">
+                      {stage === "reading" && readingOpen && (
+                        <section className="space-y-3 rounded-lg border bg-muted/30 p-4">
+                          <p className="text-sm font-medium">
+                            {context.decisions[0]?.[3]}
+                          </p>
+                          <p className="text-sm leading-6">
+                            {context.decisions[0]?.[4]}
+                          </p>
+                        </section>
                       )}
+                      {stage === "training" && (
+                        <p className="text-sm font-medium">
+                          {context.training.find((r) => !r[2])?.[1]}
+                        </p>
+                      )}
+                      {stage === "notes" && (
+                        <>
+                          <Label htmlFor="plan-note">
+                            What will you check with your reviewer?
+                          </Label>
+                          <Textarea
+                            id="plan-note"
+                            value={note}
+                            onChange={(e) => setNote(e.target.value)}
+                            maxLength={500}
+                            placeholder="For example: pending and failed payment states"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Save these notes with the current approved guidance.
+                          </p>
+                        </>
+                      )}
+                      {stage === "done" && (
+                        <p className="text-sm">
+                          {context.reviewRequest[0][2]} ·{" "}
+                          {context.reviewRequest[0][1]}
+                        </p>
+                      )}
+                    </CardContent>
+                    <CardFooter>
                       <Button
-                        variant="outline"
-                        onClick={() => {
-                          stop()
-                          void next()
-                        }}
-                        disabled={busy}
+                        disabled={
+                          busy ||
+                          stage === "blocked" ||
+                          (stage === "notes" && !note.trim())
+                        }
+                        onClick={() => void primaryAction()}
                       >
-                        Next step
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        onClick={() => void reset()}
-                        disabled={busy}
-                      >
-                        Reset sample
+                        {busy
+                          ? "Saving…"
+                          : stage === "reading"
+                            ? readingOpen
+                              ? "I have read this guidance"
+                              : "Read current guidance"
+                            : stage === "training"
+                              ? "Record training complete"
+                              : stage === "notes"
+                                ? "Save review notes"
+                                : stage === "refresh"
+                                  ? "Accept updated guidance"
+                                  : stage === "review"
+                                    ? "Create review request"
+                                    : stage === "done"
+                                      ? "Edit review notes"
+                                      : "Clarification required"}
                       </Button>
                     </CardFooter>
                   </Card>
-                  <p className="text-xs text-muted-foreground">
-                    The walkthrough runs real graph actions without AI calls.
-                  </p>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Change the sample</CardTitle>
-                      <CardDescription>
-                        Changes affect only your workspace.
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex flex-wrap gap-2">
-                      <Button
-                        variant="outline"
-                        disabled={
-                          busy || assignment !== workspace?.demo.assignment
-                        }
-                        onClick={() => void act("replace")}
-                      >
-                        Replace decision
-                      </Button>
-                      <Button
-                        variant="outline"
-                        disabled={
-                          busy || assignment !== workspace?.demo.assignment
-                        }
-                        onClick={() => void act("remove-owner")}
-                      >
-                        Remove owner
-                      </Button>
-                      <Button
-                        variant="outline"
-                        disabled={busy}
-                        onClick={() => void act("complete")}
-                      >
-                        Complete training
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
+                  <div className="flex items-center gap-3">
+                    <Avatar>
+                      <AvatarFallback>
+                        {reviewer?.[1]
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("") || "?"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <p className="text-sm">
+                      <span className="text-muted-foreground">Reviewer: </span>
+                      {reviewer?.[1] || "Not assigned"}
+                    </p>
+                  </div>
+                  <Accordion multiple>
+                    {decoded!.order
+                      .filter((k) =>
+                        ["EvidenceComparison", "ProgressCard"].includes(k)
+                      )
+                      .map((kind) => (
+                        <AccordionItem key={kind} value={kind}>
+                          <AccordionTrigger>
+                            {kind === "EvidenceComparison"
+                              ? "Why this step?"
+                              : "My saved review notes"}
+                          </AccordionTrigger>
+                          <AccordionContent className="space-y-3">
+                            {kind === "EvidenceComparison" ? (
+                              <>
+                                <p className="text-sm">
+                                  {context.conflicts.length
+                                    ? "Your starter guide points to a superseded decision. The workspace checked the replacement and its original source for this task."
+                                    : "This step follows the current guidance and prerequisites recorded for your task."}
+                                </p>
+                                <p className="text-sm font-medium">
+                                  {context.current ||
+                                    "No single source-backed approved decision is available."}
+                                </p>
+                                {context.decisions[0]?.[2] && (
+                                  <Button
+                                    variant="link"
+                                    className="h-auto p-0"
+                                    onClick={() =>
+                                      showSource(context.decisions[0][2]!)
+                                    }
+                                  >
+                                    Open source document
+                                  </Button>
+                                )}
+                                {context.conflicts.map((r) => (
+                                  <p
+                                    key={r[0]}
+                                    className="text-xs text-muted-foreground"
+                                  >
+                                    {r[5].join(" → ")}
+                                  </p>
+                                ))}
+                              </>
+                            ) : (
+                              <>
+                                <p className="text-sm">
+                                  {context.plan[0]?.[2] ||
+                                    "No review notes saved yet."}
+                                </p>
+                                {context.needsReview && (
+                                  <p className="text-sm text-destructive">
+                                    These notes use an older decision. Accept
+                                    the current guidance before requesting
+                                    review.
+                                  </p>
+                                )}
+                                <p className="text-xs text-muted-foreground">
+                                  Review requests stay in this sample workspace.
+                                  No message is sent.
+                                </p>
+                              </>
+                            )}
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                  </Accordion>
+                </>
               )}
-            </Tabs>
-            {tab === "assignment" && (
-              <Accordion className="mx-auto w-full max-w-2xl">
-                <AccordionItem value="help">
-                  <AccordionTrigger>
-                    Need help with this assignment?
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <form
-                      className="space-y-3"
-                      onSubmit={(e) => {
-                        e.preventDefault()
-                        stop()
-                        void request("/api/agent", { prompt })
-                      }}
-                    >
-                      <Label htmlFor="ai-invite">AI invite code</Label>
-                      <Input
-                        id="ai-invite"
-                        type="password"
-                        autoComplete="off"
-                        value={aiCode}
-                        onChange={(e) => setAiCode(e.target.value)}
-                        placeholder="Required for live AI access"
-                        minLength={16}
-                        maxLength={256}
-                        required
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        The code stays in this tab only. Public graph
-                        exploration does not need a code.
-                      </p>
-                      {aiCode && (
+            </TabsContent>
+            <TabsContent value="sources" className="space-y-6">
+              <h1 className="font-heading text-3xl font-semibold tracking-tight">
+                Knowledge
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Company documents and the decisions behind your work.
+              </p>
+              <form
+                className="flex gap-2"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  void request("/api/search", { query: searchQuery })
+                }}
+              >
+                <Label htmlFor="document-search" className="sr-only">
+                  Search company documents
+                </Label>
+                <Input
+                  id="document-search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search company documents…"
+                  maxLength={200}
+                  required
+                />
+                <Button type="submit" disabled={busy}>
+                  Search
+                </Button>
+                {context?.searchResults && (
+                  <Button
+                    variant="outline"
+                    disabled={busy}
+                    onClick={() => {
+                      setSearchQuery("")
+                      void request("/api/context")
+                    }}
+                  >
+                    Clear
+                  </Button>
+                )}
+              </form>
+              {context?.searchResults && (
+                <p role="status" className="text-xs text-muted-foreground">
+                  {context.searchResults.length} matching documents. Search
+                  relevance does not establish approval.
+                </p>
+              )}
+              <Accordion
+                value={openSources}
+                onValueChange={(v) => setOpenSources(v.map(String))}
+                multiple
+              >
+                {(context?.searchResults || context?.sources)?.map((r) => (
+                  <AccordionItem id={"source-" + r[0]} key={r[0]} value={r[0]}>
+                    <AccordionTrigger>{r[1]}</AccordionTrigger>
+                    <AccordionContent>
+                      <p>{r[2]}</p>
+                      {context.decisions.some((d) => d[2] === r[0]) && (
                         <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setAiCode("")}
+                          variant="outline"
+                          disabled={
+                            busy || context.ambiguous || context.guidanceRead
+                          }
+                          onClick={() => void act("review")}
                         >
-                          Clear invite code
+                          {context.guidanceRead
+                            ? "Marked as read"
+                            : "Mark current guidance as read"}
                         </Button>
                       )}
-                      <Label htmlFor="prompt">
-                        What would you like to know?
-                      </Label>
-                      <div className="flex flex-col gap-2 sm:flex-row">
-                        <Input
-                          id="prompt"
-                          value={prompt}
-                          onChange={(e) => setPrompt(e.target.value)}
-                          maxLength={1000}
-                          placeholder="Ask about this assignment…"
-                          required
-                        />
-                        <Button type="submit" disabled={busy}>
-                          {busy ? "Working…" : "Ask about this task"}
-                        </Button>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+              {judgeMode && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate("evidence")}
+                >
+                  Technical inspector
+                </Button>
+              )}
+            </TabsContent>
+            <TabsContent value="people" className="space-y-6">
+              <h1 className="font-heading text-3xl font-semibold tracking-tight">
+                People
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                People who can help with your current assignment.
+              </p>
+              <Card>
+                <CardContent className="space-y-5 pt-6">
+                  {context?.people.map((r) => (
+                    <div key={r[0]} className="flex items-center gap-3">
+                      <Avatar>
+                        <AvatarFallback>
+                          {r[1]
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">{r[1]}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {r[3] === "REVIEWER_FOR"
+                            ? "Current reviewer"
+                            : "Approved alternate"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{r[2]}</p>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        The workspace uses your assignment and company sources to
-                        organize the guidance above.
-                      </p>
-                    </form>
+                    </div>
+                  ))}
+                  {context && !context.people.length && (
+                    <p>
+                      Ask {workspace?.team.name || "your team"} to assign a
+                      reviewer.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="evidence" className="space-y-5 pt-5">
+              <Button variant="ghost" onClick={() => navigate("sources")}>
+                Back to company knowledge
+              </Button>
+              <p className="text-sm text-muted-foreground">
+                Completed graph operations for the latest successful request.
+                These results are not streamed live.
+              </p>
+              {busy && (
+                <Trace>
+                  <TraceLine status="running">
+                    <TraceTitle>Processing request</TraceTitle>
+                    <TraceDescription>
+                      Waiting for completed results
+                    </TraceDescription>
+                  </TraceLine>
+                </Trace>
+              )}
+              {error && (
+                <Trace>
+                  <TraceLine status="error">
+                    <TraceTitle>Request failed</TraceTitle>
+                  </TraceLine>
+                </Trace>
+              )}
+              <Trace>
+                {result?.trace.map((r, i) => (
+                  <TraceCollapsible key={i}>
+                    <TraceCollapsibleTrigger>
+                      <TraceLine>
+                        <TraceTitle>{r.tool}</TraceTitle>
+                        <TraceDescription>
+                          {r.executionPlan ? "Query plan" : `${r.rows} rows`} ·{" "}
+                          {r.ms} ms
+                        </TraceDescription>
+                      </TraceLine>
+                    </TraceCollapsibleTrigger>
+                    <TraceCollapsibleContent>
+                      <pre className="overflow-auto text-xs break-words whitespace-pre-wrap">
+                        {r.query +
+                          "\n\n" +
+                          JSON.stringify(r.arguments, null, 2) +
+                          (r.executionPlan
+                            ? "\n\nExecution plan (not runtime profiling):\n" +
+                              r.executionPlan
+                            : "")}
+                      </pre>
+                    </TraceCollapsibleContent>
+                  </TraceCollapsible>
+                ))}
+              </Trace>
+              <Accordion>
+                <AccordionItem value="json">
+                  <AccordionTrigger>A2UI messages</AccordionTrigger>
+                  <AccordionContent>
+                    <pre className="max-h-96 overflow-auto text-xs break-words whitespace-pre-wrap">
+                      {JSON.stringify(result?.messages, null, 2)}
+                    </pre>
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
+            </TabsContent>
+            {judgeMode && (
+              <TabsContent value="demo" className="space-y-5 pt-5">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>See the connected story</CardTitle>
+                    <CardDescription>{demoLabel}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Progress value={(demoStep / steps.length) * 100}>
+                      <ProgressLabel>Guided walkthrough</ProgressLabel>
+                      <ProgressValue>
+                        {() => `${demoStep} of ${steps.length}`}
+                      </ProgressValue>
+                    </Progress>
+                  </CardContent>
+                  <CardFooter className="flex flex-wrap gap-2">
+                    <Button
+                      onClick={() => void play()}
+                      disabled={busy || playing}
+                    >
+                      Play walkthrough
+                    </Button>
+                    {playing && (
+                      <Button variant="secondary" onClick={stop}>
+                        Pause
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        stop()
+                        void next()
+                      }}
+                      disabled={busy}
+                    >
+                      Next step
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() => void reset()}
+                      disabled={busy}
+                    >
+                      Reset sample
+                    </Button>
+                  </CardFooter>
+                </Card>
+                <p className="text-xs text-muted-foreground">
+                  The walkthrough runs real graph actions without AI calls.
+                </p>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Change the sample</CardTitle>
+                    <CardDescription>
+                      Changes affect only your workspace.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      disabled={
+                        busy || assignment !== workspace?.demo.assignment
+                      }
+                      onClick={() => void act("replace")}
+                    >
+                      Replace decision
+                    </Button>
+                    <Button
+                      variant="outline"
+                      disabled={
+                        busy || assignment !== workspace?.demo.assignment
+                      }
+                      onClick={() => void act("remove-owner")}
+                    >
+                      Remove owner
+                    </Button>
+                    <Button
+                      variant="outline"
+                      disabled={busy}
+                      onClick={() => void act("complete")}
+                    >
+                      Complete training
+                    </Button>
+                  </CardContent>
+                </Card>
+              </TabsContent>
             )}
-            <Separator />
-            <footer className="text-xs text-muted-foreground">
-              {workspace?.company.name} ·{" "}
-              {workspace?.synthetic
-                ? "Synthetic company records"
-                : "Company records"}{" "}
-              · No calendar invitations are sent
-            </footer>
-          </main>
-          <Sheet
-            open={!!meeting}
-            onOpenChange={(open) => {
-              if (!open) setMeeting(null)
-            }}
-          >
-            <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
-              <SheetHeader className="pr-12">
-                <SheetTitle>{meeting?.[1]}</SheetTitle>
-                <SheetDescription>
-                  {meeting
-                    ? meetingDate(meeting[3]) +
-                      " · " +
-                      meetingTime(meeting[3]) +
-                      " " +
-                      timezoneLabel
-                    : ""}
-                </SheetDescription>
-              </SheetHeader>
-              <div className="space-y-6 px-6 pb-6">
-                <p className="text-sm leading-7 text-muted-foreground">
-                  {meeting?.[2]}
-                </p>
-                <Separator />
-                <h3 className="text-sm font-medium">Connected context</h3>
-                {meeting?.[5] && (
-                  <Button
-                    variant="outline"
-                    className="w-full justify-between"
-                    onClick={() => {
-                      showSource(meeting[5])
-                      setMeeting(null)
+          </Tabs>
+          {tab === "assignment" && (
+            <Accordion className="mx-auto w-full max-w-2xl">
+              <AccordionItem value="help">
+                <AccordionTrigger>
+                  Need help with this assignment?
+                </AccordionTrigger>
+                <AccordionContent>
+                  <form
+                    className="space-y-3"
+                    onSubmit={(e) => {
+                      e.preventDefault()
+                      stop()
+                      void request("/api/agent", { prompt })
                     }}
                   >
-                    Open meeting notes
-                    <RiFileTextLine />
-                  </Button>
-                )}
-                {meeting?.[4] && (
-                  <Button
-                    variant="outline"
-                    className="w-full justify-between"
-                    disabled={busy}
-                    onClick={() => {
-                      void openAssignment(meeting[4])
-                      setMeeting(null)
-                    }}
-                  >
-                    Open related task
-                    <RiCheckboxCircleLine />
-                  </Button>
-                )}
-                <p className="text-xs leading-5 text-muted-foreground">
-                  These links follow the meeting’s stored relationships. The
-                  related task checks its current approved decision, source, and
-                  reviewer.
-                </p>
-              </div>
-            </SheetContent>
-          </Sheet>
-        </div>
+                    <Label htmlFor="ai-invite">AI invite code</Label>
+                    <Input
+                      id="ai-invite"
+                      type="password"
+                      autoComplete="off"
+                      value={aiCode}
+                      onChange={(e) => setAiCode(e.target.value)}
+                      placeholder="Required for live AI access"
+                      minLength={16}
+                      maxLength={256}
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      The code stays in this tab only. Public graph exploration
+                      does not need a code.
+                    </p>
+                    {aiCode && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setAiCode("")}
+                      >
+                        Clear invite code
+                      </Button>
+                    )}
+                    <Label htmlFor="prompt">What would you like to know?</Label>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <Input
+                        id="prompt"
+                        value={prompt}
+                        onChange={(e) => setPrompt(e.target.value)}
+                        maxLength={1000}
+                        placeholder="Ask about this assignment…"
+                        required
+                      />
+                      <Button type="submit" disabled={busy}>
+                        {busy ? "Working…" : "Ask about this task"}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      The workspace uses your assignment and company sources to
+                      organize the guidance above.
+                    </p>
+                  </form>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          )}
+          <Separator />
+          <footer className="text-xs text-muted-foreground">
+            {workspace?.company.name} ·{" "}
+            {workspace?.synthetic
+              ? "Synthetic company records"
+              : "Company records"}{" "}
+            · No calendar invitations are sent
+          </footer>
+        </main>
+        <Sheet
+          open={!!meeting}
+          onOpenChange={(open) => {
+            if (!open) setMeeting(null)
+          }}
+        >
+          <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
+            <SheetHeader className="pr-12">
+              <SheetTitle>{meeting?.[1]}</SheetTitle>
+              <SheetDescription>
+                {meeting
+                  ? meetingDate(meeting[3]) +
+                    " · " +
+                    meetingTime(meeting[3]) +
+                    " " +
+                    timezoneLabel
+                  : ""}
+              </SheetDescription>
+            </SheetHeader>
+            <div className="space-y-6 px-6 pb-6">
+              <p className="text-sm leading-7 text-muted-foreground">
+                {meeting?.[2]}
+              </p>
+              <Separator />
+              <h3 className="text-sm font-medium">Connected context</h3>
+              {meeting?.[5] && (
+                <Button
+                  variant="outline"
+                  className="w-full justify-between"
+                  onClick={() => {
+                    showSource(meeting[5])
+                    setMeeting(null)
+                  }}
+                >
+                  Open meeting notes
+                  <RiFileTextLine />
+                </Button>
+              )}
+              {meeting?.[4] && (
+                <Button
+                  variant="outline"
+                  className="w-full justify-between"
+                  disabled={busy}
+                  onClick={() => {
+                    void openAssignment(meeting[4])
+                    setMeeting(null)
+                  }}
+                >
+                  Open related task
+                  <RiCheckboxCircleLine />
+                </Button>
+              )}
+              <p className="text-xs leading-5 text-muted-foreground">
+                These links follow the meeting’s stored relationships. The
+                related task checks its current approved decision, source, and
+                reviewer.
+              </p>
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
-    </TooltipProvider>
+    </div>
   )
 }

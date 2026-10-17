@@ -26,10 +26,14 @@ The image contains example tasks, dates, and controls. The app uses stored synth
 ## Validation
 
 - Production frontend build passed.
-- All 33 existing graph/API tests passed.
+- The original 33 graph/API tests passed. Later server-data checks bring the suite to 36 tests; two store tests also pass.
 - Browser checks passed: Today, Calendar, Notes, meeting Sheet, meeting-note link, company search, and task gate view.
 - Light and dark mode checked in the local browser.
 - Secret scan passed. No live AI request was needed for this redesign.
 - Narrow mobile viewport and a full keyboard audit remain release checks.
 
 The application remains local. No hosting deployment was made.
+
+## Server-owned data and sidebar update
+
+The sidebar now uses structural HTML and Tailwind layout with official shadcn Buttons and a mobile Sheet. Its old React Context-based Sidebar implementation and unused mobile hook were removed. All local application state uses XState Store. Company, employee, team, time zone, assignment IDs, and walkthrough records come from server responses. Static navigation labels and form instructions remain UI text, not synthetic records.
