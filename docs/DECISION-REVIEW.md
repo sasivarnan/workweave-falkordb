@@ -30,6 +30,6 @@ The guided judge walkthrough also includes the proposal and acknowledgement acti
 
 ## Proof and limits
 
-46 server/graph tests and two store tests pass. The checks include version-specific acknowledgement, idempotency, preserved notes, unaffected assignment scope, proposal-only meetings, missing sources, missing approvers, conflicting decisions, and future-date blocking. Existing four relationship checks and eight retrieval diagnostic cases still pass.
+47 server/graph tests and two store tests pass. The checks include version-specific acknowledgement, idempotency, preserved notes, unaffected assignment scope, proposal-only meetings, missing sources, missing approvers, conflicting decisions, and future-date blocking. Existing four relationship checks and eight retrieval diagnostic cases still pass.
 
 The graph links are curated synthetic data. Approval controls are explicitly sample controls, not a production authorization system. Jira, Google Calendar, and Zoom connectors, production identities and permission checks, automatic decision extraction, general decision editing, and scheduled replacement routing remain unimplemented. Future-effective decisions cause conservative clarification; the system does not route to the earlier decision until a scheduled activation. Receipt history is persistent sample data, not a tamper-proof audit ledger. Impact is only as complete as the recorded links.

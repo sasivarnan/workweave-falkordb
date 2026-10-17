@@ -71,3 +71,11 @@ class DecisionReviewTests(unittest.TestCase):
   meetings=self.store.context()['changeReview']['meetings']
   self.assertEqual({row[0] for row in meetings},{'checkout-review','second-review'})
   self.assertEqual({row[2] for row in meetings},{'meeting-checkout','second-notes'})
+
+ def test_missing_saved_plan_evidence_is_stale(self):
+  self.store.action('accept','Keep these checks')
+  self.store.q('detach_plan_evidence','MATCH (:LearningPlan)-[r:SUPPORTED_BY]->() DELETE r',write=True)
+  context=self.store.context()
+  self.assertTrue(context['needsReview'])
+  self.assertTrue(context['changeReview']['affected'][0]['stale'])
+  self.assertEqual(context['changeReview']['affected'][0]['savedNote'],'Keep these checks')

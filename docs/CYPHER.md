@@ -153,7 +153,7 @@ MATCH (d:Decision)-[:APPLIES_TO]->(s:Service {id:$service}) OPTIONAL MATCH (d)-[
 Source: graph.py:130
 
 ```cypher
-MATCH (e:Employee {id:$employee})-[:ASSIGNED_TO]->(a:Assignment)-[:TOUCHES]->(s:Service {id:$service}) OPTIONAL MATCH (e)-[:HAS_PLAN]->(plan:LearningPlan)-[:FOR_ASSIGNMENT]->(a) OPTIONAL MATCH (plan)-[:SUPPORTED_BY]->(used:Decision) OPTIONAL MATCH (e)-[:ACKNOWLEDGED]->(receipt:DecisionReview)-[:FOR_ASSIGNMENT]->(a) OPTIONAL MATCH (receipt)-[:BASED_ON]->(ack:Decision) RETURN a.id,a.title,e.title,s.title,used.id,used.title,plan.note,ack.id,receipt.at ORDER BY a.title
+MATCH (e:Employee {id:$employee})-[:ASSIGNED_TO]->(a:Assignment)-[:TOUCHES]->(s:Service {id:$service}) OPTIONAL MATCH (e)-[:HAS_PLAN]->(plan:LearningPlan)-[:FOR_ASSIGNMENT]->(a) OPTIONAL MATCH (plan)-[:SUPPORTED_BY]->(used:Decision) OPTIONAL MATCH (e)-[:ACKNOWLEDGED]->(receipt:DecisionReview)-[:FOR_ASSIGNMENT]->(a) OPTIONAL MATCH (receipt)-[:BASED_ON]->(ack:Decision) RETURN a.id,a.title,e.title,s.title,used.id,used.title,plan.note,ack.id,receipt.at,plan.id ORDER BY a.title
 ```
 
 ## decision_affected_meetings

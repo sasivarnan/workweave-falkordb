@@ -80,7 +80,7 @@ npm run build --prefix frontend
 .venv/bin/python scripts/check_secrets.py
 ```
 
-The Python suite contains 46 tests. Two frontend store tests check state preservation and in-memory invite handling. Integration tests create isolated disposable graphs and delete only those test graphs. Agent contract tests use mocked responses. The saved eight-case retrieval diagnostic and paired model evaluation are small authored checks, not production accuracy or general RAG benchmarks. See [evaluation details](EVALUATION.md).
+The Python suite contains 47 tests. Two frontend store tests check state preservation and in-memory invite handling. Integration tests create isolated disposable graphs and delete only those test graphs. Agent contract tests use mocked responses. The saved eight-case retrieval diagnostic and paired model evaluation are small authored checks, not production accuracy or general RAG benchmarks. See [evaluation details](EVALUATION.md).
 
 ## Local safety and deployment
 
