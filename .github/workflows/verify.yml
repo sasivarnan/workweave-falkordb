@@ -27,13 +27,22 @@ jobs:
         with:
           node-version: '22'
           package-manager-cache: false
-      - run: pip install -r requirements.txt
-      - run: python -m unittest discover -s tests -v
-      - run: python scripts/evaluate_impact.py
-      - run: python scripts/evaluate_relationships.py
-      - run: python scripts/evaluate.py
-      - run: python scripts/export_queries.py
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.12.21'
+          enable-cache: true
+      - run: uv sync --locked
+      - run: uv build
+      - run: uv run --locked workweave --help
+      - run: uv run --locked ruff check src tests scripts
+      - run: uv run --locked ruff format --check src tests scripts
+      - run: uv run --locked python -m unittest discover -s tests -v
+      - run: uv run --locked python scripts/evaluate_impact.py
+      - run: uv run --locked python scripts/evaluate_relationships.py
+      - run: uv run --locked python scripts/evaluate.py
+      - run: uv run --locked python scripts/export_queries.py
       - run: git diff --exit-code docs/CYPHER.md
       - run: npm ci --prefix frontend
       - run: npm test --prefix frontend
       - run: npm run build --prefix frontend
+      - run: uv run --locked python scripts/check_secrets.py

@@ -1,0 +1,5 @@
+# Local uv development only. Production Compose keeps the database private.
+services:
+  database:
+    ports:
+      - 127.0.0.1:6381:6379

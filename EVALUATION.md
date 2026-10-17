@@ -4,11 +4,11 @@ These checks use small, builder-authored synthetic fixtures. They are not produc
 
 | Check | Last recorded result | Reproduce |
 | --- | --- | --- |
-| Backend, graph and provider contracts | 60 tests passed | `python -m unittest discover -s tests -v` |
+| Backend, graph and provider contracts | 63 tests passed | `uv run --locked python -m unittest discover -s tests -v` |
 | Frontend state and graph-proof validation | 4 tests passed | `npm test --prefix frontend` |
-| Cross-team impact | 7 cases passed | `python scripts/evaluate_impact.py` |
-| Relationship changes with identical source text | 4 cases passed | `python scripts/evaluate_relationships.py` |
-| Graph retrieval diagnostic | 8 cases passed | `python scripts/evaluate.py` |
+| Cross-team impact | 7 cases passed | `uv run --locked python scripts/evaluate_impact.py` |
+| Relationship changes with identical source text | 4 cases passed | `uv run --locked python scripts/evaluate_relationships.py` |
+| Graph retrieval diagnostic | 8 cases passed | `uv run --locked python scripts/evaluate.py` |
 
 Integration tests create isolated disposable graphs and delete only those graphs. Provider contract tests mock model responses. Browser checks covered the dependency removal/restoration proof and all 11 employee tour stops; independent user feedback is pending.
 
@@ -24,3 +24,9 @@ The paired model report records 16 live calls. Do not run `scripts/evaluate_mode
 ## Remaining release checks
 
 Public HTTPS deployment, hosted storage after restart, full mobile/keyboard review, participant technical review, independent user feedback and the final demo video remain pending. A passing local build does not establish any of these.
+
+## uv package and container checks
+
+Python code is installed from src/workweave with a committed uv.lock. The 63 backend tests include package fixture loading, configuration priority and the module entry point from another directory. A second clean, non-editable uv environment passed fixture and CLI checks. Source and wheel builds passed.
+
+The Docker image was built and tested as UID 10001: frontend, database health, context API, packaged fixture, writable usage directory and SIGTERM shutdown passed. No local secrets or internal notes were copied into the runtime. This does not establish hosted persistence, production authentication or a full security audit.

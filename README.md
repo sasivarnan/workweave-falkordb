@@ -4,17 +4,40 @@ An employee workspace that connects tasks, meetings, notes, people and approved 
 
 **Status:** working local prototype with synthetic data. Public demo and final video are pending.
 
-## Run
+## Run locally with uv
 
-Requires Docker with Compose.
+Requires uv, Node.js 22+ and Docker. Run commands from the repository root.
+
+```sh
+uv sync --locked
+npm ci --prefix frontend
+npm run build --prefix frontend
+docker compose -f compose.yaml -f compose.dev.yaml up -d database
+uv run --locked workweave
+```
+
+If a FalkorDB container already uses `127.0.0.1:6381`, reuse it and skip the database startup. Open [localhost:8080](http://localhost:8080). Start tour explains the application; [/judge](http://localhost:8080/judge) shows the graph proof.
+
+`uv sync --locked` creates or rebuilds `.venv` from `uv.lock`. No activation or pip commands are needed. Keep `.env` and `.data/` when deleting `.venv`; they contain local configuration and the durable AI usage ledger. Optional AI uses [.env.example](.env.example) and a separate invite code. Graph workflows need no AI key.
+
+To run the whole stack in containers instead:
 
 ```sh
 docker compose up --build
 ```
 
-Open [localhost:8080](http://localhost:8080). Start tour in the header explains the employee application. Open [/judge](http://localhost:8080/judge) for the interactive graph proof and evaluation evidence.
+## Project layout
 
-Graph workflows need no AI key. Optional AI uses server-only settings from [.env.example](.env.example) and a separate invite code. Never put a provider key in the frontend. Named volumes retain graph data and the AI usage ledger.
+```text
+src/workweave/       Python package: HTTP server, graph, impact, AI, access and config
+src/workweave/data/  Packaged synthetic source exports
+frontend/           React application
+scripts/            Reproducible evaluations and source checks
+tests/              Backend and graph tests
+docs/               API, graph queries and feature documentation
+pyproject.toml      Python metadata and direct dependencies
+uv.lock             Locked Python dependencies
+```
 
 ## Architecture
 
@@ -77,22 +100,22 @@ The graph links employees → assignments → services, decisions → sources, a
 
 ## Verify
 
-With Python 3.9+, Node.js 22+ and FalkorDB available on port 6381:
+With the local development database running:
 
 ```sh
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-.venv/bin/python -m unittest discover -s tests -v
-.venv/bin/python scripts/evaluate_impact.py
-.venv/bin/python scripts/evaluate_relationships.py
-.venv/bin/python scripts/evaluate.py
-npm ci --prefix frontend
+uv run --locked python -m unittest discover -s tests -v
+uv run --locked python scripts/evaluate_impact.py
+uv run --locked python scripts/evaluate_relationships.py
+uv run --locked python scripts/evaluate.py
+uv run --locked python scripts/export_queries.py
+uv run --locked ruff check src tests scripts
+uv run --locked ruff format --check src tests scripts
 npm test --prefix frontend
 npm run build --prefix frontend
-.venv/bin/python scripts/check_secrets.py
+uv run --locked python scripts/check_secrets.py
 ```
 
-Compose keeps FalkorDB private. For host-side tests, use a separate local FalkorDB instance exposed only on `127.0.0.1:6381`, or set `FALKORDB_HOST` and `FALKORDB_PORT` to a reachable test instance. Tests create disposable graphs. See [validation and limits](EVALUATION.md).
+Integration tests use disposable graphs. See [validation and limits](EVALUATION.md). The Python package can be checked separately with `uv build` and `uv run --locked workweave --help`.
 
 ## Documentation and limits
 

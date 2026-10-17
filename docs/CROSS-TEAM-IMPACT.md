@@ -12,7 +12,7 @@ The importer leaves unmatched notes and calendar events unlinked. Missing task o
 
 ## Source import
 
-`fixtures/company-sources.json` is a normalized synthetic export bundle, not a live vendor API response. It contains Jira-style issue keys, Calendar event IDs, meeting-instance references, Zoom-style note records, team/owner IDs, and a service registry dependency export.
+`src/workweave/data/company-sources.json` is a normalized synthetic export bundle, not a live vendor API response. It contains Jira-style issue keys, Calendar event IDs, meeting-instance references, Zoom-style note records, team/owner IDs, and a service registry dependency export.
 
 `POST /api/impact` accepts only these server-owned operations:
 
@@ -35,7 +35,7 @@ The decision must pass the existing approval, source, approver, and effective-ti
 
 ## Proof
 
-Run `python scripts/evaluate_impact.py` for seven authored correctness checks and `impact-evaluation-results.json`. The checked-in report shows expected affected IDs, the unaffected task, route counts before/after, equal content hashes, and restoration.
+Run `uv run --locked python scripts/evaluate_impact.py` for seven authored correctness checks and `impact-evaluation-results.json`. The checked-in report shows expected affected IDs, the unaffected task, route counts before/after, equal content hashes, and restoration.
 
 The test suite covers cycles, duplicate names, alternate paths, missing owners, missing authority, ambiguous meeting IDs, workspace isolation, actual HTTP dispatch, native algorithm failure, and the five-link bound.
 

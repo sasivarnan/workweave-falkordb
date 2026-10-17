@@ -13,3 +13,7 @@ frontend/dist
 
 # Local planning notes and submission drafts
 internal/
+
+dist/
+*.egg-info/
+.ruff_cache/

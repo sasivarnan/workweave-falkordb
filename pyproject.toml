@@ -1,0 +1,28 @@
+[project]
+name = "workweave"
+version = "0.1.0"
+description = "An employee workspace with source-backed company context in FalkorDB"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+dependencies = ["falkordb==1.2.0"]
+
+[project.scripts]
+workweave = "workweave.server:main"
+
+[dependency-groups]
+dev = ["ruff==0.14.0"]
+
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/workweave"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]

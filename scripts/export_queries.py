@@ -1,15 +1,46 @@
 """Export checked-in Cypher call sites without executing the application."""
+
 import ast
 from pathlib import Path
-root=Path(__file__).resolve().parents[1]
-lines=['# Cypher catalogue','','Generated from graph.py and impact.py by scripts/export_queries.py. Dynamic templates use code-owned labels and relationship types. Parameters are passed separately by the official client.','']
-count=0
-for source_name in ['graph.py','impact.py']:
- tree=ast.parse((root/source_name).read_text())
- for node in ast.walk(tree):
-  if isinstance(node,ast.Call) and isinstance(node.func,ast.Attribute) and node.func.attr=='q' and len(node.args)>=2:
-   name=node.args[0].value if isinstance(node.args[0],ast.Constant) else ast.unparse(node.args[0])
-   query=node.args[1].value if isinstance(node.args[1],ast.Constant) else ast.unparse(node.args[1])
-   lines.extend([f'## {name}',f'Source: {source_name}:{node.lineno}','','```cypher',query,'```','']);count+=1
-(root/'docs/CYPHER.md').write_text('\n'.join(lines))
-print(f'Exported {count} graph call sites')
+
+root = Path(__file__).resolve().parents[1]
+lines = [
+    "# Cypher catalogue",
+    "",
+    "Generated from src/workweave/graph.py and src/workweave/impact.py by scripts/export_queries.py. Dynamic templates use code-owned labels and relationship types. Parameters are passed separately by the official client.",
+    "",
+]
+count = 0
+for source_name in ["src/workweave/graph.py", "src/workweave/impact.py"]:
+    tree = ast.parse((root / source_name).read_text())
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "q"
+            and len(node.args) >= 2
+        ):
+            name = (
+                node.args[0].value
+                if isinstance(node.args[0], ast.Constant)
+                else ast.unparse(node.args[0])
+            )
+            query = (
+                node.args[1].value
+                if isinstance(node.args[1], ast.Constant)
+                else ast.unparse(node.args[1])
+            )
+            lines.extend(
+                [
+                    f"## {name}",
+                    f"Source: {source_name}:{node.lineno}",
+                    "",
+                    "```cypher",
+                    query,
+                    "```",
+                    "",
+                ]
+            )
+            count += 1
+(root / "docs/CYPHER.md").write_text("\n".join(lines))
+print(f"Exported {count} graph call sites")

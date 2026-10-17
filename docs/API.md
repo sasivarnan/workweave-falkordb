@@ -16,7 +16,7 @@ All responses use the server's same-origin API. Credentials stay on the server. 
 
 POST requests require `Content-Type: application/json` and `X-Workweave: portal`. A body may specify an assignment ID received from the server. Omitted or empty assignment values use the server's default. The HttpOnly workspace cookie selects the isolated graph; clients cannot choose a graph name.
 
-Context, search, actions, agent operations, and reset return `{messages, trace, mode}`. `messages` contains the validated A2UI context. The `workspace` property includes company and employee IDs/names, team name/department, time zone, sample-data status, and the server-defined walkthrough. Company identity is read from FalkorDB on each context response. Startup settings and sample workflow definitions live in `workspace.py`.
+Context, search, actions, agent operations, and reset return `{messages, trace, mode}`. `messages` contains the validated A2UI context. The `workspace` property includes company and employee IDs/names, team name/department, time zone, sample-data status, and the server-defined walkthrough. Company identity is read from FalkorDB on each context response. Startup settings and sample workflow definitions live in `src/workweave/workspace.py`.
 
 The UI computes initials and formats server dates. It retains static UI labels and help text. It does not substitute company names, people, tasks, or source records on failure. A missing graph identity causes an error; it does not fall back to a local fixture.
 
