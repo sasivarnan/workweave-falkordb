@@ -4,8 +4,8 @@ These checks use small, builder-authored synthetic fixtures. They are not produc
 
 | Check | Last recorded result | Reproduce |
 | --- | --- | --- |
-| Backend, graph and provider contracts | 70 tests passed | `uv run --locked python -m unittest discover -s tests -v` |
-| Frontend state, search URLs and graph-proof validation | 11 tests passed | `npm test --prefix frontend` |
+| Backend, graph and provider contracts | 75 tests passed | `uv run --locked python -m unittest discover -s tests -v` |
+| Frontend state, search URLs and graph-proof validation | 13 tests passed | `npm test --prefix frontend` |
 | Cross-team impact | 7 cases passed | `uv run --locked python scripts/evaluate_impact.py` |
 | Relationship changes with identical source text | 4 cases passed | `uv run --locked python scripts/evaluate_relationships.py` |
 | Graph retrieval diagnostic | 8 cases passed | `uv run --locked python scripts/evaluate.py` |
@@ -34,3 +34,7 @@ The Docker image was built and tested as UID 10001: frontend, database health, c
 Tour update: the Driver.js browser check covered all nine desktop stops without leaving Home, starting from Calendar, temporary sidebar expansion, completion, Escape and restoration of the original sidebar preference. Mobile layout was not included in this pass.
 
 The historical paid-model report retains the earlier Provider A/B/C labels. Graph-only reports use the current fictional Stripe/Adyen/Razorpay scenario; no paid model evaluation was rerun for this label change.
+
+## Live decision-impact agent check
+
+[Recorded live result](reports/agent-live.json) uses the configured OpenAI model and an isolated local graph. The same question was asked before and after removal of Billing → Checkout. Billing left the answer; Support remained with one route instead of two. Source text was unchanged. Both answers identified the stale plan and linked reviewers. No saved plan changed. These are two live runs on one synthetic scenario, not a general accuracy benchmark. Gemini was not tested with a live key. To repeat the paid check against local Docker on port 6381, run `uv run --locked python scripts/evaluate_agent.py`. It reserves two operations in the configured usage ledger and deletes only its disposable graph.

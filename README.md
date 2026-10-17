@@ -124,14 +124,14 @@ flowchart TB
     Browser[React and shadcn workspace] <--> State[XState local UI state]
     Browser <-->|HTTP APIs| Server[Python server]
     Server <-->|Parameterized Cypher and native algorithms| Graph[(FalkorDB)]
-    Server <-->|Optional fixed tool call| AI[OpenAI or Gemini]
-    AI --> Layout[Allowlisted layout selection]
-    Layout --> Validate[A2UI subset validation]
+    Server <-->|Bounded read-only tool loop| AI[OpenAI or Gemini]
+    AI --> Evidence[Observed fact IDs and proposed steps]
+    Evidence --> Validate[Server evidence validation and A2UI subset]
     Validate --> Browser
     Server --> Ledger[(SQLite AI usage ledger)]
 ```
 
-Company records and action checks come from the server and FalkorDB. AI selects component order; it does not generate company facts or arbitrary Cypher. The renderer supports a custom A2UI v0.9 subset, not a complete official SDK implementation. SQLite stores AI usage limits only.
+Company records and action checks come from the server and FalkorDB. The agent selects read-only tools for current decisions, saved plans, affected work and reviewers. It selects observed graph fact IDs and proposed next steps. The server rejects unknown facts, unchecked authority and stale results. It does not execute model-generated Cypher or let the agent change plans or approvals. Each operation allows at most five model calls and four distinct tools. The renderer supports a custom A2UI v0.9 subset, not a complete official SDK implementation. SQLite stores AI usage limits only.
 
 ## Graph data model
 

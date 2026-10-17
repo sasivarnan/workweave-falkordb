@@ -965,6 +965,89 @@ export default function App() {
               </AlertDescription>
             </Alert>
           )}
+          {tab === "assignment" && aiEnabled && (
+            <Card className="mx-auto w-full max-w-2xl shadow-none">
+              <CardHeader>
+                <CardTitle>Ask about your work</CardTitle>
+                <CardDescription>
+                  Check decisions, saved plans, affected work and people.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <form
+                  className="space-y-3"
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    stop()
+                    void request("/api/agent", { prompt })
+                  }}
+                >
+                  <Label htmlFor="prompt">What do you need to know?</Label>
+                  <Input
+                    id="prompt"
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    maxLength={1000}
+                    placeholder="What changed for my work, who else is affected, and whom should I ask?"
+                  />
+                  <Button type="submit" disabled={busy}>
+                    {aiFeedback === "working"
+                      ? "Checking work…"
+                      : "Check my work"}
+                  </Button>
+                </form>
+                {aiFeedback === "success" && context?.agentResult && (
+                  <div role="status" aria-live="polite" className="space-y-4">
+                    <Separator />
+                    <p className="text-sm font-medium">Your work update</p>
+                    <div className="space-y-3">
+                      {context.agentResult.facts.map((fact) => (
+                        <div key={fact.id} className="space-y-1 text-sm">
+                          <p>{fact.text}</p>
+                          {fact.sourceIds.map((id) => (
+                            <Button
+                              key={id}
+                              variant="link"
+                              size="sm"
+                              className="h-auto px-0"
+                              onClick={() => showSource(id)}
+                            >
+                              Read source · {id}
+                            </Button>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                    {context.agentResult.nextSteps.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">
+                          Suggested next steps
+                        </p>
+                        <ol className="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
+                          {context.agentResult.nextSteps.map((step) => (
+                            <li key={step}>{step}</li>
+                          ))}
+                        </ol>
+                      </div>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Checked {context.agentResult.tools.length} graph tools.
+                      Your saved work has not changed.
+                    </p>
+                  </div>
+                )}
+                {aiFeedback === "error" && (
+                  <Alert variant="destructive" role="alert">
+                    <AlertTitle>Could not complete the check</AlertTitle>
+                    <AlertDescription>
+                      {error ||
+                        "Try again later. Your saved work has not changed."}
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </CardContent>
+            </Card>
+          )}
           <Tabs value={tab} onValueChange={(v) => navigate(String(v))}>
             <TabsList className="hidden">
               <TabsTrigger value="workspace">Home</TabsTrigger>
@@ -3107,105 +3190,6 @@ export default function App() {
               </TabsContent>
             )}
           </Tabs>
-          {tab === "assignment" && aiEnabled && (
-            <Accordion className="mx-auto w-full max-w-2xl">
-              <AccordionItem value="help">
-                <AccordionTrigger>
-                  Need help with this assignment?
-                </AccordionTrigger>
-                <AccordionContent>
-                  <form
-                    className="space-y-3"
-                    onSubmit={(e) => {
-                      e.preventDefault()
-                      stop()
-                      void request("/api/agent", { prompt })
-                    }}
-                  >
-                    <Label htmlFor="prompt">
-                      What do you want to focus on?
-                    </Label>
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                      <Input
-                        id="prompt"
-                        value={prompt}
-                        onChange={(e) => setPrompt(e.target.value)}
-                        maxLength={1000}
-                        placeholder="For example: source evidence or review notes"
-                        required
-                      />
-                      <Button type="submit" disabled={busy}>
-                        {aiFeedback === "working"
-                          ? "Updating guidance…"
-                          : "Update guidance"}
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Use current company sources to organize the task guidance.
-                      This updates the task sections above.
-                    </p>
-                  </form>
-                  {aiFeedback === "working" && (
-                    <p
-                      role="status"
-                      className="mt-4 text-sm text-muted-foreground"
-                    >
-                      Checking your task sources…
-                    </p>
-                  )}
-                  {aiFeedback === "success" && (
-                    <Card
-                      role="status"
-                      aria-live="polite"
-                      className="mt-4 shadow-none"
-                    >
-                      <CardHeader>
-                        <CardTitle>Guidance updated</CardTitle>
-                        <CardDescription>
-                          Your task guidance is ready. The source links and
-                          review notes above are available.
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        <p className="text-sm font-medium">
-                          Next step: {stageTitle}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {stageDescription}
-                        </p>
-                        {context?.current && (
-                          <p className="text-sm">
-                            Current guidance: {context.current}
-                          </p>
-                        )}
-                        {reviewer && (
-                          <p className="text-sm">Reviewer: {reviewer[1]}</p>
-                        )}
-                        {context?.decisions[0]?.[2] && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => showSource(context.decisions[0][2]!)}
-                          >
-                            Read source document
-                          </Button>
-                        )}
-                      </CardContent>
-                    </Card>
-                  )}
-                  {aiFeedback === "error" && (
-                    <Alert variant="destructive" role="alert" className="mt-4">
-                      <AlertTitle>Guidance was not updated</AlertTitle>
-                      <AlertDescription>
-                        {error ||
-                          "Try again later. Your saved work has not changed."}
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          )}
         </main>
         <Sheet
           open={!!peopleTask}

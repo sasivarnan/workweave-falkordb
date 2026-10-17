@@ -221,7 +221,7 @@ class Handler(BaseHTTPRequestHandler):
                     try:
                         reserve()
                         context, selection = run(s, str(body.get("prompt", "")))
-                        mode = "Live " + provider().title() + " tool call + model-selected layout"
+                        mode = "Live " + provider().title() + " read-only decision-impact agent"
                     finally:
                         AGENT_SLOTS.release()
                 else:

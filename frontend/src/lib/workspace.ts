@@ -1,4 +1,6 @@
+import { validateAgentResult, type AgentResult } from "./agent"
 export type Context = {
+  agentResult?: AgentResult
   workspace: {
     appName: string
     company: { id: string; name: string }
@@ -151,6 +153,11 @@ export function decode(result: Result) {
     components[0]?.component !== "Column"
   )
     throw Error("Invalid A2UI surface")
+  if (context.agentResult)
+    validateAgentResult(
+      context.agentResult,
+      context.sources.map((source) => source[0])
+    )
   const profile = context.workspace
   if (
     !profile ||

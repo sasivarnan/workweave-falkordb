@@ -1,0 +1,150 @@
+{
+  "question": "What changed for my work, who else is affected, and whom should I ask? Include every affected task and its dependency route count.",
+  "provider": "openai",
+  "before": {
+    "question": "What changed for my work, who else is affected, and whom should I ask? Include every affected task and its dependency route count.",
+    "facts": [
+      {
+        "id": "authority",
+        "text": "Current approved guidance: Use Razorpay. Source: ADR-043: Razorpay. Priya approved Razorpay to replace Adyen for the checkout change. Review the saved plan with Leo before starting.",
+        "sourceIds": [
+          "adr-c"
+        ]
+      },
+      {
+        "id": "plan",
+        "text": "Saved guidance: Use Adyen. The saved plan needs review.",
+        "sourceIds": []
+      },
+      {
+        "id": "impact-count",
+        "text": "4 work items are connected to this service by current dependency paths.",
+        "sourceIds": []
+      },
+      {
+        "id": "work:BILL-204",
+        "text": "BILL-204 \u00b7 Verify invoice reconciliation. Owners: Ravi Patel. Dependency routes: 1. Billing API \u2192 Checkout service.",
+        "sourceIds": []
+      },
+      {
+        "id": "work:PAY-108",
+        "text": "PAY-108 \u00b7 Release checkout status update. Owners: Maya Chen. Dependency routes: 1. Checkout service.",
+        "sourceIds": []
+      },
+      {
+        "id": "work:SUP-310",
+        "text": "SUP-310 \u00b7 Update support payment guidance. Owners: Elena Garcia. Dependency routes: 2. Support console \u2192 Checkout service; Support console \u2192 Billing API \u2192 Checkout service.",
+        "sourceIds": []
+      },
+      {
+        "id": "work:SUP-311",
+        "text": "SUP-311 \u00b7 Review escalated payment cases. Owners: not assigned. Dependency routes: 2. Support console \u2192 Billing API \u2192 Checkout service; Support console \u2192 Checkout service.",
+        "sourceIds": []
+      },
+      {
+        "id": "person:leo",
+        "text": "Leo Martin: Service owner \u00b7 Payments (REVIEWER_FOR).",
+        "sourceIds": []
+      },
+      {
+        "id": "person:imani",
+        "text": "Imani Shah: Documented alternate reviewer (BACKUP_REVIEWER_FOR).",
+        "sourceIds": []
+      }
+    ],
+    "nextSteps": [
+      "Review your saved plan before you change it.",
+      "Open the task's People list and contact the linked reviewer."
+    ],
+    "tools": [
+      {
+        "tool": "get_current_decision",
+        "facts": 1
+      },
+      {
+        "tool": "inspect_saved_plan",
+        "facts": 1
+      },
+      {
+        "tool": "find_affected_work",
+        "facts": 5
+      },
+      {
+        "tool": "find_reviewers",
+        "facts": 2
+      }
+    ]
+  },
+  "after": {
+    "question": "What changed for my work, who else is affected, and whom should I ask? Include every affected task and its dependency route count.",
+    "facts": [
+      {
+        "id": "authority",
+        "text": "Current approved guidance: Use Razorpay. Source: ADR-043: Razorpay. Priya approved Razorpay to replace Adyen for the checkout change. Review the saved plan with Leo before starting.",
+        "sourceIds": [
+          "adr-c"
+        ]
+      },
+      {
+        "id": "plan",
+        "text": "Saved guidance: Use Adyen. The saved plan needs review.",
+        "sourceIds": []
+      },
+      {
+        "id": "work:PAY-108",
+        "text": "PAY-108 \u00b7 Release checkout status update. Owners: Maya Chen. Dependency routes: 1. Checkout service.",
+        "sourceIds": []
+      },
+      {
+        "id": "work:SUP-310",
+        "text": "SUP-310 \u00b7 Update support payment guidance. Owners: Elena Garcia. Dependency routes: 1. Support console \u2192 Checkout service.",
+        "sourceIds": []
+      },
+      {
+        "id": "work:SUP-311",
+        "text": "SUP-311 \u00b7 Review escalated payment cases. Owners: not assigned. Dependency routes: 1. Support console \u2192 Checkout service.",
+        "sourceIds": []
+      },
+      {
+        "id": "person:leo",
+        "text": "Leo Martin: Service owner \u00b7 Payments (REVIEWER_FOR).",
+        "sourceIds": []
+      },
+      {
+        "id": "person:imani",
+        "text": "Imani Shah: Documented alternate reviewer (BACKUP_REVIEWER_FOR).",
+        "sourceIds": []
+      }
+    ],
+    "nextSteps": [
+      "Review your saved plan before you change it.",
+      "Open the task's People list and contact the linked reviewer."
+    ],
+    "tools": [
+      {
+        "tool": "get_current_decision",
+        "facts": 1
+      },
+      {
+        "tool": "inspect_saved_plan",
+        "facts": 1
+      },
+      {
+        "tool": "find_affected_work",
+        "facts": 4
+      },
+      {
+        "tool": "find_reviewers",
+        "facts": 2
+      }
+    ]
+  },
+  "documentsUnchanged": true,
+  "checks": {
+    "billingRemoved": true,
+    "supportRetained": true,
+    "stalePlan": true,
+    "reviewer": true,
+    "noPlanWrite": true
+  }
+}

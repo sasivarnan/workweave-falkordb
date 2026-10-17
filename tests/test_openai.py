@@ -1,60 +1,38 @@
 import json
 import os
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 from workweave.agent import run
+from test_agent import reply, tool
 
 
 class OpenAITests(unittest.TestCase):
-    def test_function_and_layout(self):
-        context = {"people": [["owner"]], "ambiguous": False}
-        s = MagicMock()
-        s.context.return_value = context
-        order = ["Checklist", "SummaryCard", "EvidenceComparison", "PersonCard", "ProgressCard"]
-        replies = [
-            {
-                "choices": [
-                    {
-                        "message": {
-                            "role": "assistant",
-                            "content": None,
-                            "tool_calls": [
-                                {
-                                    "id": "call_test",
-                                    "type": "function",
-                                    "function": {
-                                        "name": "get_workspace_context",
-                                        "arguments": "{}",
-                                    },
-                                }
-                            ],
-                        }
-                    }
-                ]
-            },
-            {"choices": [{"message": {"content": json.dumps({"components": order})}}]},
-        ]
+    def test_live_adapter_uses_tool_loop_and_does_not_store_requests(self):
+        context = {
+            "people": [],
+            "plan": [],
+            "current": "Use Adyen",
+            "ambiguous": False,
+            "needsReview": False,
+            "decisions": [["d", "Use Adyen", "adr", "Decision", "Approved"]],
+        }
+        store = MagicMock()
+        store.context.return_value = context
+        replies = [reply([tool("get_current_decision")]), reply(facts=["authority"])]
         requests = []
 
-        def response(req, **kw):
-            requests.append(json.loads(req.data))
-            m = MagicMock()
-            m.__enter__.return_value.read.return_value = json.dumps(replies.pop(0)).encode()
-            return m
+        def respond(request, **kwargs):
+            requests.append(json.loads(request.data))
+            response = MagicMock()
+            response.__enter__.return_value.read.return_value = json.dumps(replies.pop(0)).encode()
+            return response
 
         with (
             patch.dict(os.environ, {"AI_PROVIDER": "openai", "OPENAI_API_KEY": "test-only"}),
-            patch("urllib.request.urlopen", side_effect=response),
+            patch("urllib.request.urlopen", side_effect=respond),
         ):
-            c, layout = run(s, "What is next?")
-            self.assertEqual(layout, order)
+            result, layout = run(store, "What is current?")
+        self.assertIsNone(layout)
+        self.assertIn("Adyen", result["agentResult"]["facts"][0]["text"])
         self.assertFalse(requests[0]["store"])
-        self.assertEqual(requests[1]["response_format"]["type"], "json_schema")
-        s.context.assert_called_once()
-
-    def test_missing_key(self):
-        with (
-            patch.dict(os.environ, {"AI_PROVIDER": "openai"}, clear=True),
-            self.assertRaises(ValueError),
-        ):
-            run(MagicMock(), "test")
+        self.assertEqual(requests[1]["messages"][-1]["role"], "tool")

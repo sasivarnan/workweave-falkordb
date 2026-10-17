@@ -43,5 +43,5 @@ def reserve(path=None, now=None, limits=None):
                 "The AI usage budget is reached. Graph exploration remains available."
             )
         db.execute("INSERT INTO operations VALUES (?)", (now,))
-    # Reserve the full two-call operation before network access; failures also consume it.
+    # Reserve the bounded agent operation (at most five model calls) before network access; failures also consume it.
     return {"hour": hour + 1, "day": day + 1, "total": total + 1}

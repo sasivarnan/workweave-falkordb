@@ -9,7 +9,7 @@ All responses use the server's same-origin API. Credentials stay on the server. 
 | POST | `/api/person` | Person profile and linked records; accepts `personId`. Returns `{person, trace}`; missing people return 404. |
 | POST | `/api/search` | Full-text company document lookup; accepts `query`. |
 | POST | `/api/action` | Validated graph action; accepts `name`, optional `note`, and optional `assignment`. Includes saving a workspace note. |
-| POST | `/api/agent` | Backend-enabled provider tool call and allowlisted layout selection. Requires a configured provider key and AI not disabled; no user credential header. |
+| POST | `/api/agent` | Bounded read-only decision-impact agent with validated graph facts and proposed next steps. Requires a configured provider key and AI not disabled; no user credential header. |
 | POST | `/api/impact` | Import the bundled sample, analyze dependencies, or remove/restore the defined test link. |
 | POST | `/api/demo/setup` | Reset and prepare Maya’s fixed recording scenario; no AI calls. |
 | POST | `/api/reset` | Reset only the visitor's synthetic workspace. |
@@ -43,3 +43,9 @@ The context includes `projectContacts`: graph-derived employee ID, name, descrip
 `POST /api/demo/setup` resets only the cookie-selected visitor graph, selects the server-owned checkout scenario, records sample reading/training, saves its initial plan and imports source records. It requires the same portal header and request limits as other writes. It accepts no user-defined scenario, actor or query and makes no AI calls. This fixture control does not authenticate a company approver.
 
 Context also includes `directory`, the workspace’s employee IDs, names and descriptions. Person details include all direct recorded links and tasks connected through a service reviewer role; they do not infer a full history of contributions.
+
+## Work assistant
+
+`POST /api/agent` accepts `prompt` (up to 1,000 characters) and the selected assignment. The model chooses among `get_current_decision`, `inspect_saved_plan`, `find_affected_work` and `find_reviewers`. Tools have no arguments and cannot write. Dependency checks reuse bounded Cypher paths and `algo.SPpaths`.
+
+The response contains `context.agentResult`: question, observed facts with source document IDs, proposed next steps and completed tool names. Company text comes from graph facts, not unchecked model prose. The server rejects unknown fact IDs, repeated tools, missing authority checks and changed evidence. At most five model requests and four distinct tool executions are allowed. Failures consume the reserved operation budget. This is a tool-planning agent with constrained output, not an unrestricted conversational agent.
