@@ -126,7 +126,7 @@ Facts and action gates come from FalkorDB. A2UI descriptors control the order of
 
 ### Changes that affect your work
 
-Home leads with graph-backed supersession findings across all assignments for the current employee. Each finding links the outdated guide, current approved decision, and affected task. Findings update after decision replacement. The weekly plan uses compact rows. The review-ready state requires current unambiguous guidance, reading, completed training, saved non-empty working notes, a reviewer, and no stale plan. This state means preparation is complete; reviewer approval is still required.
+The task step warns when its starter guide is superseded. The current source opens on demand. A decision replacement makes the new guidance unread and flags the saved plan. The judge view contains relationship evidence across isolated fixtures. The review-ready state requires current unambiguous guidance, reading, completed training, saved non-empty working notes, a reviewer, and no stale plan. This state means preparation is complete; reviewer approval is still required.
 
 ### Navigation motion
 
