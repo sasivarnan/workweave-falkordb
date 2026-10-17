@@ -1,3 +1,4 @@
+import { readSearchQuery } from "./search-url.ts"
 import { createStore } from "@xstate/store"
 import type { ImpactAnalysis, ImpactResult } from "./impact"
 import type { Evaluation, Result } from "./workspace"
@@ -21,6 +22,7 @@ export type AppState = {
   readingOpen: boolean
   editingNotes: boolean
   aiCode: string
+  searchNavigation: { query: string; view: string; revision: number } | null
   searchQuery: string
   evaluation: Evaluation | null
   evaluationError: boolean
@@ -58,10 +60,21 @@ const initial: AppState = {
   readingOpen: false,
   editingNotes: false,
   aiCode: "",
-  searchQuery: "",
+  searchQuery: readSearchQuery(window.location.search),
+  searchNavigation: readSearchQuery(window.location.search)
+    ? {
+        query: readSearchQuery(window.location.search),
+        view: "sources",
+        revision: 0,
+      }
+    : null,
   evaluation: null,
   evaluationError: false,
-  tab: judgeMode ? "proof" : "workspace",
+  tab: readSearchQuery(window.location.search)
+    ? "sources"
+    : judgeMode
+      ? "proof"
+      : "workspace",
   prompt: "",
   note: "",
   demoStep: 0,

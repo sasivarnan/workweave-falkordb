@@ -1,3 +1,4 @@
+import { readSearchQuery, searchURL } from "@/lib/search-url"
 import { useOnboardingTour } from "@/hooks/use-onboarding-tour"
 import { useEffect, useLayoutEffect, useRef } from "react"
 import { useSelector } from "@xstate/store-react"
@@ -11,6 +12,7 @@ import {
   RiBookOpenLine,
   RiTeamLine,
   RiSearchLine,
+  RiCompass3Line,
   RiArrowRightLine,
   RiSunLine,
   RiMoonLine,
@@ -84,6 +86,7 @@ import type { ImpactResult } from "@/lib/impact"
 import { decode } from "@/lib/workspace"
 
 export default function App() {
+  const searchRevision = useRef(0)
   const judgeMode = window.location.pathname === "/judge"
   const state = useSelector(appStore, (snapshot) => snapshot.context)
   const {
@@ -104,6 +107,7 @@ export default function App() {
     editingNotes,
     aiCode,
     searchQuery,
+    searchNavigation,
     evaluation,
     evaluationError,
     tab,
@@ -236,7 +240,8 @@ export default function App() {
   async function request(
     path: string,
     body: Record<string, unknown> = {},
-    destination?: string
+    destination?: string,
+    isCurrent: () => boolean = () => true
   ) {
     if (appStore.getSnapshot().context.busy) return false
     const navigationVersion = navigationRef.current
@@ -254,6 +259,7 @@ export default function App() {
       const data = await response.json()
       if (response.status === 401) setAiCode("")
       if (!response.ok) throw Error(data.error || "Request failed")
+      if (!isCurrent()) return false
       const decoded = decode(data)
       if (navigationRef.current !== navigationVersion) destination = undefined
       const commit = () => {
@@ -282,6 +288,7 @@ export default function App() {
         localStorage.setItem("workweave-assignment", decoded.context.assignment)
       return true
     } catch (e) {
+      if (!isCurrent()) return false
       setError(e instanceof Error ? e.message : "Request failed")
       return false
     } finally {
@@ -319,6 +326,53 @@ export default function App() {
       activeTransition.current?.skipTransition()
     }
   }, [])
+  function queueSearch(query: string, view = "sources") {
+    const revision = ++searchRevision.current
+    appStore.trigger.updated({
+      patch: {
+        searchQuery: query,
+        searchNavigation: { query, view, revision },
+        openSources: [],
+      },
+    })
+  }
+  function submitSearch(value = searchQuery) {
+    stop()
+    const query = value.trim().slice(0, 200)
+    const url = searchURL(window.location.href, query)
+    if (url !== window.location.href) {
+      window.history.replaceState(
+        { ...window.history.state, workweaveView: tab },
+        "",
+        window.location.href
+      )
+      window.history.pushState({ workweaveView: "sources" }, "", url)
+    }
+    queueSearch(query)
+  }
+  useEffect(() => {
+    const restore = () => {
+      const query = readSearchQuery(window.location.search)
+      const view = query
+        ? "sources"
+        : window.history.state?.workweaveView ||
+          (judgeMode ? "proof" : "workspace")
+      queueSearch(query, view)
+    }
+    window.addEventListener("popstate", restore)
+    return () => window.removeEventListener("popstate", restore)
+  }, [])
+  useEffect(() => {
+    if (!searchNavigation || busy || !context) return
+    const queued = searchNavigation
+    updateField("searchNavigation", null)
+    void request(
+      queued.query ? "/api/search" : "/api/context",
+      queued.query ? { query: queued.query } : {},
+      queued.view,
+      () => queued.revision === searchRevision.current
+    )
+  }, [searchNavigation, busy, context])
   useEffect(() => {
     if (tab === "sources" && openSources[0])
       document
@@ -809,7 +863,7 @@ export default function App() {
               onSubmit={(e) => {
                 e.preventDefault()
                 stop()
-                void request("/api/search", { query: searchQuery }, "sources")
+                submitSearch()
               }}
             >
               <Label htmlFor="workspace-search" className="sr-only">
@@ -845,7 +899,7 @@ export default function App() {
               onClick={startEmployeeTour}
             >
               Start tour
-              <RiArrowRightLine />
+              <RiCompass3Line />
             </Button>
           </div>
         </header>
@@ -2593,7 +2647,7 @@ export default function App() {
                 className="flex gap-2"
                 onSubmit={(e) => {
                   e.preventDefault()
-                  void request("/api/search", { query: searchQuery })
+                  submitSearch()
                 }}
               >
                 <Label htmlFor="document-search" className="sr-only">
@@ -2614,10 +2668,8 @@ export default function App() {
                   <Button
                     variant="outline"
                     disabled={busy}
-                    onClick={() => {
-                      setSearchQuery("")
-                      void request("/api/context")
-                    }}
+                    type="button"
+                    onClick={() => submitSearch("")}
                   >
                     Clear
                   </Button>

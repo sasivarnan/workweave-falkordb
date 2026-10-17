@@ -25,3 +25,5 @@ For a built application, the Python server serves `frontend/dist`. See the [root
 Company records come from the server. Provider keys must stay on the server.
 
 [Driver.js](https://driverjs.com/docs/configuration) is the approved exception to shadcn-only controls for onboarding. Its library stylesheet supplies overlay positioning; Tailwind classes apply the application theme. React effect cleanup removes the tour, and XState retains application progress and sidebar state.
+
+Search stores the submitted query in `?q=...`. Shared links, refresh, and browser Back and Forward restore the query. Clear removes it from the URL.
