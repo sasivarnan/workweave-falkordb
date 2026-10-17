@@ -1,4 +1,4 @@
-import { startWorkspaceTour } from "@/lib/onboarding"
+import { useOnboardingTour } from "@/hooks/use-onboarding-tour"
 import { useEffect, useLayoutEffect, useRef } from "react"
 import { useSelector } from "@xstate/store-react"
 import { appStore, updateField } from "@/lib/app-store"
@@ -87,7 +87,6 @@ export default function App() {
   const judgeMode = window.location.pathname === "/judge"
   const state = useSelector(appStore, (snapshot) => snapshot.context)
   const {
-    employeeGuide,
     impact,
     proofStage,
     proofBaseline,
@@ -397,42 +396,10 @@ export default function App() {
       appStore.trigger.requestFinished()
     }
   }
-  const tourRunning = employeeGuide > 0
-  useEffect(() => {
-    if (!tourRunning) return
-    const tour = startWorkspaceTour(
-      (step) => updateField("employeeGuide", step),
-      () => {
-        const current = appStore.getSnapshot().context
-        appStore.trigger.updated({
-          patch: {
-            employeeGuide: 0,
-            sidebarOpen: current.tourSidebarBefore ?? current.sidebarOpen,
-            tourSidebarBefore: null,
-          },
-        })
-        document
-          .querySelector<HTMLButtonElement>('[data-tour="start-tour"]')
-          ?.focus()
-      }
-    )
-    return () => {
-      tour?.destroy()
-    }
-  }, [tourRunning])
-  function startEmployeeTour() {
-    stop()
-    const current = appStore.getSnapshot().context
-    appStore.trigger.updated({
-      patch: {
-        employeeGuide: 1,
-        tourSidebarBefore: current.sidebarOpen,
-        sidebarOpen: true,
-        mobileSidebarOpen: false,
-      },
-    })
-    navigate("workspace")
-  }
+  const startEmployeeTour = useOnboardingTour({
+    onBeforeStart: stop,
+    navigateHome: () => navigate("workspace"),
+  })
   async function startImpactProof() {
     const navigationVersion = navigationRef.current
     appStore.trigger.updated({

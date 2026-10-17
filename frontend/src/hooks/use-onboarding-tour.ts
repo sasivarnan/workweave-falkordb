@@ -1,6 +1,9 @@
+import { useEffect } from "react"
+import { useSelector } from "@xstate/store-react"
+import { appStore, updateField } from "@/lib/app-store"
 import { driver, type PopoverDOM } from "driver.js"
 import "driver.js/dist/driver.css"
-import { workspaceTour } from "./tour"
+import { workspaceTour } from "@/lib/tour"
 
 function applyTheme(popover: PopoverDOM) {
   // Tailwind utilities override the library theme, without custom CSS selectors.
@@ -20,10 +23,7 @@ function applyTheme(popover: PopoverDOM) {
   popover.closeButton.setAttribute("aria-label", "Skip tour")
 }
 
-export function startWorkspaceTour(
-  onStep: (step: number) => void,
-  onEnd: () => void
-) {
+function startWorkspaceTour(onStep: (step: number) => void, onEnd: () => void) {
   const visible = (element: Element | null): element is HTMLElement =>
     element instanceof HTMLElement && element.getClientRects().length > 0
   const menu = document.querySelector('[data-tour="navigation-menu"]')
@@ -75,4 +75,55 @@ export function startWorkspaceTour(
   })
   tour.drive()
   return tour
+}
+
+type OnboardingOptions = {
+  onBeforeStart: () => void
+  navigateHome: () => void
+}
+
+export function useOnboardingTour({
+  onBeforeStart,
+  navigateHome,
+}: OnboardingOptions) {
+  const running = useSelector(
+    appStore,
+    (snapshot) => snapshot.context.employeeGuide > 0
+  )
+  useEffect(() => {
+    if (!running) return
+    const tour = startWorkspaceTour(
+      (step) => updateField("employeeGuide", step),
+      () => {
+        const current = appStore.getSnapshot().context
+        appStore.trigger.updated({
+          patch: {
+            employeeGuide: 0,
+            sidebarOpen: current.tourSidebarBefore ?? current.sidebarOpen,
+            tourSidebarBefore: null,
+          },
+        })
+        document
+          .querySelector<HTMLButtonElement>('[data-tour="start-tour"]')
+          ?.focus()
+      }
+    )
+    return () => {
+      tour?.destroy()
+    }
+  }, [running])
+
+  return function startTour() {
+    onBeforeStart()
+    const current = appStore.getSnapshot().context
+    appStore.trigger.updated({
+      patch: {
+        employeeGuide: 1,
+        tourSidebarBefore: current.sidebarOpen,
+        sidebarOpen: true,
+        mobileSidebarOpen: false,
+      },
+    })
+    navigateHome()
+  }
 }

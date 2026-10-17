@@ -16,7 +16,7 @@ The Python server serves `frontend/dist`. See the [root README](../README.md) fo
 - `src/lib/workspace.ts`: response types and A2UI subset validation.
 - `src/lib/app-store.ts`: local application state.
 - `src/lib/tour.ts`: Home and navigation tour instructions.
-- `src/lib/onboarding.ts`: Driver.js lifecycle and theme integration.
+- `src/hooks/use-onboarding-tour.ts`: Driver.js lifecycle, theme, cleanup and XState integration.
 - `src/components/ui`: shadcn controls.
 - `src/index.css`: framework imports, fonts and theme tokens. Layout uses Tailwind classes.
 
