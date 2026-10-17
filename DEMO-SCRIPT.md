@@ -1,11 +1,12 @@
 # Workweave judge demonstration
 
-Record after the hosted demo works. Use synthetic company data only.
+Use the hosted URL after it is verified. All company records are synthetic. Do not record keys or invite codes.
 
-1. 0:00–0:20 — “Workweave connects company work to the decisions behind it.” Show Today: tasks, schedule, and meeting notes. Open the meeting brief, then its linked task.
-2. 0:20–0:45 — Open the task's current guidance and source. Explain that the starter guide recommends Provider A, while an approved decision replaces it with Provider B. This affects any employee who follows the old guide.
-3. 0:45–1:15 — Use the judge walkthrough to save a plan and replace the decision. Show the stale plan and the relationship-backed impact on the meeting and its notes. Complete the required reading and training, then create a stored review request.
-4. 1:15–1:40 — Show the relationship diagnostic: the documents stay identical while relationship changes alter the correct decision or reviewer. SQL could represent the same relationships; this is a relationship-information claim, not a database exclusivity claim.
-5. 1:40–2:00 — If protected live AI is available, show its tool call and validated A2UI layout selection. End with the limits: curated synthetic records, one sample employee, no external calendar sync or production access control.
+1. 0:00–0:15 — “One approved service decision changes. Which teams need to review their work?” Open Cross-team impact and load the synthetic exports. Show the affected tasks across three teams and the missing owner.
+2. 0:15–0:40 — Expand Why affected? for Billing and Support. Show the source issue key, exact calendar link, meeting notes, native shortest dependency path, and Support's alternate route. Explain that source identifiers and service relationships came from normalized exports, not title similarity.
+3. 0:40–1:10 — Expand Test one dependency link. Remove Billing → Checkout. Billing leaves the affected set. Support stays affected through another route. Show equal source content hashes, then restore the link.
+4. 1:10–1:35 — Open Decision review. Show a saved plan tied to the older decision. Approve the sample replacement and add a newer proposal. The old plan stays intact, the replacement remains current, and linked meeting notes need review. Acknowledge the current version; the saved plan still needs an explicit update.
+5. 1:35–1:50 — Show the untouched People task outside the dependency scope and the unmatched source note. Missing links and traversal bounds are stated, rather than treated as proof of safety.
+6. 1:50–2:00 — Show saved reproducible checks and the actual query trace. Close with limits: small curated fixture, no live OAuth connectors or production access model. SQL could model these relationships too; FalkorDB provides the relationship traversal and native path explanation in this implementation.
 
-The walkthrough runs graph operations without model calls. The evaluation table shows saved, reproducible results. Do not describe either as live AI reasoning. Do not record invite codes or API keys.
+Run the flow once before recording. Prepare the saved plan before step 4. The impact workflow and decision walkthrough use real FalkorDB operations with no AI calls. Optional protected AI layout selection is a separate capability; do not present this deterministic analysis as live LLM reasoning.

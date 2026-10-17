@@ -18,7 +18,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 29.15,
+      "ms": 27.46,
       "detail": "Current assignment guidance resolved."
     },
     {
@@ -30,7 +30,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 27.37,
+      "ms": 32.08,
       "detail": "Current assignment guidance resolved."
     },
     {
@@ -42,7 +42,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 26.2,
+      "ms": 28.44,
       "detail": "Current assignment guidance resolved."
     },
     {
@@ -54,7 +54,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 31.27,
+      "ms": 32.77,
       "detail": "Abstained because evidence was incomplete or conflicting."
     },
     {
@@ -66,7 +66,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 31.67,
+      "ms": 32.58,
       "detail": "Abstained because evidence was incomplete or conflicting."
     },
     {
@@ -78,7 +78,7 @@
       "lexicalSource": "Refund test policy",
       "passed": true,
       "lexicalPassed": true,
-      "ms": 27.77,
+      "ms": 35.56,
       "detail": "Current assignment guidance resolved."
     },
     {
@@ -90,7 +90,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 35.08,
+      "ms": 32.04,
       "detail": "Reviewer absence detected; no substitute inferred."
     },
     {
@@ -102,7 +102,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 28.43,
+      "ms": 28.72,
       "detail": "Saved plan flagged for review."
     }
   ],

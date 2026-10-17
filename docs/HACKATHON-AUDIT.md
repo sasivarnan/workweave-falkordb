@@ -94,3 +94,7 @@ No gate is complete merely because a draft, deployment file or screenshot exists
 Paired live model diagnostic: documents 4/8 guidance correct; graph-context 6/8. Both required abstentions still failed in the model arm. Two graph-context citation lists had invalid IDs. Keep these failures visible; do not replace the published report with only successful examples. GitHub Actions run 38958268300 passed before this diagnostic-report update.
 
 Pre-deployment update: live AI is now invite-gated and has a durable global operation ledger. 31 tests pass. Hosted storage, HTTPS and provider-side spending controls still need verification. Do not interpret a shared invite as production HR authentication.
+
+## Cross-team impact milestone
+
+Added normalized synthetic exports, exact source linking, bounded dependency impact, native shortest-path explanations, source-content hash comparison, and reversible edge mutation. The new entry narrative and demo script lead with this workflow. No live vendor connectors, production permissions, scale benchmark, hosting completion, or prize guarantee is claimed. See CROSS-TEAM-IMPACT.md and impact-evaluation-results.json.

@@ -78,3 +78,35 @@ class ImpactTests(unittest.TestCase):
   try:
    run(self.store,'import');self.assertFalse(analyze(other)['ready'])
   finally:other.g.delete()
+ def test_depth_limit_is_reported_without_claiming_global_safety(self):
+  run(self.store,'import')
+  previous='checkout-service'
+  for index in range(6):
+   current='deep-'+str(index)
+   self.store.q('deep_dependency','MATCH (target:Service {id:$target}) CREATE (s:Service {id:$id,title:$title})-[:DEPENDS_ON {weight:1}]->(target)',{'target':previous,'id':current,'title':'Deep service '+str(index)},True)
+   previous=current
+  self.store.q('deep_work','MATCH (s:Service {id:$service}),(t:Team {id:"billing"}) CREATE (w:WorkItem {id:"DEEP-1",title:"Beyond traversal bound",source:"Jira export"})-[:TOUCHES]->(s) CREATE (t)-[:RESPONSIBLE_FOR]->(w)',{'service':previous},True)
+  result=analyze(self.store)
+  self.assertEqual(result['depthLimit'],5)
+  self.assertIn('DEEP-1',{item['id'] for item in result['excluded']})
+ def test_duplicate_service_names_do_not_merge_distinct_routes(self):
+  run(self.store,'import')
+  self.store.q('same_names','MATCH (s:Service {id:"support-console"}),(root:Service {id:"checkout-service"}) CREATE (other:Service {id:"another-billing",title:"Billing API"}) CREATE (s)-[:DEPENDS_ON {weight:1}]->(other) CREATE (other)-[:DEPENDS_ON {weight:1}]->(root)',write=True)
+  item=next(item for item in analyze(self.store)['items'] if item['id']=='SUP-310')
+  self.assertEqual(item['routeCount'],3)
+  self.assertEqual(len(item['pathIds']),3)
+ def test_http_impact_api_uses_the_cookie_workspace(self):
+  import json,threading,urllib.request,urllib.error
+  from server import Handler,ThreadingHTTPServer
+  server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
+  thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
+  try:
+   token=self.store.name.removeprefix('workweave_')
+   request=urllib.request.Request('http://127.0.0.1:'+str(server.server_port)+'/api/impact',data=b'{"operation":"import"}',headers={'Content-Type':'application/json','X-Workweave':'portal','Cookie':'workweave='+token})
+   with urllib.request.urlopen(request) as response:payload=json.load(response)
+   self.assertEqual(len(payload['analysis']['items']),4)
+   self.assertTrue(payload['trace'])
+   request=urllib.request.Request('http://127.0.0.1:'+str(server.server_port)+'/api/impact',data=b'{"operation":"arbitrary-query"}',headers={'Content-Type':'application/json','X-Workweave':'portal','Cookie':'workweave='+token})
+   with self.assertRaises(urllib.error.HTTPError) as error:urllib.request.urlopen(request)
+   self.assertEqual(error.exception.code,400)
+  finally:server.shutdown();server.server_close();thread.join()

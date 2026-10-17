@@ -252,7 +252,8 @@ export default function App() {
       if (navigationRef.current !== navigationVersion) destination = undefined
       const commit = () => {
         setResult(data)
-        if(path==="/api/action"||path==="/api/reset")updateField("impact",null)
+        if (path === "/api/action" || path === "/api/reset")
+          updateField("impact", null)
         document.title =
           decoded.context.workspace.appName + " · Company workspace"
         setAssignment(decoded.context.assignment)
@@ -1474,7 +1475,11 @@ export default function App() {
                             ).length
                           }
                         </span>{" "}
-                        owners to clarify
+                        {impact.analysis.items?.filter(
+                          (item) => item.owners.length !== 1
+                        ).length === 1
+                          ? "owner to clarify"
+                          : "owners to clarify"}
                       </p>
                     </CardContent>
                     <CardFooter>

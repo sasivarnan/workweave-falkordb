@@ -72,6 +72,7 @@ UI controls use official shadcn base-rhea components, with the supplied violet/n
 
 ```sh
 .venv/bin/python -m unittest discover -s tests -v
+.venv/bin/python scripts/evaluate_impact.py
 .venv/bin/python scripts/evaluate_relationships.py
 .venv/bin/python scripts/evaluate.py
 .venv/bin/python scripts/export_queries.py
@@ -80,7 +81,7 @@ npm run build --prefix frontend
 .venv/bin/python scripts/check_secrets.py
 ```
 
-The Python suite contains 47 tests. Two frontend store tests check state preservation and in-memory invite handling. Integration tests create isolated disposable graphs and delete only those test graphs. Agent contract tests use mocked responses. The saved eight-case retrieval diagnostic and paired model evaluation are small authored checks, not production accuracy or general RAG benchmarks. See [evaluation details](EVALUATION.md).
+The Python suite contains 60 tests. Two frontend store tests check state preservation and in-memory invite handling. Integration tests create isolated disposable graphs and delete only those test graphs. Agent contract tests use mocked responses. The saved eight-case retrieval diagnostic and paired model evaluation are small authored checks, not production accuracy or general RAG benchmarks. See [evaluation details](EVALUATION.md).
 
 ## Local safety and deployment
 
@@ -126,3 +127,11 @@ Codex assisted with implementation, synthetic data, tests, design, and documenta
 ## Decision change review
 
 Open **Decision review** to inspect a decision's source, recorded approval, service scope, and affected work. Saved plans retain their original version and notes. Version-specific acknowledgements are stored separately. A newer proposal does not replace approved guidance. The sample controls let a judge exercise both cases. See [workflow, proof, and limits](docs/DECISION-REVIEW.md).
+
+## Flagship graph workflow: cross-team impact
+
+Open **Cross-team impact** and load synthetic source exports. Workweave follows service dependencies from an approved decision to tasks across Payments, Billing, and Support, then links their calendar events and notes through exact source identifiers.
+
+Expand **Why affected?** for native shortest-path explanations and alternate routes. Remove the sample dependency: Billing drops out, Support stays reachable through another route, and source text stays unchanged. Restore the edge to recover the original result. Missing owners and unmatched notes remain explicit.
+
+[Workflow and limits](docs/CROSS-TEAM-IMPACT.md). Reproduce with `python scripts/evaluate_impact.py`. The fixture is normalized synthetic data; live integrations remain pending.

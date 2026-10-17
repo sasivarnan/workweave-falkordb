@@ -10,6 +10,14 @@ A starter guide can remain readable after its underlying decision changes. Any e
 
 Workweave connects assignments, services, decisions, documents, reviewers, and training in FalkorDB. It follows explicit approval and supersession relationships. It preserves an accepted plan and flags it for review after a decision changes.
 
+## The cross-team proof
+
+The flagship workflow imports normalized synthetic task, calendar, note, and service-registry exports. Exact issue keys link meetings to tasks; unique meeting identifiers link notes to events. Unmatched records remain unresolved.
+
+Billing depends on Checkout. Support depends on both Billing and Checkout. Bounded Cypher finds affected work; native `algo.SPpaths` supplies the shortest explanation for indirect dependencies. The UI exposes alternate routes and recorded owners. Removing Billing → Checkout drops the Billing task while Support remains reachable. Task, event, note, and document content hashes stay equal. Restoring the edge recovers Billing.
+
+This is a seven-case authored correctness demonstration, not a performance benchmark. The independent expectations, raw results, and reproducible script are included in the repository. Cycle, ambiguity, depth-bound, missing owner, and native-procedure failure checks are part of the test suite.
+
 ## Why the graph changes the answer
 
 The conflict path is document → historical decision ← replacement decision → service ← assignment. Looking only at the assignment's source does not expose this connection. Show the actual path and query from the app here.
@@ -20,7 +28,7 @@ The model calls a fixed workspace-context tool. It then selects the order of val
 
 ## The parts we tested
 
-The local test suite has 47 passing checks. It covers persistent state, workspace isolation, outdated guidance, missing ownership, conflicting decisions, reset, and model contract failures. Model responses in the contract tests are mocked.
+The local test suite has 60 passing checks. It covers persistent state, workspace isolation, outdated guidance, missing ownership, conflicting decisions, reset, and model contract failures. Model responses in the contract tests are mocked.
 
 A separate reproducible evaluation passed eight graph cases: outdated guidance, replacement, unapproved replacement, conflicting approvals, missing source, a second assignment, missing reviewer, and stale saved plan. A simple word-overlap top-document diagnostic matched expected guidance in one case. This narrow diagnostic is not a same-model RAG benchmark. Workweave receives curated graph relationships that the text retrieval method does not use; ingestion quality is outside this evaluation. The script and full outputs ship with the source.
 

@@ -23,10 +23,14 @@ The UI state store holds the latest response, navigation, theme, sidebar mode, d
 
 This API is for synthetic hackathon workspaces. Employee identity is a server-owned sample, not production authentication or permission enforcement.
 
-Checks: 47 server/graph tests and two frontend store tests pass. The frontend source contains no sample company/person names or fixture assignment IDs. Browser checks cover collapse, expansion, saved mode after reload, and server-backed meeting details.
+Checks: 60 server/graph tests and two frontend store tests pass. The frontend source contains no sample company/person names or fixture assignment IDs. Browser checks cover collapse, expansion, saved mode after reload, and server-backed meeting details.
 
 ## Decision review data
 
 `POST /api/context` now includes `context.changeReview`: decision history, affected tasks, meeting/note paths, assignments outside the selected service scope, clarification issues, and `canAcknowledge`.
 
 `POST /api/action` accepts `acknowledge-change` for a version-specific acknowledgement. Synthetic workspace controls also accept `propose` and `replace`. The latter records a sample approver and approval meeting. These controls confer no real company authority. See [the feature contract](DECISION-REVIEW.md).
+
+## Cross-team impact endpoint
+
+`POST /api/impact` accepts `operation`: `import`, `analyze`, `remove`, or `restore`. It reads the same isolated workspace and returns `{analysis, trace}`. The changed service scope and experiment edge are server-owned. It imports only the bundled normalized synthetic fixture. No model calls or vendor account access occur. See [cross-team impact](CROSS-TEAM-IMPACT.md).
