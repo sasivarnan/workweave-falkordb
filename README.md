@@ -40,7 +40,18 @@ For either option, open [localhost:8080](http://localhost:8080). Start tour expl
 
 ## Development: frontend and backend separately
 
-Install dependencies once with `uv sync --locked` and `npm ci --prefix frontend`. Keep FalkorDB running at `127.0.0.1:6381`; reuse an existing instance or start the database with the development Compose command above.
+Run both terminals from the repository root. Install dependencies once:
+
+```sh
+uv sync --locked
+npm ci --prefix frontend
+```
+
+Keep FalkorDB running at `127.0.0.1:6381`. Reuse your existing instance, or start only the database:
+
+```sh
+docker compose -f compose.yaml -f compose.dev.yaml up -d database
+```
 
 **Terminal 1 — backend with automatic restart:**
 
