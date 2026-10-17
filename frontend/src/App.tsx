@@ -479,6 +479,7 @@ export default function App() {
   const navItems = [
     ["workspace", "Today", RiHome5Line],
     ["home", "Tasks", RiCheckboxCircleLine],
+    ["changes", "Decision review", RiInformationLine],
     ["calendar", "Calendar", RiCalendarLine],
     ["notes", "Notes", RiFileTextLine],
     ["sources", "Knowledge", RiBookOpenLine],
@@ -739,6 +740,7 @@ export default function App() {
           <Tabs value={tab} onValueChange={(v) => navigate(String(v))}>
             <TabsList className="hidden">
               <TabsTrigger value="workspace">Today</TabsTrigger>
+              <TabsTrigger value="changes">Decision review</TabsTrigger>
               <TabsTrigger value="calendar">Calendar</TabsTrigger>
               <TabsTrigger value="notes">Notes</TabsTrigger>
               <TabsTrigger value="proof">Proof & evaluation</TabsTrigger>
@@ -822,10 +824,7 @@ export default function App() {
                                   className="h-auto px-0 text-xs"
                                   disabled={busy}
                                   onClick={() =>
-                                    void openAssignment(
-                                      context.findings[0]?.[0] ||
-                                        context.assignment
-                                    )
+                                    navigate("changes")
                                   }
                                 >
                                   Review update <RiArrowRightLine />
@@ -996,6 +995,21 @@ export default function App() {
                   </aside>
                 </div>
               )}
+            </TabsContent>
+            <TabsContent value="changes" className="space-y-8">
+              <section className="space-y-2"><p className="text-xs text-muted-foreground">Current assignment · {context?.task[0]?.[0]}</p><h1 className="font-heading text-3xl font-semibold tracking-tight">Decision review</h1><p className="max-w-2xl text-sm leading-6 text-muted-foreground">See what changed, which work it affects, and what needs your review.</p></section>
+              {!context?<Skeleton className="h-64"/>:<>
+                <div className="flex flex-wrap gap-2">{context.assignments.map(row=><Button key={row[0]} variant={assignment===row[0]?'secondary':'ghost'} size="sm" disabled={busy} onClick={()=>void request('/api/context',{assignment:row[0]})}>{row[1]}</Button>)}</div>
+                <Card className="shadow-none"><CardHeader><div className="flex items-center justify-between gap-3"><CardTitle>{context.current || 'Guidance needs clarification'}</CardTitle><Badge variant={context.changeReview.canAcknowledge?'secondary':'destructive'}>{context.changeReview.canAcknowledge?'Approved guidance':'Needs clarification'}</Badge></div><CardDescription>Scope: {context.task[0]?.[2]}</CardDescription></CardHeader><CardContent className="space-y-4">
+                  {context.changeReview.history.filter(row=>row[0]===context.changeReview.currentId).slice(0,1).map(row=><div key={String(row[0])} className="space-y-2 text-sm"><p>{row[3]?<>Replaces <span className="font-medium">{String(row[3])}</span></>:'No earlier decision recorded.'}</p><p className="text-muted-foreground">Recorded approver: {row[4]?String(row[4]):'Missing'} · Effective: {row[6]?new Date(Number(row[6])).toLocaleString([], {timeZone:timezone}):'Missing'}</p>{row[8]&&<p className="text-muted-foreground">Approval meeting: {String(row[8])}</p>}{row[9]&&<Button variant="link" className="h-auto px-0" onClick={()=>showSource(String(row[9]))}>Read original source · {String(row[10])}<RiArrowRightLine/></Button>}</div>)}
+                  {context.changeReview.issues.length>0&&<Alert variant="destructive"><AlertTitle>Clarification required</AlertTitle><AlertDescription>{context.changeReview.issues.map(issue=><p key={issue}>{issue}</p>)}</AlertDescription></Alert>}
+                </CardContent></Card>
+                <section className="space-y-4"><div className="flex items-center justify-between"><h2 className="text-lg font-semibold">Affected work</h2><Badge variant="outline">{context.changeReview.affected.length} task{context.changeReview.affected.length===1?'':'s'}</Badge></div>{context.changeReview.affected.map(record=><Card key={record.id} className="gap-3 shadow-none"><CardHeader><div className="flex flex-wrap items-center justify-between gap-2"><CardTitle className="text-base">{record.title}</CardTitle><Badge variant={record.stale?'destructive':'secondary'}>{record.stale?'Saved plan needs review':record.acknowledged?'Acknowledged':'Review guidance'}</Badge></div><CardDescription>Assigned owner: {record.owner}</CardDescription></CardHeader><CardContent className="space-y-4"><p className="text-xs leading-6 text-muted-foreground">{record.path.join(' → ')}</p>{record.savedNote&&<div className="space-y-1 border-l-2 pl-4"><p className="text-xs text-muted-foreground">Saved using {record.savedDecision || 'Missing decision evidence'}</p><p className="whitespace-pre-wrap text-sm leading-6">{record.savedNote}</p></div>}{record.acknowledged&&<p role="status" className="text-xs text-muted-foreground">Acknowledged {record.acknowledgedAt?new Date(record.acknowledgedAt).toLocaleString([], {timeZone:timezone}):''}. {record.stale?'Your saved plan still needs an update.':'This acknowledgement applies to the current decision version.'}</p>}</CardContent><CardFooter className="flex flex-wrap gap-2"><Button disabled={busy||!context.changeReview.canAcknowledge||record.acknowledged} onClick={()=>void request('/api/action',{name:'acknowledge-change',assignment:record.id})}>{record.acknowledged?'Acknowledged':'Acknowledge current guidance'}</Button><Button variant="outline" disabled={busy} onClick={()=>void openAssignment(record.id)}>{record.stale?'Update saved plan':'Open task'}</Button></CardFooter></Card>)}</section>
+                {context.changeReview.meetings.length>0&&<section className="space-y-3"><h2 className="text-lg font-semibold">Meetings and notes to review</h2><div className="divide-y border-y">{context.changeReview.meetings.map(row=><div key={row[0]} className="space-y-2 py-4"><p className="text-sm font-medium">{row[1]}</p><p className="text-xs leading-6 text-muted-foreground">{row[4].join(' → ')}</p>{row[2]?<Button variant="link" className="h-auto px-0 text-xs" onClick={()=>showSource(row[2]!)}>Review notes · {row[3]}<RiArrowRightLine/></Button>:<p className="text-xs text-muted-foreground">Meeting notes are missing.</p>}</div>)}</div></section>}
+                {context.changeReview.unaffected.length>0&&<section className="space-y-3"><h2 className="text-lg font-semibold">Outside this decision’s scope</h2><div className="divide-y border-y">{context.changeReview.unaffected.map(row=><div key={row[0]} className="flex items-center justify-between gap-4 py-4"><div><p className="text-sm">{row[1]}</p><p className="text-xs text-muted-foreground">Uses {row[2]}; no link to this decision’s service.</p></div><Badge variant="outline">Unchanged</Badge></div>)}</div><p className="text-xs text-muted-foreground">Based on recorded relationships. Missing links can hide impact.</p></section>}
+                <Accordion><AccordionItem value="history"><AccordionTrigger>Decision history and proposals</AccordionTrigger><AccordionContent className="space-y-4">{context.changeReview.history.map((row,index)=><div key={String(row[0])+index} className="space-y-2 border-l pl-4"><div className="flex items-center gap-2"><p className="text-sm font-medium">{String(row[1])}</p><Badge variant="outline">{row[0]===context.changeReview.currentId?'Current':row[2]?'Earlier approval':'Proposal only'}</Badge></div>{!row[2]&&<p className="text-xs text-muted-foreground">A newer discussion does not replace approved guidance.</p>}{row[8]&&<p className="text-xs text-muted-foreground">{String(row[8])}</p>}{row[9]&&<Button variant="link" className="h-auto px-0 text-xs" onClick={()=>showSource(String(row[9]))}>Open source</Button>}</div>)}</AccordionContent></AccordionItem></Accordion>
+                {workspace?.synthetic&&<Accordion><AccordionItem value="scenario"><AccordionTrigger>Try a change in this sample workspace</AccordionTrigger><AccordionContent className="space-y-3"><p className="text-xs leading-6 text-muted-foreground">Save review notes in the task first. Approve a replacement to see the saved plan become stale. Then add a newer proposal: approved guidance should stay the same. These controls do not approve decisions in a real company.</p><div className="flex flex-wrap gap-2"><Button variant="outline" disabled={busy||assignment!==workspace.demo.assignment} onClick={()=>void act('replace')}>Approve sample replacement</Button><Button variant="outline" disabled={busy||assignment!==workspace.demo.assignment} onClick={()=>void act('propose')}>Add newer proposal</Button></div></AccordionContent></AccordionItem></Accordion>}
+              </>}
             </TabsContent>
             <TabsContent value="calendar" className="space-y-8">
               <section className="space-y-2">

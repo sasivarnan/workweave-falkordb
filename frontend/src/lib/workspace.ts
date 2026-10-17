@@ -11,6 +11,15 @@ export type Context = {
       steps: { label: string; path: string; body: Record<string, unknown> }[]
     }
   }
+  changeReview: {
+    currentId:string|null
+    history:(string|number|boolean|null)[][]
+    affected:{id:string;title:string;owner:string;path:string[];savedDecision:string|null;savedNote:string|null;stale:boolean;acknowledged:boolean;acknowledgedAt:number|null}[]
+    meetings:[string,string,string|null,string|null,string[]][]
+    unaffected:string[][]
+    issues:string[]
+    canAcknowledge:boolean
+  }
   meetings: string[][]
   notes: string[][]
   impact: string[][]
