@@ -14,3 +14,15 @@ This review supports the event's AI-assistance and understanding rules. Read the
 10. Confirm what you contributed: product choices, scope, UI review, verification and corrections. Describe AI assistance truthfully.
 
 Participant completion: PENDING. Record actual manual observations here before submission; do not pre-fill a sign-off.
+
+## Main proof: human check still required
+
+Open /judge and select “Try the one-minute proof”. Without help:
+
+1. Explain both routes from Support console to Checkout service.
+2. Remove the test link. Explain why BILL-204 leaves but SUP-310 and SUP-311 stay.
+3. Restore the link. Check task IDs, route counts and source content hashes.
+4. Explain the limit: another database can implement this logic. This prototype demonstrates relationship traversal in FalkorDB, not database exclusivity.
+5. Read impact.py. Explain exact source IDs, the five-link limit, missing owners and ambiguous note links.
+
+Record the actual reviewer, date, time needed, point of confusion and correction. Do not mark this complete from automated browser checks. The one-minute label is a design target; no independent timing result is claimed.

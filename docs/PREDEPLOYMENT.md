@@ -13,7 +13,7 @@ The app remains local. Publish the hosted app last.
 - Git ignores .env and the .data ledger directory. Docker excludes both from the image context.
 - Compose uses a separate persistent usage-data volume.
 - Local invite code generated in ignored .env; never copy it into public docs or video.
-- 31 automated tests pass; no live model calls were used for protection tests.
+- 60 backend tests passed in the previous validation; 4 frontend tests pass; no live model calls were used for protection tests.
 
 ## Still required before public access
 
@@ -22,7 +22,7 @@ The app remains local. Publish the hosted app last.
 - Verify HTTPS and secure cookies. Send the invite code only over HTTPS.
 - Configure provider-side spend controls. Application operation limits are not a guaranteed dollar cap.
 - Verify limits survive a host restart/replacement, not only a local ledger reopen.
-- Finish browser mobile/keyboard/failure checks. Browser automation was blocked by the local tab URL policy during this pass; no visual test is claimed.
+- Complete remaining mobile/keyboard/failure checks. The three-step cross-team guide passed a local browser check on 17 October: remove one link, keep the alternate path, restore original task IDs and route counts.
 - Complete the participant technical review and confirm registration.
 - Review the blog and source. Record the final video after the public URL works.
 
