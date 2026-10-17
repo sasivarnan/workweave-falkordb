@@ -2,7 +2,7 @@
 
 [![Verify FirstTask](https://github.com/sasivarnan/firsttask-falkordb/actions/workflows/verify.yml/badge.svg)](https://github.com/sasivarnan/firsttask-falkordb/actions/workflows/verify.yml)
 
-A new employee portal that finds outdated guidance before a first contribution.
+A company workspace that connects work, meetings, notes and source-backed decisions.
 
 **Status:** working local graph workflow. OpenAI live function calling and layout selection passed. Public deployment still needs hosting configuration. Do not submit this as a completed hosted agent until those checks pass.
 
@@ -157,3 +157,9 @@ Local code is stored in the ignored .env file with restricted file permissions. 
 ## Relationship evidence
 
 Run `python scripts/evaluate_relationships.py`. Four isolated checks retain byte-identical source document IDs, titles and bodies while changing only relationships. Removing approval lineage creates ambiguity; removing source support blocks plan acceptance; changing the recorded reviewer changes the correct owner; disconnecting a task from its service removes its valid context. Full results: relationship-evaluation-results.json and `/judge`. This proves the need for relationship information and its central role here, not that SQL or other databases cannot represent the same model.
+
+## Company workspace
+
+The scope now includes a company Overview, Calendar, Notes, Tasks, Knowledge and People. Calendar entries are synthetic graph records, not external bookings. Meetings link to assignments, services, decision versions and notes. A replacement decision identifies meetings and notes whose linked decision needs review, together with the affected assignment. The note editor stores one personal workspace note; it is not a full document editor. Light/dark mode follows the system on first use and then remembers the selected preference.
+
+The one-task flow remains the focused action view. Authentication, permissions across real employees, external calendar sync, meeting transcription and general-purpose question answering remain unimplemented. AI access remains invite-protected; do not deploy until the release checklist is complete.

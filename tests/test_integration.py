@@ -73,4 +73,10 @@ class GraphTests(unittest.TestCase):
   rows=self.s.search('refund sandbox');self.assertTrue(any(r[0]=='refund-source' for r in rows));self.assertTrue(all(len(r)==4 for r in rows))
   self.s.seed();self.assertTrue(self.s.search('checkout'))
   with self.assertRaises(ValueError):self.s.search('***')
+ def test_23_company_links_and_impact(self):
+  c=self.s.context();self.assertEqual(len(c['meetings']),2);self.assertEqual(len(c['notes']),2);self.assertEqual(c['impact'],[])
+  self.assertEqual(c['meetings'][0][4:6],['checkout','meeting-checkout'])
+  self.s.action('replace');c=self.s.context();self.assertEqual(c['impact'][0],['Use Provider C','Checkout release review','Checkout planning notes','Ship your first checkout change'])
+ def test_24_workspace_note_persistence(self):
+  self.s.action('save-note','Check with Payments about release readiness');self.s.seed();c=self.s.context();self.assertTrue(any(r[2]=='Check with Payments about release readiness' for r in c['notes']))
 if __name__=='__main__':unittest.main(verbosity=2)

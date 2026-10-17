@@ -7,7 +7,7 @@
       "before": "Use Provider B",
       "after": "Clarification required",
       "documentsUnchanged": true,
-      "documentHash": "124c8a08a98dfc5fa3135efce529cd80df0400c04d12835f6b226106a253f638",
+      "documentHash": "9a9b171c3f9b29d9d2b14b8f8f7671a9c18771b4634105715425222de35532ee",
       "acceptanceBlocked": true,
       "passed": true,
       "query": "MATCH (:Decision {id:\"provider-b\"})-[r:SUPERSEDES]->() DELETE r"
@@ -17,7 +17,7 @@
       "before": "Use Provider B",
       "after": "Clarification required",
       "documentsUnchanged": true,
-      "documentHash": "124c8a08a98dfc5fa3135efce529cd80df0400c04d12835f6b226106a253f638",
+      "documentHash": "9a9b171c3f9b29d9d2b14b8f8f7671a9c18771b4634105715425222de35532ee",
       "acceptanceBlocked": true,
       "passed": true,
       "query": "MATCH (:Decision {id:\"provider-b\"})-[r:SUPPORTED_BY]->() DELETE r"
@@ -27,7 +27,7 @@
       "before": "Leo Martin",
       "after": "Noah Williams",
       "documentsUnchanged": true,
-      "documentHash": "124c8a08a98dfc5fa3135efce529cd80df0400c04d12835f6b226106a253f638",
+      "documentHash": "9a9b171c3f9b29d9d2b14b8f8f7671a9c18771b4634105715425222de35532ee",
       "acceptanceBlocked": null,
       "passed": true,
       "query": "MATCH (:Employee {id:\"leo\"})-[r:REVIEWER_FOR]->(:Service {id:\"checkout-service\"}) DELETE r WITH count(*) AS removed MATCH (n:Employee {id:\"noah\"}),(s:Service {id:\"checkout-service\"}) MERGE (n)-[:REVIEWER_FOR]->(s)"
@@ -37,7 +37,7 @@
       "before": "Use Provider B",
       "after": "Task context unavailable",
       "documentsUnchanged": true,
-      "documentHash": "124c8a08a98dfc5fa3135efce529cd80df0400c04d12835f6b226106a253f638",
+      "documentHash": "9a9b171c3f9b29d9d2b14b8f8f7671a9c18771b4634105715425222de35532ee",
       "acceptanceBlocked": null,
       "passed": true,
       "query": "MATCH (:Assignment {id:\"checkout\"})-[r:TOUCHES]->() DELETE r"

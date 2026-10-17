@@ -65,6 +65,7 @@ class Store:
    self.seed_assignments()
    self.seed_week()
    self.seed_search()
+   self.seed_company()
    self.g.execute_command('EXPIRE',self.name,86400)
    return
   for label,id,title,body in NODES:
@@ -77,6 +78,7 @@ class Store:
   self.seed_assignments()
   self.seed_week()
   self.seed_search()
+  self.seed_company()
   self.q('seed_complete','CREATE (:Meta {id:$id})',{'id':'seed'},True)
   self.g.execute_command('EXPIRE',self.name,86400)
   self.trace=[]
@@ -102,6 +104,14 @@ class Store:
   terms=re.findall(r'[a-zA-Z0-9]+',str(text)[:200])[:12]
   if not terms:raise ValueError('Enter a document search term')
   return self.q('search_company_documents','CALL db.idx.fulltext.queryNodes("Document",$query) YIELD node,score RETURN node.id,node.title,node.body,score ORDER BY score DESC LIMIT 10',{'query':'|'.join(terms)})
+ def seed_company(self):
+  if self.q('company_version','MATCH (:Meta {id:"company-v1"}) RETURN true'):return
+  nodes=[('Meeting','checkout-review','Checkout release review','Review the provider migration and status indicator.','2026-10-19T10:00:00+05:30'),('Meeting','refund-sync','Refund test planning','Agree on synthetic refund test coverage.','2026-10-20T14:00:00+05:30'),('Document','meeting-checkout','Checkout planning notes','The team will review the current approved provider decision before the status indicator change.',''),('Document','meeting-refund','Refund planning notes','Cover successful, pending and failed refund outcomes using synthetic data.',''),('Document','hr-leave','Leave and time-off policy','Sample policy: discuss planned leave with your manager before submitting a request.',''),('Project','payments-project','Payments reliability','Improve payment status visibility and refund test coverage.','')]
+  for label,id,title,body,start in nodes:
+   self.q('seed_company_record',f'MERGE (n:{label} {{id:$id}}) SET n.title=$title,n.body=$body,n.starts=$start',{'id':id,'title':title,'body':body,'start':start},True)
+  edges=[('checkout-review','DISCUSSES','checkout'),('checkout-review','DISCUSSES','checkout-service'),('checkout-review','CONSIDERS','provider-b'),('refund-sync','DISCUSSES','refunds'),('meeting-checkout','NOTES_FOR','checkout-review'),('meeting-refund','NOTES_FOR','refund-sync'),('maya','ATTENDS','checkout-review'),('leo','ATTENDS','checkout-review'),('maya','ATTENDS','refund-sync'),('noah','ATTENDS','refund-sync'),('payments-project','INCLUDES','checkout'),('payments-project','INCLUDES','refunds'),('payments','OWNS','payments-project')]
+  for a,r,b in edges:self.q('seed_company_link',f'MATCH (a {{id:$a}}),(b {{id:$b}}) MERGE (a)-[:{r}]->(b)',{'a':a,'b':b},True)
+  self.q('company_ready','CREATE (:Meta {id:"company-v1"})',write=True)
  def context(self):
   task=self.q('get_assignment_context','MATCH (e:Employee {id:$employee})-[:ASSIGNED_TO]->(a:Assignment {id:$assignment})-[:TOUCHES]->(s:Service) RETURN a.title,a.body,s.title,s.id',{'employee':'maya','assignment':self.assignment})
   if not task:raise ValueError('This assignment is not assigned to the current employee')
@@ -126,7 +136,11 @@ class Store:
   colleagues=self.q('get_team_reviewers','MATCH (:Employee {id:$employee})-[:ASSIGNED_TO]->(:Assignment)-[:TOUCHES]->(s:Service)<-[r:REVIEWER_FOR|BACKUP_REVIEWER_FOR]-(p:Employee) RETURN DISTINCT p.id,p.title,p.body,type(r) ORDER BY p.title',{'employee':'maya'})
   findings=self.q('find_changes_affecting_my_work','MATCH (:Employee {id:$employee})-[:ASSIGNED_TO]->(a:Assignment)-[:TOUCHES]->(s:Service)<-[:APPLIES_TO]-(current:Decision)-[:SUPERSEDES*1..4]->(old:Decision)<-[:RECOMMENDS]-(doc:Document) MATCH (current)-[:SUPPORTED_BY]->(src:Document) WHERE current.approved=true AND NOT (:Decision {approved:true})-[:SUPERSEDES]->(current) RETURN DISTINCT a.id,a.title,doc.id,doc.title,old.title,current.title,src.id,src.title,src.body ORDER BY a.title',{'employee':'maya'})
   review_request=self.q('get_review_request','MATCH (:Employee {id:$employee})-[:CREATED]->(r:ReviewRequest)-[:FOR_ASSIGNMENT]->(:Assignment {id:$assignment}) MATCH (r)-[:ASSIGNED_REVIEWER]->(reviewer:Employee),(r)-[:BASED_ON]->(d:Decision) RETURN r.id,r.status,reviewer.title,d.id,r.note',{'employee':'maya','assignment':self.assignment})
-  return {'reviewRequest':review_request,'findings':findings,'week':week,'colleagues':colleagues,'guidanceRead':bool(read),'assignment':self.assignment,'assignments':assignments,'task':task,'people':people,'decisions':decisions,'conflicts':conflicts,'training':training,'plan':plan,'paths':path,'sources':sources,'current':current,'needsReview':bool(plan and (len(decisions)!=1 or plan[0][3]!=decisions[0][0])),'ambiguous':len(decisions)!=1 or not decisions[0][2],'direct':direct,'connected':connected}
+  meetings=self.q('company_calendar','MATCH (:Employee {id:$employee})-[:ATTENDS]->(m:Meeting) OPTIONAL MATCH (m)-[:DISCUSSES]->(a:Assignment) OPTIONAL MATCH (n:Document)-[:NOTES_FOR]->(m) RETURN m.id,m.title,m.body,m.starts,a.id,n.id ORDER BY m.starts',{'employee':'maya'})
+  notes=self.q('company_notes','MATCH (n:Document) WHERE (n)-[:NOTES_FOR]->(:Meeting) OR (:Employee {id:$employee})-[:CREATED]->(n) RETURN n.id,n.title,n.body ORDER BY n.title',{'employee':'maya'})
+  impact=self.q('company_change_impact','MATCH (old:Decision)<-[:SUPERSEDES*1..4]-(current:Decision) WHERE current.approved=true AND NOT (:Decision {approved:true})-[:SUPERSEDES]->(current) MATCH (m:Meeting)-[:CONSIDERS]->(old) MATCH (n:Document)-[:NOTES_FOR]->(m) MATCH (m)-[:DISCUSSES]->(a:Assignment)-[:TOUCHES]->(s:Service)<-[:APPLIES_TO]-(current) RETURN DISTINCT current.title,m.title,n.title,a.title ORDER BY m.title')
+  return_extra={'meetings':meetings,'notes':notes,'impact':impact}
+  return {**return_extra,'reviewRequest':review_request,'findings':findings,'week':week,'colleagues':colleagues,'guidanceRead':bool(read),'assignment':self.assignment,'assignments':assignments,'task':task,'people':people,'decisions':decisions,'conflicts':conflicts,'training':training,'plan':plan,'paths':path,'sources':sources,'current':current,'needsReview':bool(plan and (len(decisions)!=1 or plan[0][3]!=decisions[0][0])),'ambiguous':len(decisions)!=1 or not decisions[0][2],'direct':direct,'connected':connected}
  def action(self,name,note=''):
   if name in ('replace','remove-owner') and self.assignment!='checkout':raise ValueError('This sample change is available only for the checkout assignment')
   if name=='replace':
@@ -145,6 +159,8 @@ class Store:
    if c['ambiguous']:raise ValueError('Resolve current guidance before accepting a plan')
    self.q('save_learning_plan','MATCH (e:Employee {id:$employee})-[:ASSIGNED_TO]->(a:Assignment {id:$assignment}) MERGE (p:LearningPlan {id:$plan}) SET p.title=a.title,p.guidance=$guidance,p.note=$note MERGE (e)-[:HAS_PLAN]->(p) MERGE (p)-[:FOR_ASSIGNMENT]->(a)',{'employee':'maya','assignment':self.assignment,'plan':'plan_'+self.assignment,'guidance':c['current'],'note':note[:500]},True)
    self.q('save_plan_evidence','MATCH (p:LearningPlan {id:$plan}),(d:Decision {id:$decision}) WITH p,d OPTIONAL MATCH (p)-[old:SUPPORTED_BY]->() DELETE old MERGE (p)-[:SUPPORTED_BY]->(d)',{'plan':'plan_'+self.assignment,'decision':c['decisions'][0][0]},True)
+  elif name=='save-note':
+   self.q('save_workspace_note','MATCH (e:Employee {id:"maya"}) MERGE (n:Document {id:"personal-note"}) SET n.title="My workspace note",n.body=$note MERGE (e)-[:CREATED]->(n)',{'note':note[:500]},True)
   elif name=='request-review':
    c=self.context()
    if c['ambiguous'] or c['needsReview'] or not c['guidanceRead'] or not c['training'] or not all(r[2] for r in c['training']) or not c['plan'] or not c['plan'][0][2].strip() or not c['people']:raise ValueError('Complete current reading, training, saved notes, and reviewer assignment before requesting review')

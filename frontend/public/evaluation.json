@@ -18,7 +18,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 18.07,
+      "ms": 21.94,
       "detail": "Current assignment guidance resolved."
     },
     {
@@ -30,7 +30,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 19.56,
+      "ms": 23.31,
       "detail": "Current assignment guidance resolved."
     },
     {
@@ -42,7 +42,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 21.26,
+      "ms": 23.51,
       "detail": "Current assignment guidance resolved."
     },
     {
@@ -54,7 +54,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 38.92,
+      "ms": 23.88,
       "detail": "Abstained because evidence was incomplete or conflicting."
     },
     {
@@ -66,7 +66,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 33.47,
+      "ms": 29.32,
       "detail": "Abstained because evidence was incomplete or conflicting."
     },
     {
@@ -78,7 +78,7 @@
       "lexicalSource": "Refund test policy",
       "passed": true,
       "lexicalPassed": true,
-      "ms": 41.97,
+      "ms": 25.83,
       "detail": "Current assignment guidance resolved."
     },
     {
@@ -90,7 +90,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 30.37,
+      "ms": 26.01,
       "detail": "Reviewer absence detected; no substitute inferred."
     },
     {
@@ -102,7 +102,7 @@
       "lexicalSource": "Checkout starter guide",
       "passed": true,
       "lexicalPassed": false,
-      "ms": 24.0,
+      "ms": 25.6,
       "detail": "Saved plan flagged for review."
     }
   ],
@@ -571,7 +571,7 @@
         "before": "Use Provider B",
         "after": "Clarification required",
         "documentsUnchanged": true,
-        "documentHash": "124c8a08a98dfc5fa3135efce529cd80df0400c04d12835f6b226106a253f638",
+        "documentHash": "9a9b171c3f9b29d9d2b14b8f8f7671a9c18771b4634105715425222de35532ee",
         "acceptanceBlocked": true,
         "passed": true,
         "query": "MATCH (:Decision {id:\"provider-b\"})-[r:SUPERSEDES]->() DELETE r"
@@ -581,7 +581,7 @@
         "before": "Use Provider B",
         "after": "Clarification required",
         "documentsUnchanged": true,
-        "documentHash": "124c8a08a98dfc5fa3135efce529cd80df0400c04d12835f6b226106a253f638",
+        "documentHash": "9a9b171c3f9b29d9d2b14b8f8f7671a9c18771b4634105715425222de35532ee",
         "acceptanceBlocked": true,
         "passed": true,
         "query": "MATCH (:Decision {id:\"provider-b\"})-[r:SUPPORTED_BY]->() DELETE r"
@@ -591,7 +591,7 @@
         "before": "Leo Martin",
         "after": "Noah Williams",
         "documentsUnchanged": true,
-        "documentHash": "124c8a08a98dfc5fa3135efce529cd80df0400c04d12835f6b226106a253f638",
+        "documentHash": "9a9b171c3f9b29d9d2b14b8f8f7671a9c18771b4634105715425222de35532ee",
         "acceptanceBlocked": null,
         "passed": true,
         "query": "MATCH (:Employee {id:\"leo\"})-[r:REVIEWER_FOR]->(:Service {id:\"checkout-service\"}) DELETE r WITH count(*) AS removed MATCH (n:Employee {id:\"noah\"}),(s:Service {id:\"checkout-service\"}) MERGE (n)-[:REVIEWER_FOR]->(s)"
@@ -601,7 +601,7 @@
         "before": "Use Provider B",
         "after": "Task context unavailable",
         "documentsUnchanged": true,
-        "documentHash": "124c8a08a98dfc5fa3135efce529cd80df0400c04d12835f6b226106a253f638",
+        "documentHash": "9a9b171c3f9b29d9d2b14b8f8f7671a9c18771b4634105715425222de35532ee",
         "acceptanceBlocked": null,
         "passed": true,
         "query": "MATCH (:Assignment {id:\"checkout\"})-[r:TOUCHES]->() DELETE r"
