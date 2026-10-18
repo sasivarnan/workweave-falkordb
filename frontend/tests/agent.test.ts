@@ -4,7 +4,14 @@ import { validateAgentResult } from "../src/lib/agent.ts"
 
 const answer = {
   question: "What changed?",
-  facts: [{ id: "authority", text: "Use Razorpay", sourceIds: ["adr"] }],
+  facts: [
+    {
+      id: "authority",
+      text: "Use Razorpay",
+      summary: "Use Razorpay",
+      sourceIds: ["adr"],
+    },
+  ],
   nextSteps: ["Read the source."],
   tools: [{ tool: "get_current_decision", facts: 1 }],
   evidence: {
@@ -63,7 +70,12 @@ test("graph evidence preserves server route counts without an extra model result
     ...answer,
     facts: [
       ...answer.facts,
-      { id: "work:SUP-310", text: "Support", sourceIds: [] },
+      {
+        id: "work:SUP-310",
+        text: "Support",
+        summary: "Support",
+        sourceIds: [],
+      },
     ],
     evidence: {
       component: "GraphEvidence",

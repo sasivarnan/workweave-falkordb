@@ -1,3 +1,4 @@
+import { summaryFacts } from "@/lib/agent"
 import { decodePerson } from "@/lib/people"
 import { Spinner } from "@/components/ui/spinner"
 import { useOnboardingTour } from "@/hooks/use-onboarding-tour"
@@ -110,8 +111,8 @@ export default function App() {
     aiEnabled,
     assistantWorking,
     assistantOpen,
-    assistantAnswer,
-    assistantOutdated,
+    assistantMessages,
+    assistantPendingQuestion,
     assistantError,
     searchQuery,
     searchNavigation,
@@ -189,6 +190,11 @@ export default function App() {
     !!context &&
     ["assignment", "changes", "impact"].includes(tab)
   const assistantVisible = assistantAvailable && assistantOpen
+  const assistantScrollRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const panel = assistantScrollRef.current
+    if (panel) panel.scrollTop = panel.scrollHeight
+  }, [assistantMessages.length, assistantPendingQuestion, assistantWorking])
   function closeAssistant() {
     updateField("assistantOpen", false)
     requestAnimationFrame(() =>
@@ -281,10 +287,15 @@ export default function App() {
   }
   async function requestAgent() {
     const before = appStore.getSnapshot().context
-    if (before.busy || before.assistantWorking) return
+    if (before.busy || before.assistantWorking || !before.prompt.trim()) return
     const requestedAssignment = before.assignment
     appStore.trigger.updated({
-      patch: { assistantWorking: true, assistantError: "" },
+      patch: {
+        assistantWorking: true,
+        assistantError: "",
+        assistantPendingQuestion: before.prompt.trim(),
+        prompt: "",
+      },
     })
     try {
       const response = await fetch("/api/agent", {
@@ -319,7 +330,10 @@ export default function App() {
         assignment: requestedAssignment,
         answer: decoded.context.agentResult,
       })
-      if (changed) updateField("assistantOutdated", true)
+      if (changed)
+        appStore.trigger.assistantContextChanged({
+          assignment: requestedAssignment,
+        })
       else setResult(data)
     } catch (error) {
       if (appStore.getSnapshot().context.assignment === requestedAssignment)
@@ -329,7 +343,6 @@ export default function App() {
               error instanceof Error
                 ? error.message
                 : "Could not complete the check",
-            assistantOutdated: true,
           },
         })
     } finally {
@@ -3207,199 +3220,290 @@ export default function App() {
               }
             }}
           >
-            <Card className="max-h-[55dvh] gap-0 rounded-none border-0 border-b py-0 shadow-none lg:h-[calc(100dvh-4rem)] lg:max-h-none lg:border-b-0 lg:border-l">
-              <CardHeader className="flex flex-row items-start justify-between gap-3 border-b p-5">
-                <div className="space-y-1.5">
-                  <CardTitle id="assistant-title">Ask Workweave</CardTitle>
-                  <CardDescription>
-                    Help with {context.task[0]?.[1] || "your selected task"}.
+            <Card className="flex h-[55dvh] flex-col gap-0 rounded-none border-0 border-b py-0 shadow-none lg:h-[calc(100dvh-4rem)] lg:border-b-0 lg:border-l">
+              <CardHeader className="flex shrink-0 flex-row items-center justify-between gap-2 border-b px-4 py-3">
+                <div className="min-w-0 space-y-1">
+                  <CardTitle id="assistant-title" className="text-sm">
+                    Workweave
+                  </CardTitle>
+                  <CardDescription className="truncate text-xs">
+                    {context.task[0]?.[1]}
                   </CardDescription>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Close assistant"
-                  onClick={closeAssistant}
-                >
-                  <RiCloseLine aria-hidden="true" />
-                </Button>
+                <div className="flex shrink-0 items-center gap-1">
+                  {assistantMessages.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs text-muted-foreground"
+                      disabled={assistantWorking}
+                      onClick={() =>
+                        appStore.trigger.updated({
+                          patch: {
+                            assistantMessages: [],
+                            assistantPendingQuestion: "",
+                            assistantError: "",
+                            prompt: "",
+                          },
+                        })
+                      }
+                    >
+                      New chat
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Close assistant"
+                    onClick={closeAssistant}
+                  >
+                    <RiCloseLine aria-hidden="true" />
+                  </Button>
+                </div>
               </CardHeader>
-              <CardContent className="min-h-0 space-y-5 overflow-y-auto p-5 lg:flex-1">
+              <CardContent
+                ref={assistantScrollRef}
+                className="min-h-0 flex-1 overflow-y-auto p-4"
+              >
+                {assistantMessages.length === 0 &&
+                  !assistantPendingQuestion && (
+                    <div className="flex min-h-full flex-col justify-center gap-5 pb-8">
+                      <div className="space-y-2">
+                        <RiChat3Line
+                          className="size-5 text-muted-foreground"
+                          aria-hidden="true"
+                        />
+                        <p className="text-sm font-medium">
+                          What would you like to know?
+                        </p>
+                        <p className="text-xs leading-relaxed text-muted-foreground">
+                          Check a change, find its impact or ask who can help
+                          with this task.
+                        </p>
+                      </div>
+                      <div className="flex flex-col items-start gap-2">
+                        {[
+                          "What changed for my work?",
+                          "Who else is affected?",
+                          "Who can review my work?",
+                        ].map((question) => (
+                          <Button
+                            key={question}
+                            variant="outline"
+                            size="sm"
+                            className="h-auto py-2 text-left text-xs whitespace-normal"
+                            onClick={() => {
+                              setPrompt(question)
+                              document.getElementById("prompt")?.focus()
+                            }}
+                          >
+                            {question}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                <div
+                  role="log"
+                  aria-label="Workweave conversation"
+                  aria-live="polite"
+                  className="space-y-7"
+                >
+                  {assistantMessages.map(
+                    ({ id, answer: assistantAnswer, outdated }) => (
+                      <div key={id} className="space-y-4">
+                        <div className="ml-6 rounded-2xl rounded-tr-sm bg-muted px-3 py-2.5 text-sm leading-relaxed whitespace-pre-wrap">
+                          <span className="sr-only">You: </span>
+                          {assistantAnswer.question}
+                        </div>
+                        <div className="space-y-3 text-sm leading-relaxed">
+                          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                            <RiChat3Line
+                              className="size-3.5"
+                              aria-hidden="true"
+                            />
+                            Workweave
+                            {outdated && (
+                              <Badge variant="outline" className="text-[10px]">
+                                Previous check
+                              </Badge>
+                            )}
+                          </div>
+                          {summaryFacts(assistantAnswer).map((fact) => (
+                            <p key={fact.id}>{fact.summary}</p>
+                          ))}
+                          {assistantAnswer.evidence.component ===
+                            "GraphEvidence" && (
+                            <Accordion className="rounded-none border-0">
+                              <AccordionItem value="graph-evidence">
+                                <AccordionTrigger className="px-0 py-2 text-xs text-muted-foreground">
+                                  Why this answer?
+                                </AccordionTrigger>
+                                <AccordionContent className="px-0 pb-2">
+                                  <div className="space-y-4">
+                                    <p className="text-xs text-muted-foreground">
+                                      Evidence and dependency paths from this
+                                      check. Each arrow means “depends on”.
+                                    </p>
+                                    {assistantAnswer.evidence.entries.map(
+                                      (entry) => {
+                                        const fact = assistantAnswer.facts.find(
+                                          (item) => item.id === entry.factId
+                                        )!
+                                        return (
+                                          <div
+                                            key={entry.factId}
+                                            className="space-y-2 text-sm"
+                                          >
+                                            <Badge variant="secondary">
+                                              {
+                                                {
+                                                  decision: "Decision check",
+                                                  plan: "Saved plan",
+                                                  reviewer: "Linked reviewer",
+                                                  impact: "Affected work",
+                                                }[entry.kind]
+                                              }
+                                            </Badge>
+                                            <p>{fact.text}</p>
+                                            {entry.paths.length > 0 && (
+                                              <div className="space-y-2">
+                                                <p className="text-xs text-muted-foreground">
+                                                  {entry.paths.length}{" "}
+                                                  dependency{" "}
+                                                  {entry.paths.length === 1
+                                                    ? "route"
+                                                    : "routes"}{" "}
+                                                  to the changed service
+                                                </p>
+                                                <ul
+                                                  className="space-y-2"
+                                                  aria-label="Dependency paths"
+                                                >
+                                                  {entry.paths.map(
+                                                    (path, index) => (
+                                                      <li
+                                                        key={index}
+                                                        className="rounded-lg border p-3 text-xs leading-relaxed break-words"
+                                                      >
+                                                        {path.join(" → ")}
+                                                      </li>
+                                                    )
+                                                  )}
+                                                </ul>
+                                              </div>
+                                            )}
+                                            {fact.sourceIds.map((id) => (
+                                              <Button
+                                                key={id}
+                                                variant="link"
+                                                size="sm"
+                                                className="h-auto px-0"
+                                                onClick={() => showSource(id)}
+                                              >
+                                                Read source ·{" "}
+                                                {context?.sources.find(
+                                                  (source) => source[0] === id
+                                                )?.[1] || id}
+                                              </Button>
+                                            ))}
+                                          </div>
+                                        )
+                                      }
+                                    )}
+                                    {assistantAnswer.nextSteps.length > 0 && (
+                                      <div className="space-y-2">
+                                        <p className="text-xs font-medium">
+                                          Suggested next steps
+                                        </p>
+                                        <ol className="list-decimal space-y-1 pl-4 text-xs text-muted-foreground">
+                                          {assistantAnswer.nextSteps.map(
+                                            (step) => (
+                                              <li key={step}>{step}</li>
+                                            )
+                                          )}
+                                        </ol>
+                                      </div>
+                                    )}
+                                  </div>
+                                </AccordionContent>
+                              </AccordionItem>
+                            </Accordion>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  )}
+                  {assistantPendingQuestion && (
+                    <div className="ml-6 rounded-2xl rounded-tr-sm bg-muted px-3 py-2.5 text-sm leading-relaxed whitespace-pre-wrap">
+                      <span className="sr-only">You: </span>
+                      {assistantPendingQuestion}
+                    </div>
+                  )}
+                  {assistantWorking && (
+                    <p
+                      role="status"
+                      className="flex items-center gap-2 text-xs text-muted-foreground"
+                    >
+                      <Spinner className="size-3.5" />
+                      Checking linked records…
+                    </p>
+                  )}
+                  {assistantError && (
+                    <p role="alert" className="text-xs text-destructive">
+                      {assistantError} Your saved work has not changed.
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+              <CardFooter className="shrink-0 flex-col items-stretch gap-2 border-t p-3">
                 <form
-                  className="space-y-3"
-                  onSubmit={(e) => {
-                    e.preventDefault()
+                  className="relative"
+                  onSubmit={(event) => {
+                    event.preventDefault()
                     stop()
                     void requestAgent()
                   }}
                 >
-                  <Label htmlFor="prompt">What do you need to know?</Label>
+                  <Label htmlFor="prompt" className="sr-only">
+                    Message Workweave
+                  </Label>
                   <Textarea
                     id="prompt"
-                    rows={3}
-                    className="min-h-24 resize-none"
+                    rows={2}
+                    className="max-h-32 min-h-20 resize-none rounded-xl pr-11 text-sm"
                     value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
+                    onChange={(event) => setPrompt(event.target.value)}
                     maxLength={1000}
-                    placeholder="What changed for my work, who else is affected, and whom should I ask?"
+                    placeholder="Ask about this task…"
+                    onKeyDown={(event) => {
+                      if (
+                        event.key === "Enter" &&
+                        !event.shiftKey &&
+                        !event.nativeEvent.isComposing
+                      ) {
+                        event.preventDefault()
+                        event.currentTarget.form?.requestSubmit()
+                      }
+                    }}
                   />
-                  <Button type="submit" disabled={busy || assistantWorking}>
-                    {assistantWorking ? "Checking work…" : "Check my work"}
+                  <Button
+                    type="submit"
+                    size="icon-sm"
+                    className="absolute right-2 bottom-2 rounded-lg"
+                    aria-label="Send message"
+                    disabled={busy || assistantWorking || !prompt.trim()}
+                  >
+                    <RiArrowRightLine
+                      className="-rotate-90"
+                      aria-hidden="true"
+                    />
                   </Button>
                 </form>
-                {assistantWorking && (
-                  <p
-                    role="status"
-                    className="flex items-center gap-2 text-sm text-muted-foreground"
-                  >
-                    <Spinner />
-                    Checking linked records…
-                  </p>
-                )}
-                {assistantAnswer && (
-                  <div role="status" aria-live="polite" className="space-y-4">
-                    <Separator />
-                    {assistantOutdated && (
-                      <Alert>
-                        <AlertTitle>Previous check</AlertTitle>
-                        <AlertDescription>
-                          The workspace was refreshed or changed. Run a new
-                          check for current evidence.
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                    <p className="text-sm font-medium">Your work update</p>
-                    <div className="space-y-3">
-                      {assistantAnswer.facts.map((fact) => (
-                        <div key={fact.id} className="space-y-1 text-sm">
-                          <p>{fact.text}</p>
-                          {fact.sourceIds.map((id) => (
-                            <Button
-                              key={id}
-                              variant="link"
-                              size="sm"
-                              className="h-auto px-0"
-                              onClick={() => showSource(id)}
-                            >
-                              Read source ·{" "}
-                              {context?.sources.find(
-                                (source) => source[0] === id
-                              )?.[1] || id}
-                            </Button>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-                    {assistantAnswer.evidence.component === "GraphEvidence" && (
-                      <Accordion key={JSON.stringify(assistantAnswer.evidence)}>
-                        <AccordionItem value="graph-evidence">
-                          <AccordionTrigger>Why this answer?</AccordionTrigger>
-                          <AccordionContent>
-                            <div className="space-y-4">
-                              <p className="text-xs text-muted-foreground">
-                                Evidence and dependency paths from this check.
-                                These are graph records, not private model
-                                reasoning.
-                              </p>
-                              {assistantAnswer.evidence.entries.map((entry) => {
-                                const fact = assistantAnswer.facts.find(
-                                  (item) => item.id === entry.factId
-                                )!
-                                return (
-                                  <div
-                                    key={entry.factId}
-                                    className="space-y-2 text-sm"
-                                  >
-                                    <Badge variant="secondary">
-                                      {
-                                        {
-                                          decision: "Decision check",
-                                          plan: "Saved plan",
-                                          reviewer: "Linked reviewer",
-                                          impact: "Affected work",
-                                        }[entry.kind]
-                                      }
-                                    </Badge>
-                                    <p>{fact.text}</p>
-                                    {entry.paths.length > 0 && (
-                                      <div className="space-y-2">
-                                        <p className="text-xs text-muted-foreground">
-                                          {entry.paths.length} dependency{" "}
-                                          {entry.paths.length === 1
-                                            ? "route"
-                                            : "routes"}{" "}
-                                          to the changed service
-                                        </p>
-                                        <ul
-                                          className="space-y-2"
-                                          aria-label="Dependency paths"
-                                        >
-                                          {entry.paths.map((path, index) => (
-                                            <li
-                                              key={index}
-                                              className="rounded-lg border p-3 text-xs leading-relaxed break-words"
-                                            >
-                                              {path.join(" → ")}
-                                            </li>
-                                          ))}
-                                        </ul>
-                                      </div>
-                                    )}
-                                    {fact.sourceIds.map((id) => (
-                                      <Button
-                                        key={id}
-                                        variant="link"
-                                        size="sm"
-                                        className="h-auto px-0"
-                                        onClick={() => showSource(id)}
-                                      >
-                                        Read source ·{" "}
-                                        {context?.sources.find(
-                                          (source) => source[0] === id
-                                        )?.[1] || id}
-                                      </Button>
-                                    ))}
-                                  </div>
-                                )
-                              })}
-                              <p className="text-xs text-muted-foreground">
-                                {assistantAnswer.tools.length} read-only graph
-                                checks. Only checked facts are shown. No plan or
-                                approval was changed.
-                              </p>
-                            </div>
-                          </AccordionContent>
-                        </AccordionItem>
-                      </Accordion>
-                    )}
-                    {assistantAnswer.nextSteps.length > 0 && (
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium">
-                          Suggested next steps
-                        </p>
-                        <ol className="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
-                          {assistantAnswer.nextSteps.map((step) => (
-                            <li key={step}>{step}</li>
-                          ))}
-                        </ol>
-                      </div>
-                    )}
-                    <p className="text-xs text-muted-foreground">
-                      Suggestions only. You choose when to update your saved
-                      work.
-                    </p>
-                  </div>
-                )}
-                {assistantError && (
-                  <Alert variant="destructive" role="alert">
-                    <AlertTitle>Could not complete the check</AlertTitle>
-                    <AlertDescription>
-                      {assistantError ||
-                        "Try again later. Your saved work has not changed."}
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </CardContent>
+                <p className="text-center text-[10px] text-muted-foreground">
+                  Checks current task records. You control changes.
+                </p>
+              </CardFooter>
             </Card>
           </aside>
         )}

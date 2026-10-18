@@ -40,7 +40,14 @@ test("functional updates use the latest snapshot and server AI settings are not 
 
 const checkedAnswer = {
   question: "What changed?",
-  facts: [{ id: "authority", text: "Use Razorpay", sourceIds: ["adr-c"] }],
+  facts: [
+    {
+      id: "authority",
+      text: "Use Razorpay",
+      summary: "Use Razorpay",
+      sourceIds: ["adr-c"],
+    },
+  ],
   nextSteps: ["Read the current source."],
   tools: [{ tool: "get_current_decision", facts: 1 }],
   evidence: {
@@ -60,25 +67,34 @@ test("closing and reopening the assistant keeps the question and checked answer"
   updateField("assistantOpen", true)
   assert.equal(appStore.getSnapshot().context.prompt, "What changed?")
   assert.deepEqual(
-    appStore.getSnapshot().context.assistantAnswer,
+    appStore.getSnapshot().context.assistantMessages.at(-1)?.answer,
     checkedAnswer
   )
-  assert.equal(appStore.getSnapshot().context.assistantOutdated, false)
+  assert.equal(
+    appStore.getSnapshot().context.assistantMessages.at(-1)?.outdated,
+    false
+  )
   assert.equal(persisted.size, 0)
 })
 
 test("a workspace refresh marks the retained answer as a previous check", () => {
   appStore.trigger.assistantContextChanged({ assignment: "checkout" })
   assert.deepEqual(
-    appStore.getSnapshot().context.assistantAnswer,
+    appStore.getSnapshot().context.assistantMessages.at(-1)?.answer,
     checkedAnswer
   )
-  assert.equal(appStore.getSnapshot().context.assistantOutdated, true)
+  assert.equal(
+    appStore.getSnapshot().context.assistantMessages.at(-1)?.outdated,
+    true
+  )
 })
 
 test("changing assignments clears the old task answer and draft", () => {
   appStore.trigger.assistantContextChanged({ assignment: "refunds" })
-  assert.equal(appStore.getSnapshot().context.assistantAnswer, null)
+  assert.equal(
+    appStore.getSnapshot().context.assistantMessages.at(-1)?.answer,
+    undefined
+  )
   assert.equal(appStore.getSnapshot().context.assistantError, "")
   assert.equal(appStore.getSnapshot().context.prompt, "")
 })
@@ -100,4 +116,34 @@ test("assistant loading does not block page requests or discard its draft", () =
   assert.equal(appStore.getSnapshot().context.assistantWorking, true)
   assert.equal(appStore.getSnapshot().context.prompt, "Keep this question")
   updateField("assistantWorking", false)
+})
+
+test("chat keeps a bounded history and clears it when the task changes", () => {
+  for (let i = 0; i < 8; i++) {
+    appStore.trigger.assistantAnswered({
+      assignment: "checkout",
+      answer: { ...checkedAnswer, question: String(i) },
+    })
+  }
+  const messages = appStore.getSnapshot().context.assistantMessages
+  assert.equal(messages.length, 6)
+  assert.equal(messages[0].answer.question, "2")
+  appStore.trigger.assistantContextChanged({ assignment: "refunds" })
+  assert.deepEqual(appStore.getSnapshot().context.assistantMessages, [])
+})
+
+test("a new chat reply does not make earlier evidence current again", () => {
+  appStore.trigger.assistantAnswered({
+    assignment: "checkout",
+    answer: checkedAnswer,
+  })
+  appStore.trigger.assistantContextChanged({ assignment: "checkout" })
+  appStore.trigger.assistantAnswered({
+    assignment: "checkout",
+    answer: checkedAnswer,
+  })
+  const messages = appStore.getSnapshot().context.assistantMessages
+  assert.equal(messages[0].outdated, true)
+  assert.equal(messages[1].outdated, false)
+  assert.notEqual(messages[0].id, messages[1].id)
 })

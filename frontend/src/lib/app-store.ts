@@ -29,9 +29,10 @@ export type AppState = {
   editingNotes: boolean
   assistantWorking: boolean
   assistantOpen: boolean
-  assistantAnswer: AgentResult | null
+  assistantMessages: { id: number; answer: AgentResult; outdated: boolean }[]
+  assistantSequence: number
+  assistantPendingQuestion: string
   assistantAssignment: string
-  assistantOutdated: boolean
   assistantError: string
   aiEnabled: boolean
   searchNavigation: {
@@ -82,9 +83,10 @@ const initial: AppState = {
   editingNotes: false,
   assistantWorking: false,
   assistantOpen: false,
-  assistantAnswer: null,
+  assistantMessages: [],
+  assistantSequence: 0,
+  assistantPendingQuestion: "",
   assistantAssignment: "",
-  assistantOutdated: false,
   assistantError: "",
   aiEnabled: false,
   searchQuery: readSearchQuery(window.location.search),
@@ -104,9 +106,17 @@ export const appStore = createStore({
       event: { assignment: string; answer: AgentResult }
     ) => ({
       ...context,
-      assistantAnswer: event.answer,
+      assistantMessages: [
+        ...context.assistantMessages,
+        {
+          id: context.assistantSequence + 1,
+          answer: event.answer,
+          outdated: false,
+        },
+      ].slice(-6),
+      assistantPendingQuestion: "",
       assistantAssignment: event.assignment,
-      assistantOutdated: false,
+      assistantSequence: context.assistantSequence + 1,
       assistantError: "",
     }),
     assistantContextChanged: (context, event: { assignment: string }) => {
@@ -116,14 +126,19 @@ export const appStore = createStore({
       )
         return {
           ...context,
-          assistantAnswer: null,
+          assistantMessages: [],
+          assistantPendingQuestion: "",
           assistantAssignment: "",
-          assistantOutdated: false,
           assistantError: "",
           prompt: "",
         }
-      if (!context.assistantAnswer) return context
-      return { ...context, assistantOutdated: true }
+      return {
+        ...context,
+        assistantMessages: context.assistantMessages.map((message) => ({
+          ...message,
+          outdated: true,
+        })),
+      }
     },
     requestStarted: (context) => ({ ...context, busy: true, error: "" }),
     requestFinished: (context) => ({ ...context, busy: false }),

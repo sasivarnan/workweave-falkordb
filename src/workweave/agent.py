@@ -160,10 +160,15 @@ def investigate(store, prompt, call):
     steps = []
     used = set()
 
-    def fact(identifier, text, sources=None):
-        value = {"id": identifier, "text": text, "sourceIds": sources or []}
+    def fact(identifier, text, sources=None, summary=None):
+        value = {
+            "id": identifier,
+            "text": text,
+            "summary": summary or text,
+            "sourceIds": sources or [],
+        }
         facts[identifier] = value
-        return value
+        return {key: value[key] for key in ("id", "text", "sourceIds")}
 
     def execute(name):
         nonlocal impact_snapshot
@@ -186,6 +191,7 @@ def investigate(store, prompt, call):
                     + ". "
                     + str(decision[4])[:1200],
                     [decision[2]],
+                    "Current guidance: " + context["current"] + ".",
                 )
             ]
         if name == "inspect_saved_plan":

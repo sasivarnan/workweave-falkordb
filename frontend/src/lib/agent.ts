@@ -1,6 +1,6 @@
 export type AgentResult = {
   question: string
-  facts: { id: string; text: string; sourceIds: string[] }[]
+  facts: { id: string; text: string; summary: string; sourceIds: string[] }[]
   nextSteps: string[]
   tools: { tool: string; facts: number }[]
   evidence: {
@@ -39,6 +39,7 @@ export function validateAgentResult(value: AgentResult, sourceIds: string[]) {
         fact &&
         typeof fact.id === "string" &&
         typeof fact.text === "string" &&
+        typeof fact.summary === "string" &&
         Array.isArray(fact.sourceIds) &&
         fact.sourceIds.every((id) => sourceIds.includes(id))
     ) ||
@@ -74,4 +75,20 @@ export function validateAgentResult(value: AgentResult, sourceIds: string[]) {
     throw Error("Invalid work assistant evidence")
   }
   return value
+}
+
+// Keep the reply short. Full selected facts and paths stay in its evidence panel.
+export function summaryFacts(answer: AgentResult) {
+  const reviewer = answer.facts.find((fact) => fact.id.startsWith("person:"))
+  return answer.facts.filter(
+    (fact) =>
+      [
+        "authority",
+        "plan",
+        "impact-count",
+        "impact-unavailable",
+        "impact-blocked",
+        "reviewer-missing",
+      ].includes(fact.id) || fact === reviewer
+  )
 }
