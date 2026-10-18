@@ -1,10 +1,16 @@
 # Workweave
 
-An employee workspace that connects tasks, meetings, notes, people and approved decisions through **FalkorDB**. Built for the **Company Brain** hackathon track.
+A company decision changes. Which saved plans need review, which teams are affected, and who can help? **Workweave** uses an agent and **FalkorDB** to answer these questions from connected company records. Built for the **Company Brain** hackathon track.
 
 **Live demo:** [Open Workweave](https://workweave-falkordb.onrender.com/) · [Demo controls](https://workweave-falkordb.onrender.com/demo-controls)
 
 Hosted on Render with FalkorDB Cloud. Synthetic data only. Stripe, Adyen, Razorpay and PayPal appear in a fictional payment-provider scenario; no real company decisions or integrations are implied. Final demo video is pending.
+
+## Graph proof
+
+Ask the agent what changed for Maya's checkout work. Its tools check the approved decision, saved plan, affected tasks and reviewers. Remove Billing → Checkout in Demo controls, then ask the same question again: Billing leaves the answer; Support stays through its alternate route. Source text remains unchanged. Maya must explicitly update her plan and create a review request.
+
+See the [recorded live agent check](reports/agent-live.json), [validation limits](EVALUATION.md) and [Cypher catalogue](docs/CYPHER.md). The assistant opens from **Ask Workweave** beside the task, Decision review or Cross-team impact page.
 
 ## Run
 
@@ -132,6 +138,13 @@ flowchart TB
 ```
 
 Company records and action checks come from the server and FalkorDB. The agent selects read-only tools for current decisions, saved plans, affected work and reviewers. It selects observed graph fact IDs and proposed next steps. The server rejects unknown facts, unchecked authority and stale results. It does not execute model-generated Cypher or let the agent change plans or approvals. Each operation allows at most five model calls and four distinct tools. The renderer supports a custom A2UI v0.9 subset, not a complete official SDK implementation. SQLite stores AI usage limits only.
+
+| Agent tool | Graph work |
+| --- | --- |
+| `get_current_decision` | Resolve service scope, approval, replacement and source links. |
+| `inspect_saved_plan` | Compare the saved decision with current guidance. |
+| `find_affected_work` | Follow directed dependencies up to five links; verify indirect explanations with `algo.SPpaths`. |
+| `find_reviewers` | Follow the selected service's reviewer and alternate-reviewer links. |
 
 ## Graph data model
 

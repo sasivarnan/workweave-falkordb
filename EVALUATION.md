@@ -27,7 +27,7 @@ The [public Render deployment](https://workweave-falkordb.onrender.com/) serves 
 
 ## uv package and container checks
 
-Python code is installed from src/workweave with a committed uv.lock. The 64 backend tests include package fixture loading, configuration priority and the module entry point from another directory. A second clean, non-editable uv environment passed fixture and CLI checks. Source and wheel builds passed.
+Python code is installed from src/workweave with a committed uv.lock. Package tests include fixture loading, configuration priority and the module entry point from another directory. A second clean, non-editable uv environment passed fixture and CLI checks. Source and wheel builds passed.
 
 The Docker image was built and tested as UID 10001: frontend, database health, context API, packaged fixture, writable usage directory and SIGTERM shutdown passed. No local secrets or internal notes were copied into the runtime. This does not establish hosted persistence, production authentication or a full security audit.
 
