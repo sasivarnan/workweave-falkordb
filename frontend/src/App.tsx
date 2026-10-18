@@ -867,13 +867,7 @@ export default function App() {
               </AvatarFallback>
             </Avatar>
             {sidebarOpen && (
-              <div
-                className={
-                  assistantVisible
-                    ? "grid min-w-0 flex-1 content-start items-start lg:grid-cols-[minmax(0,1fr)_22rem] xl:grid-cols-[minmax(0,1fr)_25rem]"
-                    : "min-w-0 flex-1"
-                }
-              >
+              <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">
                   {workspace?.employee.name}
                 </p>
@@ -940,7 +934,13 @@ export default function App() {
           </nav>
         </SheetContent>
       </Sheet>
-      <div className="min-w-0 flex-1">
+      <div
+        className={
+          assistantVisible
+            ? "grid min-w-0 flex-1 content-start items-start lg:grid-cols-[minmax(0,1fr)_22rem] xl:grid-cols-[minmax(0,1fr)_25rem]"
+            : "min-w-0 flex-1"
+        }
+      >
         <header className="col-span-full row-start-1 flex min-h-16 flex-wrap items-center justify-between gap-3 border-b px-5 py-3 lg:px-10">
           <div className="flex items-center gap-3">
             <Button
