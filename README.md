@@ -51,14 +51,14 @@ For either option, open [localhost:8080](http://localhost:8080). Start tour expl
 [render.yaml](render.yaml) builds the existing Dockerfile as one web service: Python serves the UI and APIs. FalkorDB runs separately in FalkorDB Cloud. Docker Compose is for local use only.
 
 1. Create a FalkorDB Cloud instance with **TLS enabled** and a public endpoint reachable from Render. Copy its host, port, username and password from the connection panel. Use the supplied database port, not a browser-console URL.
-2. Push the tested source to GitHub. In Render, select **New → Blueprint** and connect this repository. Review the configuration before creating resources: it selects a **paid service and 1 GB persistent disk**. The default region is Singapore; change it before creation if another region is closer to your database.
+2. Push the tested source to GitHub. In Render, select **New → Blueprint** and connect this repository. Review the configuration before creating resources: it selects a **paid service**. The default region is Singapore; change it before creation if another region is closer to your database.
 3. Enter `FALKORDB_HOST`, `FALKORDB_PORT`, `FALKORDB_USERNAME` and `FALKORDB_PASSWORD` when prompted. The Blueprint sets `FALKORDB_SSL=true`, `COOKIE_SECURE=true` and `WORKWEAVE_HOST=0.0.0.0`. Render supplies `PORT`; the server reads it automatically.
 4. Deploy, then open the assigned `https://<service>.onrender.com` URL. Demo controls are at `/demo-controls`; the health check is `/api/health`. Automatic deployments are off; deploy later source updates manually after checks pass.
 5. Verify Home, search, the tour and the remove/restore dependency proof in a fresh browser. If the cloud instance restricts incoming connections, allow the service's Render outbound IP ranges. Never put database credentials in frontend variables or source files.
 
-**Optional AI:** graph workflows work without a provider key. To enable OpenAI, set `AI_PROVIDER=openai`, `OPENAI_API_KEY` and `OPENAI_MODEL` in Render's environment settings. AI is available when the selected provider key exists; `AI_ENABLED=false` disables it. Employees enter no key or invite. Because there is no employee login, all visitors can use enabled AI within the shared budget. Choose a model supported by your API account. Do not use a `VITE_` variable for secrets. The disk retains `AI_USAGE_DB=/app/.data/ai-usage.sqlite3` across restarts; limits default to 5 operations/hour, 10/day and 30 total. Set provider spending controls too. Keep one app instance for this SQLite ledger. Confirm one successful AI call and that the ledger remains after a restart before sharing paid access.
+**Optional AI:** graph workflows work without a provider key. To enable OpenAI, set `AI_PROVIDER=openai`, `OPENAI_API_KEY` and `OPENAI_MODEL` in Render's environment settings. Set `AI_ENABLED=false` to disable AI. Employees enter no key or invite. Keep keys on the server; never use a `VITE_` variable for secrets. Request limits, two concurrent agent slots and bounded model calls remain active. There is no persistent usage counter or application spending cap. Set provider spending controls and check your remaining credit.
 
-**Free Render alternative:** create a Docker web service manually, use the same database and secure-cookie settings, and omit the disk. Set `AI_ENABLED=false` and leave provider keys unset. Free services sleep after inactivity and lose local files on restart, so they cannot retain our AI usage ledger. Company data remains in FalkorDB Cloud. The paid configuration is preferable for judge visits.
+**Free Render alternative:** create a free Docker web service with the same database and secure-cookie settings. AI can use the server's provider key. No persistent app disk is required; company data remains in FalkorDB Cloud. Free services sleep after inactivity, so the first visit can be slow.
 
 The Blueprint contains no credentials and does not create the cloud database. Creating it in Render starts a public deployment. See [Render Blueprints](https://render.com/docs/blueprint-spec), [free-service limits](https://render.com/docs/free) and [outbound IP ranges](https://render.com/docs/outbound-ip-addresses).
 
@@ -99,7 +99,7 @@ Employee pages show work, guidance and source evidence. `/demo-controls` contain
 
 Open `/demo-controls` and select **Reset and prepare story**. It resets only this visitor graph, records sample reading and training, saves Maya’s original Adyen plan and imports the synthetic source records. Priya is the recorded approver of a later replacement; Leo remains the work reviewer. The controls simulate company events, not separate authenticated roles. Setup makes no AI calls.
 
-For an empty workspace, use **Reset demo data → Reset this demo workspace**. Both actions remove this visitor’s saved notes, plans, progress, review requests and sample changes. They do not reset other visitors or the paid AI usage ledger. Keep recording tabs in the same browser session and refresh the employee tab after a trigger. The presenter controls the pace.
+For an empty workspace, use **Reset demo data → Reset this demo workspace**. Both actions remove this visitor’s saved notes, plans, progress, review requests and sample changes. They do not reset other visitors. Keep recording tabs in the same browser session and refresh the employee tab after a trigger. The presenter controls the pace.
 
 ## Record links
 
@@ -134,7 +134,6 @@ flowchart TB
     AI --> Evidence[Observed fact IDs and proposed steps]
     Evidence --> Validate[Server evidence validation and A2UI subset]
     Validate --> Browser
-    Server --> Ledger[(SQLite AI usage ledger)]
 ```
 
 Company records and action checks come from the server and FalkorDB. The agent selects read-only tools for current decisions, saved plans, affected work and reviewers. It selects observed graph fact IDs and proposed next steps. The server rejects unknown facts, unchecked authority and stale results. It does not execute model-generated Cypher or let the agent change plans or approvals. Each operation allows at most five model calls and four distinct tools. The renderer supports a custom A2UI v0.9 subset, not a complete official SDK implementation. SQLite stores AI usage limits only.
@@ -212,7 +211,7 @@ Integration tests use disposable graphs. See [validation and limits](EVALUATION.
 
 [API](docs/API.md) · [Cypher catalogue](docs/CYPHER.md) · [Cross-team impact](docs/CROSS-TEAM-IMPACT.md) · [Decision review](docs/DECISION-REVIEW.md)
 
-Synthetic records only. No live Jira, Calendar or Zoom sync, production login, employee permissions, or external messages. AI access is controlled by server configuration and shared operation limits; there is no employee authentication. Before public deployment, configure HTTPS, secure cookies, private database access, persistent storage and provider spending controls. Application operation limits are not a dollar cap.
+Synthetic records only. No live Jira, Calendar or Zoom sync, production login, employee permissions, or external messages. AI access is controlled by server configuration and request limits; there is no employee authentication. Before public deployment, configure HTTPS, secure cookies, private database access and provider spending controls. Request limits are not a dollar cap.
 
 **AI disclosure:** Codex assisted with implementation, tests, design and documentation. The participant is responsible for verification and technical understanding.
 

@@ -1,14 +1,11 @@
 import json
 import os
-import tempfile
 import threading
 import unittest
 import urllib.request
 import urllib.error
-from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import patch
-from workweave.access import enabled, reserve, BudgetExceeded
+from workweave.access import enabled
 from workweave.server import Handler, ThreadingHTTPServer
 
 
@@ -25,46 +22,14 @@ class AccessTests(unittest.TestCase):
             os.environ["AI_ENABLED"] = "true"
             self.assertTrue(enabled("openai"))
 
-    def test_budget_survives_reopen_and_windows(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            p = Path(tmp) / "usage.sqlite3"
-            reserve(p, 10000, (1, 2, 3))
-            with self.assertRaises(BudgetExceeded):
-                reserve(p, 10001, (1, 2, 3))
-            reserve(p, 14000, (1, 2, 3))
-            with self.assertRaises(BudgetExceeded):
-                reserve(p, 18000, (1, 2, 3))
-            reserve(p, 100000, (1, 2, 3))
-            with self.assertRaises(BudgetExceeded):
-                reserve(p, 200000, (1, 2, 3))
-
-    def test_concurrent_reservations_respect_cap(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            p = Path(tmp) / "usage.sqlite3"
-
-            def attempt(_):
-                try:
-                    reserve(p, 10000, (3, 3, 3))
-                    return True
-                except BudgetExceeded:
-                    return False
-
-            with ThreadPoolExecutor(max_workers=6) as pool:
-                self.assertEqual(sum(pool.map(attempt, range(6))), 3)
-
-    def test_http_server_setting_blocks_provider_and_budget_is_shared(self):
+    def test_http_server_setting_blocks_provider_and_allows_repeat_calls(self):
         with (
-            tempfile.TemporaryDirectory() as tmp,
             patch.dict(
                 os.environ,
                 {
                     "AI_ENABLED": "false",
                     "AI_PROVIDER": "openai",
                     "OPENAI_API_KEY": "test-key-never-used",
-                    "AI_USAGE_DB": str(Path(tmp) / "usage.sqlite3"),
-                    "AI_HOURLY_LIMIT": "1",
-                    "AI_DAILY_LIMIT": "1",
-                    "AI_TOTAL_LIMIT": "1",
                 },
             ),
             patch("workweave.server.Store") as store,
@@ -97,11 +62,13 @@ class AccessTests(unittest.TestCase):
                 os.environ["AI_ENABLED"] = "true"
                 self.assertEqual(send()[0], 200)
                 self.assertEqual(agent.call_count, 1)
-                self.assertEqual(send()[0], 429)
-                self.assertEqual(agent.call_count, 1)
-                with patch("workweave.server.reserve", side_effect=OSError("storage unavailable")):
-                    self.assertEqual(send()[0], 503)
-                    self.assertEqual(agent.call_count, 1)
+                self.assertEqual(send()[0], 200)
+                self.assertEqual(agent.call_count, 2)
+                with patch("workweave.server.AGENT_SLOTS") as slots:
+                    slots.acquire.return_value = False
+                    self.assertEqual(send()[0], 429)
+                    self.assertEqual(agent.call_count, 2)
+                    slots.release.assert_not_called()
             finally:
                 server.shutdown()
                 server.server_close()

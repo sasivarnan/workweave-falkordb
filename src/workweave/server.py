@@ -14,7 +14,7 @@ from workweave.paths import FRONTEND_DIR
 from workweave.graph import Store, database
 from workweave.ui import compose
 from workweave.agent import run, provider
-from workweave.access import enabled, reserve, BudgetExceeded
+from workweave.access import enabled
 from workweave.config import load
 from workweave.impact import run as run_impact
 from workweave.workspace import APP_NAME, DEMO_ASSIGNMENT, DEMO_SCENARIO
@@ -219,7 +219,6 @@ class Handler(BaseHTTPRequestHandler):
                             429, {"error": "The agent is busy. Try again shortly."}, cookie
                         )
                     try:
-                        reserve()
                         context, selection = run(s, str(body.get("prompt", "")))
                         mode = "Live " + provider().title() + " read-only decision-impact agent"
                     finally:
@@ -234,8 +233,6 @@ class Handler(BaseHTTPRequestHandler):
                     {"messages": compose(context, selection), "trace": s.trace, "mode": mode},
                     cookie,
                 )
-        except BudgetExceeded as e:
-            self.respond(429, {"error": str(e)})
         except ValueError as e:
             self.respond(400, {"error": str(e)})
         except Exception:

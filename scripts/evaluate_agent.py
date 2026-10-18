@@ -1,7 +1,7 @@
 """Paid live check: two agent operations against a disposable local Docker graph.
 
-Uses the configured provider and the normal usage ledger unless AI_USAGE_DB is set.
-Never resets a ledger or a visitor's graph. Run only when paid API calls are intended.
+Uses the configured provider. Never resets a visitor's graph.
+Run only when paid API calls are intended.
 """
 
 import json
@@ -13,7 +13,6 @@ from workweave.config import load
 from workweave.graph import Store
 from workweave.agent import run, provider
 from workweave.impact import run as impact
-from workweave.access import reserve
 
 load()
 os.environ.update(FALKORDB_HOST="127.0.0.1", FALKORDB_PORT="6381", FALKORDB_SSL="false")
@@ -30,10 +29,8 @@ try:
     impact(store, "import")
     store.action("replace")
     before_context = store.context()
-    reserve()
     before, _ = run(store, question)
     experiment = impact(store, "remove")["experiment"]
-    reserve()
     after, _ = run(store, question)
     before_ids = [f["id"] for f in before["agentResult"]["facts"]]
     after_ids = [f["id"] for f in after["agentResult"]["facts"]]

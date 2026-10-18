@@ -20,10 +20,8 @@ ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     WORKWEAVE_ROOT=/app \
-    WORKWEAVE_HOST=0.0.0.0 \
-    AI_USAGE_DB=/app/.data/ai-usage.sqlite3
-RUN groupadd --gid 10001 workweave && useradd --uid 10001 --gid 10001 --no-create-home workweave \
-    && mkdir /app/.data && chown workweave:workweave /app/.data
+    WORKWEAVE_HOST=0.0.0.0
+RUN groupadd --gid 10001 workweave && useradd --uid 10001 --gid 10001 --no-create-home workweave
 COPY --from=python-build /app/.venv /app/.venv
 COPY --from=ui /ui/dist ./frontend/dist
 USER workweave

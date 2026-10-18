@@ -4,7 +4,7 @@ These checks use small, builder-authored synthetic fixtures. They are not produc
 
 | Check | Last recorded result | Reproduce |
 | --- | --- | --- |
-| Backend, graph and provider contracts | 78 tests passed | `uv run --locked python -m unittest discover -s tests -v` |
+| Backend, graph and provider contracts | 78 tests passed before usage-counter removal | `uv run --locked python -m unittest discover -s tests -v` |
 | Frontend state, search URLs and graph-proof validation | 18 tests passed | `npm test --prefix frontend` |
 | Cross-team impact | 7 cases passed | `uv run --locked python scripts/evaluate_impact.py` |
 | Relationship changes with identical source text | 4 cases passed | `uv run --locked python scripts/evaluate_relationships.py` |
@@ -37,4 +37,6 @@ The historical paid-model report retains the earlier Provider A/B/C labels. Grap
 
 ## Live decision-impact agent check
 
-[Recorded live result](reports/agent-live.json) uses the configured OpenAI model and an isolated local graph. The same question was asked before and after removal of Billing → Checkout. Billing left the answer; Support remained with one route instead of two. Source text was unchanged. Both answers identified the stale plan and linked reviewers. No saved plan changed. These are two live runs on one synthetic scenario, not a general accuracy benchmark. Gemini was not tested with a live key. To repeat the paid check against local Docker on port 6381, run `uv run --locked python scripts/evaluate_agent.py`. It reserves two operations in the configured usage ledger and deletes only its disposable graph.
+[Recorded live result](reports/agent-live.json) uses the configured OpenAI model and an isolated local graph. The same question was asked before and after removal of Billing → Checkout. Billing left the answer; Support remained with one route instead of two. Source text was unchanged. Both answers identified the stale plan and linked reviewers. No saved plan changed. These are two live runs on one synthetic scenario, not a general accuracy benchmark. Gemini was not tested with a live key. To repeat the paid check against local Docker on port 6381, run `uv run --locked python scripts/evaluate_agent.py`. It makes two paid agent calls and deletes only its disposable graph.
+
+Usage-counter removal: 16 targeted access and agent tests passed without provider calls. The current suite has two fewer tests because the SQLite counter was removed. Full graph checks above refer to the previous CI run.

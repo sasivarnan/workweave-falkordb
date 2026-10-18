@@ -5,10 +5,6 @@ from workweave.paths import PROJECT_ROOT
 
 ALLOWED = {
     "AI_ENABLED",
-    "AI_USAGE_DB",
-    "AI_HOURLY_LIMIT",
-    "AI_DAILY_LIMIT",
-    "AI_TOTAL_LIMIT",
     "AI_PROVIDER",
     "OPENAI_API_KEY",
     "OPENAI_MODEL",
