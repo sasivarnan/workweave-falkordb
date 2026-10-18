@@ -23,13 +23,13 @@ The paired model report records 16 live calls. Do not run `scripts/evaluate_mode
 
 ## Remaining release checks
 
-The [public Render deployment](https://workweave-falkordb.onrender.com/) serves frontend HTML, and `/api/health` reports `status: ok` and `database: reachable`. The participant reports that it connects to FalkorDB Cloud. Hosted storage after restart, full mobile/keyboard review, participant technical review, independent user feedback and the final demo video remain pending. The health check does not verify these items or a successful AI response.
+The [public Render deployment](https://workweave-falkordb.onrender.com/) serves frontend HTML, and `/api/health` reports `status: ok` and `database: reachable`. The participant reports that it connects to FalkorDB Cloud. The latest source is not deployed. Full mobile review, participant technical review, independent user feedback and the final demo video remain pending. Desktop chat keyboard checks are recorded below. The health check does not verify these items or a successful AI response.
 
 ## uv package and container checks
 
 Python code is installed from src/workweave with a committed uv.lock. Package tests include fixture loading, configuration priority and the module entry point from another directory. A second clean, non-editable uv environment passed fixture and CLI checks. Source and wheel builds passed.
 
-The Docker image was built and tested as UID 10001: frontend, database health, context API, packaged fixture, writable usage directory and SIGTERM shutdown passed. No local secrets or internal notes were copied into the runtime. This does not establish hosted persistence, production authentication or a full security audit.
+A previous Docker image was built and tested as UID 10001: frontend, database health, context API, packaged fixture and SIGTERM shutdown passed. The current Dockerfile no longer creates an AI usage directory; a new local image build was not run because the local Docker daemon is unavailable. No local secrets or internal notes were copied into the runtime. This does not establish hosted persistence, production authentication or a full security audit.
 
 Tour update: the Driver.js browser check covered all nine desktop stops without leaving Home, starting from Calendar, temporary sidebar expansion, completion, Escape and restoration of the original sidebar preference. Mobile layout was not included in this pass.
 
@@ -39,6 +39,6 @@ The historical paid-model report retains the earlier Provider A/B/C labels. Grap
 
 [Recorded live result](reports/agent-live.json) uses the configured OpenAI model and an isolated local graph. The same question was asked before and after removal of Billing → Checkout. Billing left the answer; Support remained with one route instead of two. Source text was unchanged. Both answers identified the stale plan and linked reviewers. No saved plan changed. These are two live runs on one synthetic scenario, not a general accuracy benchmark. Gemini was not tested with a live key. To repeat the paid check against local Docker on port 6381, run `uv run --locked python scripts/evaluate_agent.py`. It makes two paid agent calls and deletes only its disposable graph.
 
-[Full CI passed for the compact chat and graph-evidence feature](https://github.com/sasivarnan/workweave-falkordb/actions/runs/39146976975) at commit `b1c9700`: 77 backend tests, 22 frontend tests, graph evaluations, package and frontend builds, formatting and secret checks. UI verification used an isolated FalkorDB Cloud graph and simulated model replies, with no paid API calls. The earlier live-provider report remains separate from this UI check.
+[Full CI passed for the compact chat and graph-evidence feature](https://github.com/sasivarnan/workweave-falkordb/actions/runs/39147286727) at commit `d8dd786`: 77 backend tests, 22 frontend tests, graph evaluations, package and frontend builds, formatting and secret checks. UI verification used an isolated FalkorDB Cloud graph and simulated model replies, with no paid API calls. The earlier live-provider report remains separate from this UI check.
 
 The isolated UI check confirmed a collapsed evidence panel, source navigation, two chat replies, affected items changing from four to three, Support routes changing from two to one, and restoration of the original result. Enter, Shift+Enter, Escape, New chat and draft retention were checked in the desktop browser. Mobile layout was not checked in a device browser.

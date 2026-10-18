@@ -2,7 +2,7 @@
 
 A company decision changes. Which saved plans need review, which teams are affected, and who can help? **Workweave** uses an agent and **FalkorDB** to answer these questions from connected company records. Built for the **Company Brain** hackathon track.
 
-**Live demo:** [Open Workweave](https://workweave-falkordb.onrender.com/) · [Demo controls](https://workweave-falkordb.onrender.com/demo-controls)
+**Live demo:** [Open Workweave](https://workweave-falkordb.onrender.com/) · [Demo controls](https://workweave-falkordb.onrender.com/demo-controls) · [Project blog](https://dev.to/sasivarnan/one-changed-link-a-different-answer-workweave-with-falkordb-33e5)
 
 Hosted on Render with FalkorDB Cloud. Synthetic data only. Stripe, Adyen, Razorpay and PayPal appear in a fictional payment-provider scenario; no real company decisions or integrations are implied. Final demo video is pending.
 
@@ -11,6 +11,18 @@ Hosted on Render with FalkorDB Cloud. Synthetic data only. Stripe, Adyen, Razorp
 Ask the agent what changed for Maya's checkout work. Its tools check the approved decision, saved plan, affected tasks and reviewers. Remove Billing → Checkout in Demo controls, then ask the same question again: Billing leaves the answer; Support stays through its alternate route. Source text remains unchanged. Maya must explicitly update her plan and create a review request.
 
 See the [recorded live agent check](reports/agent-live.json), [validation limits](EVALUATION.md) and [Cypher catalogue](docs/CYPHER.md). The assistant opens from **Ask Workweave** beside the task, Decision review or Cross-team impact page.
+
+### Review the main workflow
+
+Use two tabs in the same browser session. AI checks require a configured server provider key.
+
+1. In **Demo controls**, select **Reset and prepare story**, then **Approve sample replacement**.
+2. Open **Maya’s task → Ask Workweave**. Ask: “What changed for my work, who else is affected, and whom should I ask? Include every affected task and its dependency route count.”
+3. Expand **Why this answer?**. Check the approved source, old plan, Billing and Support’s two routes.
+4. In Controls, select **Start dependency demo → Remove the test link**. Check that source text is unchanged.
+5. Return to the task, refresh it and ask the same question. Billing leaves the answer; Support has one route. Restore the link in Controls.
+
+This uses two agent checks. Each can make several model requests. If the hosted release differs, use the complete local setup below.
 
 ## Run
 
@@ -140,10 +152,10 @@ Company records and action checks come from the server and FalkorDB. The agent s
 
 | Agent tool | Graph work |
 | --- | --- |
-| `get_current_decision` | Resolve service scope, approval, replacement and source links. |
+| `get_current_decision` | Resolve service scope, approval, replacement and source links ([query](docs/CYPHER.md#get_current_guidance)). |
 | `inspect_saved_plan` | Compare the saved decision with current guidance. |
-| `find_affected_work` | Follow directed dependencies up to five links; verify indirect explanations with `algo.SPpaths`. |
-| `find_reviewers` | Follow the selected service's reviewer and alternate-reviewer links. |
+| `find_affected_work` | Follow directed dependencies up to five links ([query](docs/CYPHER.md#bounded_dependency_impact)); verify indirect explanations with native [`algo.SPpaths`](docs/CYPHER.md#native_dependency_explanation). |
+| `find_reviewers` | Follow the selected service's reviewer and alternate-reviewer links ([query](docs/CYPHER.md#get_team_reviewers)). |
 
 ## Graph data model
 
