@@ -3,6 +3,10 @@ export type AgentResult = {
   facts: { id: string; text: string; sourceIds: string[] }[]
   nextSteps: string[]
   tools: { tool: string; facts: number }[]
+  evidence: {
+    component: string
+    entries: { factId: string; kind: string; paths: string[][] }[]
+  }
 }
 
 export function validateAgentResult(value: AgentResult, sourceIds: string[]) {
@@ -38,7 +42,34 @@ export function validateAgentResult(value: AgentResult, sourceIds: string[]) {
         Array.isArray(fact.sourceIds) &&
         fact.sourceIds.every((id) => sourceIds.includes(id))
     ) ||
-    new Set(value.facts.map((fact) => fact.id)).size !== value.facts.length
+    new Set(value.facts.map((fact) => fact.id)).size !== value.facts.length ||
+    value.evidence?.component !== "GraphEvidence" ||
+    !Array.isArray(value.evidence.entries) ||
+    value.evidence.entries.length !== value.facts.length ||
+    new Set(value.evidence.entries.map((entry) => entry.factId)).size !==
+      value.facts.length ||
+    !value.evidence.entries.every(
+      (entry) =>
+        entry &&
+        value.facts.some((fact) => fact.id === entry.factId) &&
+        ["decision", "plan", "reviewer", "impact"].includes(entry.kind) &&
+        Array.isArray(entry.paths) &&
+        entry.paths.length <= 100 &&
+        (entry.paths.length === 0 ||
+          (entry.kind === "impact" && entry.factId.startsWith("work:"))) &&
+        entry.paths.every(
+          (path) =>
+            Array.isArray(path) &&
+            path.length > 0 &&
+            path.length <= 6 &&
+            path.every(
+              (node) =>
+                typeof node === "string" &&
+                node.length > 0 &&
+                node.length <= 500
+            )
+        )
+    )
   ) {
     throw Error("Invalid work assistant evidence")
   }

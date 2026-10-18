@@ -417,6 +417,32 @@ def investigate(store, prompt, call):
             "facts": [facts[identifier] for identifier in ids],
             "nextSteps": [labels[action] for action in dict.fromkeys(actions)],
             "tools": steps,
+            "evidence": {
+                "component": "GraphEvidence",
+                "entries": [
+                    {
+                        "factId": identifier,
+                        "kind": (
+                            "decision"
+                            if identifier == "authority"
+                            else "plan"
+                            if identifier == "plan"
+                            else "reviewer"
+                            if identifier.startswith("person:") or identifier == "reviewer-missing"
+                            else "impact"
+                        ),
+                        "paths": next(
+                            (
+                                item["paths"]
+                                for item in (impact_snapshot or {}).get("items", [])
+                                if identifier == "work:" + item["id"]
+                            ),
+                            [],
+                        ),
+                    }
+                    for identifier in ids
+                ],
+            },
         }
         return context, None
     raise ValueError("The assistant could not complete its check within the request limit.")

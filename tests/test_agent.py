@@ -63,6 +63,45 @@ class AgentContractTests(unittest.TestCase):
         self.assertEqual(call.call_args_list[0].args[0]["tool_choice"], "auto")
         self.store.action.assert_not_called()
 
+    def test_graph_evidence_uses_only_selected_facts_and_current_paths(self):
+        from workweave.ui import compose
+
+        def impact(paths):
+            return {
+                "ready": True,
+                "items": [
+                    {
+                        "id": "SUP-310",
+                        "title": "Support",
+                        "owners": ["Leo"],
+                        "paths": paths,
+                        "pathIds": paths,
+                        "routeCount": len(paths),
+                    }
+                ],
+            }
+
+        for paths in [
+            [["Support", "Billing", "Checkout"], ["Support", "Checkout"]],
+            [["Support", "Checkout"]],
+        ]:
+            with patch("workweave.impact.analyze", return_value=impact(paths)):
+                (context, _), _ = self.invoke(
+                    [
+                        reply([tool("get_current_decision"), tool("find_affected_work")]),
+                        reply(facts=["authority", "work:SUP-310"]),
+                    ]
+                )
+            evidence = context["agentResult"]["evidence"]
+            self.assertEqual(evidence["component"], "GraphEvidence")
+            self.assertEqual(evidence["entries"][1]["paths"], paths)
+            self.assertEqual(
+                [entry["factId"] for entry in evidence["entries"]], ["authority", "work:SUP-310"]
+            )
+            components = compose(context)[1]["updateComponents"]["components"]
+            self.assertEqual(components[-1]["component"], "GraphEvidence")
+        self.store.action.assert_not_called()
+
     def test_unknown_tool_cannot_write(self):
         with self.assertRaises(ValueError):
             self.invoke([reply([tool("delete_graph")])])

@@ -54,3 +54,5 @@ The docked employee assistant opens from **Ask Workweave** on Task, Decision rev
  On desktop it shares the page width without a backdrop. On narrow screens it appears above the page.
 
 Assistant loading and errors stay in the sidebar. A late answer for another assignment is discarded. If the page changes while an answer is pending, the answer is marked as a previous check and does not replace the main page data.
+
+Agent responses include a `GraphEvidence` component in the custom A2UI subset. Its bound data contains only selected, checked fact IDs and server-read dependency paths. The assistant renders it as a collapsed **Why this answer?** section with existing shadcn controls. No extra model call is required. It describes graph evidence, not private model reasoning.

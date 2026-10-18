@@ -136,7 +136,7 @@ flowchart TB
     Validate --> Browser
 ```
 
-Company records and action checks come from the server and FalkorDB. The agent selects read-only tools for current decisions, saved plans, affected work and reviewers. It selects observed graph fact IDs and proposed next steps. The server rejects unknown facts, unchecked authority and stale results. It does not execute model-generated Cypher or let the agent change plans or approvals. Each operation allows at most five model calls and four distinct tools. The renderer supports a custom A2UI v0.9 subset, not a complete official SDK implementation.
+Company records and action checks come from the server and FalkorDB. The agent selects read-only tools for current decisions, saved plans, affected work and reviewers. It selects observed graph fact IDs and proposed next steps. The server rejects unknown facts, unchecked authority and stale results. It does not execute model-generated Cypher or let the agent change plans or approvals. Each operation allows at most five model calls and four distinct tools. Expand **Why this answer?** in the assistant to inspect the checked decision, saved plan, reviewer and dependency paths. This custom A2UI component uses graph data without another model call. The renderer supports a custom A2UI v0.9 subset, not a complete official SDK implementation.
 
 | Agent tool | Graph work |
 | --- | --- |

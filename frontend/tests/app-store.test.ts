@@ -43,6 +43,10 @@ const checkedAnswer = {
   facts: [{ id: "authority", text: "Use Razorpay", sourceIds: ["adr-c"] }],
   nextSteps: ["Read the current source."],
   tools: [{ tool: "get_current_decision", facts: 1 }],
+  evidence: {
+    component: "GraphEvidence",
+    entries: [{ factId: "authority", kind: "decision", paths: [] }],
+  },
 }
 
 test("closing and reopening the assistant keeps the question and checked answer", () => {

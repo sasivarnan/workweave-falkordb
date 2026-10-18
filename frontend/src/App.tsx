@@ -3290,6 +3290,88 @@ export default function App() {
                         </div>
                       ))}
                     </div>
+                    {assistantAnswer.evidence.component === "GraphEvidence" && (
+                      <Accordion key={JSON.stringify(assistantAnswer.evidence)}>
+                        <AccordionItem value="graph-evidence">
+                          <AccordionTrigger>Why this answer?</AccordionTrigger>
+                          <AccordionContent>
+                            <div className="space-y-4">
+                              <p className="text-xs text-muted-foreground">
+                                Evidence and dependency paths from this check.
+                                These are graph records, not private model
+                                reasoning.
+                              </p>
+                              {assistantAnswer.evidence.entries.map((entry) => {
+                                const fact = assistantAnswer.facts.find(
+                                  (item) => item.id === entry.factId
+                                )!
+                                return (
+                                  <div
+                                    key={entry.factId}
+                                    className="space-y-2 text-sm"
+                                  >
+                                    <Badge variant="secondary">
+                                      {
+                                        {
+                                          decision: "Decision check",
+                                          plan: "Saved plan",
+                                          reviewer: "Linked reviewer",
+                                          impact: "Affected work",
+                                        }[entry.kind]
+                                      }
+                                    </Badge>
+                                    <p>{fact.text}</p>
+                                    {entry.paths.length > 0 && (
+                                      <div className="space-y-2">
+                                        <p className="text-xs text-muted-foreground">
+                                          {entry.paths.length} dependency{" "}
+                                          {entry.paths.length === 1
+                                            ? "route"
+                                            : "routes"}{" "}
+                                          to the changed service
+                                        </p>
+                                        <ul
+                                          className="space-y-2"
+                                          aria-label="Dependency paths"
+                                        >
+                                          {entry.paths.map((path, index) => (
+                                            <li
+                                              key={index}
+                                              className="rounded-lg border p-3 text-xs leading-relaxed break-words"
+                                            >
+                                              {path.join(" → ")}
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
+                                    {fact.sourceIds.map((id) => (
+                                      <Button
+                                        key={id}
+                                        variant="link"
+                                        size="sm"
+                                        className="h-auto px-0"
+                                        onClick={() => showSource(id)}
+                                      >
+                                        Read source ·{" "}
+                                        {context?.sources.find(
+                                          (source) => source[0] === id
+                                        )?.[1] || id}
+                                      </Button>
+                                    ))}
+                                  </div>
+                                )
+                              })}
+                              <p className="text-xs text-muted-foreground">
+                                {assistantAnswer.tools.length} read-only graph
+                                checks. Only checked facts are shown. No plan or
+                                approval was changed.
+                              </p>
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
+                    )}
                     {assistantAnswer.nextSteps.length > 0 && (
                       <div className="space-y-2">
                         <p className="text-sm font-medium">

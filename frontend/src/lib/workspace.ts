@@ -134,6 +134,7 @@ const kinds = [
   "Checklist",
   "ProgressCard",
   "QuestionForm",
+  "GraphEvidence",
 ]
 export function decode(result: Result) {
   const m = result.messages
@@ -198,7 +199,8 @@ export function decode(result: Result) {
   const order = components[0].children
   if (
     !order ||
-    order.length > 6 ||
+    order.length > 7 ||
+    Boolean(context.agentResult) !== order.includes("GraphEvidence") ||
     new Set(order).size !== order.length ||
     components.length !== order.length + 1
   )

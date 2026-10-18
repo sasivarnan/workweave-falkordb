@@ -196,17 +196,47 @@
               "PersonCard",
               "Checklist",
               "ProgressCard",
-              "QuestionForm"
+              "QuestionForm",
+              "GraphEvidence"
             ]
           },
           "uniqueItems": true,
-          "maxItems": 6
+          "maxItems": 7
         }
       },
       "required": [
         "id",
         "component",
         "children"
+      ],
+      "additionalProperties": false
+    },
+    "GraphEvidence": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "component": {
+          "const": "GraphEvidence"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "const": "/context"
+            }
+          },
+          "required": [
+            "path"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id",
+        "component",
+        "data"
       ],
       "additionalProperties": false
     }

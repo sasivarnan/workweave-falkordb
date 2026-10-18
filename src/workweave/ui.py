@@ -8,6 +8,7 @@ KINDS = {
     "Checklist",
     "ProgressCard",
     "QuestionForm",
+    "GraphEvidence",
 }
 
 
@@ -15,10 +16,12 @@ def compose(context, selection=None):
     required = ["SummaryCard", "EvidenceComparison", "PersonCard", "Checklist", "ProgressCard"]
     if not context["people"] or context["ambiguous"]:
         required.append("QuestionForm")
+    if context.get("agentResult"):
+        required.append("GraphEvidence")
     order = selection or required
     if (
         not isinstance(order, list)
-        or len(order) > 6
+        or len(order) > 7
         or len(set(order)) != len(order)
         or set(order) != set(required)
     ):
