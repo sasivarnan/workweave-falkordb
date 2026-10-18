@@ -107,7 +107,10 @@ export const appStore = createStore({
     ) => ({
       ...context,
       assistantMessages: [
-        ...context.assistantMessages,
+        ...context.assistantMessages.map((message) => ({
+          ...message,
+          outdated: true,
+        })),
         {
           id: context.assistantSequence + 1,
           answer: event.answer,
