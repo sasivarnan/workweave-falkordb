@@ -1,3 +1,4 @@
+import type { AgentResult } from "./agent"
 import { readRoute } from "./routes.ts"
 import { readSearchQuery } from "./search-url.ts"
 import type { PersonProfile } from "./people"
@@ -26,7 +27,12 @@ export type AppState = {
   busy: boolean
   readingOpen: boolean
   editingNotes: boolean
-  aiFeedback: "idle" | "working" | "success" | "error"
+  assistantWorking: boolean
+  assistantOpen: boolean
+  assistantAnswer: AgentResult | null
+  assistantAssignment: string
+  assistantOutdated: boolean
+  assistantError: string
   aiEnabled: boolean
   searchNavigation: {
     query: string
@@ -74,7 +80,12 @@ const initial: AppState = {
   busy: false,
   readingOpen: false,
   editingNotes: false,
-  aiFeedback: "idle",
+  assistantWorking: false,
+  assistantOpen: false,
+  assistantAnswer: null,
+  assistantAssignment: "",
+  assistantOutdated: false,
+  assistantError: "",
   aiEnabled: false,
   searchQuery: readSearchQuery(window.location.search),
   searchNavigation: { ...initialRoute, revision: 0 },
@@ -88,6 +99,32 @@ const initial: AppState = {
 export const appStore = createStore({
   context: initial,
   on: {
+    assistantAnswered: (
+      context,
+      event: { assignment: string; answer: AgentResult }
+    ) => ({
+      ...context,
+      assistantAnswer: event.answer,
+      assistantAssignment: event.assignment,
+      assistantOutdated: false,
+      assistantError: "",
+    }),
+    assistantContextChanged: (context, event: { assignment: string }) => {
+      if (
+        context.assistantAssignment &&
+        context.assistantAssignment !== event.assignment
+      )
+        return {
+          ...context,
+          assistantAnswer: null,
+          assistantAssignment: "",
+          assistantOutdated: false,
+          assistantError: "",
+          prompt: "",
+        }
+      if (!context.assistantAnswer) return context
+      return { ...context, assistantOutdated: true }
+    },
     requestStarted: (context) => ({ ...context, busy: true, error: "" }),
     requestFinished: (context) => ({ ...context, busy: false }),
     updated: (context, event: { patch: Partial<AppState> }) => ({

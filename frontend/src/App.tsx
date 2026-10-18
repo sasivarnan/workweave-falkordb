@@ -6,6 +6,8 @@ import { useSelector } from "@xstate/store-react"
 import { appStore, updateField } from "@/lib/app-store"
 import { flushSync } from "react-dom"
 import {
+  RiChat3Line,
+  RiCloseLine,
   RiHome5Line,
   RiCheckboxCircleLine,
   RiCalendarLine,
@@ -106,7 +108,11 @@ export default function App() {
     readingOpen,
     editingNotes,
     aiEnabled,
-    aiFeedback,
+    assistantWorking,
+    assistantOpen,
+    assistantAnswer,
+    assistantOutdated,
+    assistantError,
     searchQuery,
     searchNavigation,
     evaluation,
@@ -177,6 +183,21 @@ export default function App() {
   }, [sidebarOpen])
   const decoded = result ? decode(result) : null,
     context = decoded?.context
+  const assistantAvailable =
+    !judgeMode &&
+    aiEnabled &&
+    !!context &&
+    ["assignment", "changes", "impact"].includes(tab)
+  const assistantVisible = assistantAvailable && assistantOpen
+  function closeAssistant() {
+    updateField("assistantOpen", false)
+    requestAnimationFrame(() =>
+      document.getElementById("work-assistant-trigger")?.focus()
+    )
+  }
+  useEffect(() => {
+    if (assistantVisible) document.getElementById("prompt")?.focus()
+  }, [assistantVisible])
   const workspace = context?.workspace
   const initials = (name?: string) =>
     name
@@ -232,7 +253,7 @@ export default function App() {
     const revision = ++searchRevision.current
     appStore.trigger.updated({
       patch: {
-        aiFeedback: "idle",
+        assistantOpen: false,
         searchQuery: route.query,
         searchNavigation: { ...route, revision },
         meeting: null,
@@ -258,6 +279,63 @@ export default function App() {
   async function openAssignment(id: string) {
     goToURL("/tasks/" + encodeURIComponent(id))
   }
+  async function requestAgent() {
+    const before = appStore.getSnapshot().context
+    if (before.busy || before.assistantWorking) return
+    const requestedAssignment = before.assignment
+    appStore.trigger.updated({
+      patch: { assistantWorking: true, assistantError: "" },
+    })
+    try {
+      const response = await fetch("/api/agent", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Workweave": "portal",
+        },
+        body: JSON.stringify({
+          assignment: requestedAssignment,
+          prompt: before.prompt,
+        }),
+      })
+      const data = await response.json()
+      if (!response.ok)
+        throw Error(data.error || "Could not complete the check")
+      const decoded = decode(data)
+      if (!decoded.context.agentResult)
+        throw Error("The assistant returned no checked answer.")
+      const current = appStore.getSnapshot().context
+      const routeAssignment = readRoute(
+        window.location.pathname,
+        window.location.search
+      ).assignment
+      if (
+        current.assignment !== requestedAssignment ||
+        (routeAssignment && routeAssignment !== requestedAssignment)
+      )
+        return
+      const changed = current.result !== before.result || current.busy
+      appStore.trigger.assistantAnswered({
+        assignment: requestedAssignment,
+        answer: decoded.context.agentResult,
+      })
+      if (changed) updateField("assistantOutdated", true)
+      else setResult(data)
+    } catch (error) {
+      if (appStore.getSnapshot().context.assignment === requestedAssignment)
+        appStore.trigger.updated({
+          patch: {
+            assistantError:
+              error instanceof Error
+                ? error.message
+                : "Could not complete the check",
+            assistantOutdated: true,
+          },
+        })
+    } finally {
+      updateField("assistantWorking", false)
+    }
+  }
   async function request(
     path: string,
     body: Record<string, unknown> = {},
@@ -266,7 +344,6 @@ export default function App() {
   ) {
     if (appStore.getSnapshot().context.busy) return false
     const navigationVersion = navigationRef.current
-    updateField("aiFeedback", path === "/api/agent" ? "working" : "idle")
     appStore.trigger.requestStarted()
     try {
       const response = await fetch(path, {
@@ -284,7 +361,9 @@ export default function App() {
       if (navigationRef.current !== navigationVersion) destination = undefined
       const commit = () => {
         setResult(data)
-        if (path === "/api/agent") updateField("aiFeedback", "success")
+        appStore.trigger.assistantContextChanged({
+          assignment: decoded.context.assignment,
+        })
         if (
           path === "/api/action" ||
           path === "/api/reset" ||
@@ -315,8 +394,8 @@ export default function App() {
       return true
     } catch (e) {
       if (!isCurrent()) return false
-      setError(e instanceof Error ? e.message : "Request failed")
-      if (path === "/api/agent") updateField("aiFeedback", "error")
+      const message = e instanceof Error ? e.message : "Request failed"
+      setError(message)
       return false
     } finally {
       appStore.trigger.requestFinished()
@@ -455,6 +534,7 @@ export default function App() {
         !Array.isArray(data.trace)
       )
         throw Error("Invalid impact response")
+      appStore.trigger.assistantContextChanged({ assignment })
       updateField("impact", data)
       const baseline = appStore.getSnapshot().context.proofBaseline
       if (baseline && appStore.getSnapshot().context.proofStage !== "off") {
@@ -787,7 +867,13 @@ export default function App() {
               </AvatarFallback>
             </Avatar>
             {sidebarOpen && (
-              <div className="min-w-0 flex-1">
+              <div
+                className={
+                  assistantVisible
+                    ? "grid min-w-0 flex-1 content-start items-start lg:grid-cols-[minmax(0,1fr)_22rem] xl:grid-cols-[minmax(0,1fr)_25rem]"
+                    : "min-w-0 flex-1"
+                }
+              >
                 <p className="truncate text-sm font-medium">
                   {workspace?.employee.name}
                 </p>
@@ -855,7 +941,7 @@ export default function App() {
         </SheetContent>
       </Sheet>
       <div className="min-w-0 flex-1">
-        <header className="flex min-h-16 flex-wrap items-center justify-between gap-3 border-b px-5 py-3 lg:px-10">
+        <header className="col-span-full row-start-1 flex min-h-16 flex-wrap items-center justify-between gap-3 border-b px-5 py-3 lg:px-10">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
@@ -945,7 +1031,7 @@ export default function App() {
         <main
           aria-busy={busy}
           className={
-            "mx-auto flex w-full flex-col gap-7 px-5 py-8 [view-transition-name:work-area] md:px-9 lg:px-12 lg:py-10 " +
+            "row-start-3 mx-auto flex w-full min-w-0 flex-col gap-7 px-5 py-8 [view-transition-name:work-area] md:px-9 lg:col-start-1 lg:row-start-2 lg:px-12 lg:py-10 " +
             (tab === "assignment" ? "max-w-3xl" : "max-w-7xl")
           }
         >
@@ -964,89 +1050,6 @@ export default function App() {
                 </Button>
               </AlertDescription>
             </Alert>
-          )}
-          {tab === "assignment" && aiEnabled && (
-            <Card className="mx-auto w-full max-w-2xl shadow-none">
-              <CardHeader>
-                <CardTitle>Ask about your work</CardTitle>
-                <CardDescription>
-                  Check decisions, saved plans, affected work and people.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <form
-                  className="space-y-3"
-                  onSubmit={(e) => {
-                    e.preventDefault()
-                    stop()
-                    void request("/api/agent", { prompt })
-                  }}
-                >
-                  <Label htmlFor="prompt">What do you need to know?</Label>
-                  <Input
-                    id="prompt"
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    maxLength={1000}
-                    placeholder="What changed for my work, who else is affected, and whom should I ask?"
-                  />
-                  <Button type="submit" disabled={busy}>
-                    {aiFeedback === "working"
-                      ? "Checking work…"
-                      : "Check my work"}
-                  </Button>
-                </form>
-                {aiFeedback === "success" && context?.agentResult && (
-                  <div role="status" aria-live="polite" className="space-y-4">
-                    <Separator />
-                    <p className="text-sm font-medium">Your work update</p>
-                    <div className="space-y-3">
-                      {context.agentResult.facts.map((fact) => (
-                        <div key={fact.id} className="space-y-1 text-sm">
-                          <p>{fact.text}</p>
-                          {fact.sourceIds.map((id) => (
-                            <Button
-                              key={id}
-                              variant="link"
-                              size="sm"
-                              className="h-auto px-0"
-                              onClick={() => showSource(id)}
-                            >
-                              Read source · {id}
-                            </Button>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-                    {context.agentResult.nextSteps.length > 0 && (
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium">
-                          Suggested next steps
-                        </p>
-                        <ol className="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
-                          {context.agentResult.nextSteps.map((step) => (
-                            <li key={step}>{step}</li>
-                          ))}
-                        </ol>
-                      </div>
-                    )}
-                    <p className="text-xs text-muted-foreground">
-                      Checked {context.agentResult.tools.length} graph tools.
-                      Your saved work has not changed.
-                    </p>
-                  </div>
-                )}
-                {aiFeedback === "error" && (
-                  <Alert variant="destructive" role="alert">
-                    <AlertTitle>Could not complete the check</AlertTitle>
-                    <AlertDescription>
-                      {error ||
-                        "Try again later. Your saved work has not changed."}
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </CardContent>
-            </Card>
           )}
           <Tabs value={tab} onValueChange={(v) => navigate(String(v))}>
             <TabsList className="hidden">
@@ -3191,6 +3194,151 @@ export default function App() {
             )}
           </Tabs>
         </main>
+
+        {assistantVisible && context && (
+          <aside
+            id="work-assistant"
+            aria-labelledby="assistant-title"
+            className="row-start-2 min-w-0 lg:sticky lg:top-16 lg:col-start-2"
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                event.stopPropagation()
+                closeAssistant()
+              }
+            }}
+          >
+            <Card className="max-h-[55dvh] gap-0 rounded-none border-0 border-b py-0 shadow-none lg:h-[calc(100dvh-4rem)] lg:max-h-none lg:border-b-0 lg:border-l">
+              <CardHeader className="flex flex-row items-start justify-between gap-3 border-b p-5">
+                <div className="space-y-1.5">
+                  <CardTitle id="assistant-title">Ask Workweave</CardTitle>
+                  <CardDescription>
+                    Help with {context.task[0]?.[1] || "your selected task"}.
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Close assistant"
+                  onClick={closeAssistant}
+                >
+                  <RiCloseLine aria-hidden="true" />
+                </Button>
+              </CardHeader>
+              <CardContent className="min-h-0 space-y-5 overflow-y-auto p-5 lg:flex-1">
+                <form
+                  className="space-y-3"
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    stop()
+                    void requestAgent()
+                  }}
+                >
+                  <Label htmlFor="prompt">What do you need to know?</Label>
+                  <Textarea
+                    id="prompt"
+                    rows={3}
+                    className="min-h-24 resize-none"
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    maxLength={1000}
+                    placeholder="What changed for my work, who else is affected, and whom should I ask?"
+                  />
+                  <Button type="submit" disabled={busy || assistantWorking}>
+                    {assistantWorking ? "Checking work…" : "Check my work"}
+                  </Button>
+                </form>
+                {assistantWorking && (
+                  <p
+                    role="status"
+                    className="flex items-center gap-2 text-sm text-muted-foreground"
+                  >
+                    <Spinner />
+                    Checking linked records…
+                  </p>
+                )}
+                {assistantAnswer && (
+                  <div role="status" aria-live="polite" className="space-y-4">
+                    <Separator />
+                    {assistantOutdated && (
+                      <Alert>
+                        <AlertTitle>Previous check</AlertTitle>
+                        <AlertDescription>
+                          The workspace was refreshed or changed. Run a new
+                          check for current evidence.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    <p className="text-sm font-medium">Your work update</p>
+                    <div className="space-y-3">
+                      {assistantAnswer.facts.map((fact) => (
+                        <div key={fact.id} className="space-y-1 text-sm">
+                          <p>{fact.text}</p>
+                          {fact.sourceIds.map((id) => (
+                            <Button
+                              key={id}
+                              variant="link"
+                              size="sm"
+                              className="h-auto px-0"
+                              onClick={() => showSource(id)}
+                            >
+                              Read source ·{" "}
+                              {context?.sources.find(
+                                (source) => source[0] === id
+                              )?.[1] || id}
+                            </Button>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                    {assistantAnswer.nextSteps.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">
+                          Suggested next steps
+                        </p>
+                        <ol className="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
+                          {assistantAnswer.nextSteps.map((step) => (
+                            <li key={step}>{step}</li>
+                          ))}
+                        </ol>
+                      </div>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Suggestions only. You choose when to update your saved
+                      work.
+                    </p>
+                  </div>
+                )}
+                {assistantError && (
+                  <Alert variant="destructive" role="alert">
+                    <AlertTitle>Could not complete the check</AlertTitle>
+                    <AlertDescription>
+                      {assistantError ||
+                        "Try again later. Your saved work has not changed."}
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </CardContent>
+            </Card>
+          </aside>
+        )}
+        {assistantAvailable && !assistantOpen && (
+          <Button
+            id="work-assistant-trigger"
+            size="lg"
+            aria-controls="work-assistant"
+            aria-expanded={false}
+            onClick={() =>
+              appStore.trigger.updated({
+                patch: { assistantOpen: true, assistantAssignment: assignment },
+              })
+            }
+            className="fixed right-5 bottom-5 z-40 h-12 rounded-full px-5 shadow-lg"
+          >
+            <RiChat3Line aria-hidden="true" />
+            Ask Workweave
+          </Button>
+        )}
+
         <Sheet
           open={!!peopleTask}
           onOpenChange={(open) => {

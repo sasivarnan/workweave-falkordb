@@ -5,7 +5,7 @@ These checks use small, builder-authored synthetic fixtures. They are not produc
 | Check | Last recorded result | Reproduce |
 | --- | --- | --- |
 | Backend, graph and provider contracts | 78 tests passed | `uv run --locked python -m unittest discover -s tests -v` |
-| Frontend state, search URLs and graph-proof validation | 13 tests passed | `npm test --prefix frontend` |
+| Frontend state, search URLs and graph-proof validation | 18 tests passed | `npm test --prefix frontend` |
 | Cross-team impact | 7 cases passed | `uv run --locked python scripts/evaluate_impact.py` |
 | Relationship changes with identical source text | 4 cases passed | `uv run --locked python scripts/evaluate_relationships.py` |
 | Graph retrieval diagnostic | 8 cases passed | `uv run --locked python scripts/evaluate.py` |

@@ -49,3 +49,8 @@ Context also includes `directory`, the workspace’s employee IDs, names and des
 `POST /api/agent` accepts `prompt` (up to 1,000 characters) and the selected assignment. The model chooses among `get_current_decision`, `inspect_saved_plan`, `find_affected_work` and `find_reviewers`. Tools have no arguments and cannot write. Dependency checks reuse bounded Cypher paths and `algo.SPpaths`.
 
 The response contains `context.agentResult`: question, observed facts with source document IDs, proposed next steps and completed tool names. Company text comes from graph facts, not unchecked model prose. The server rejects unknown fact IDs, repeated tools, missing authority checks and changed evidence. At most five model requests and four distinct tool executions are allowed. Failures consume the reserved operation budget. This is a tool-planning agent with constrained output, not an unrestricted conversational agent.
+
+The docked employee assistant opens from **Ask Workweave** on Task, Decision review and Cross-team impact pages. It uses the selected assignment. Its question and last answer stay in the XState memory store when the sidebar closes. They are not saved to local storage. A workspace refresh marks the retained answer as a previous check; selecting another assignment clears it.
+ On desktop it shares the page width without a backdrop. On narrow screens it appears above the page.
+
+Assistant loading and errors stay in the sidebar. A late answer for another assignment is discarded. If the page changes while an answer is pending, the answer is marked as a previous check and does not replace the main page data.
