@@ -44,7 +44,7 @@ If FalkorDB already runs at `127.0.0.1:6381`, skip the database command. Do not 
 
 For either option, open [localhost:8080](http://localhost:8080). Start tour explains the application; [/demo-controls](http://localhost:8080/demo-controls) provides optional graph and query evidence.
 
-`uv sync --locked` rebuilds `.venv` from `uv.lock`. Keep `.env` and `.data/` when removing `.venv`. Optional AI is configured only on the server through [.env.example](.env.example). Graph workflows need no AI key.
+`uv sync --locked` rebuilds `.venv` from `uv.lock`. Keep `.env` when removing `.venv`. Optional AI is configured only on the server through [.env.example](.env.example). Graph workflows need no AI key.
 
 ## Deploy: Render + FalkorDB Cloud
 
@@ -136,7 +136,7 @@ flowchart TB
     Validate --> Browser
 ```
 
-Company records and action checks come from the server and FalkorDB. The agent selects read-only tools for current decisions, saved plans, affected work and reviewers. It selects observed graph fact IDs and proposed next steps. The server rejects unknown facts, unchecked authority and stale results. It does not execute model-generated Cypher or let the agent change plans or approvals. Each operation allows at most five model calls and four distinct tools. The renderer supports a custom A2UI v0.9 subset, not a complete official SDK implementation. SQLite stores AI usage limits only.
+Company records and action checks come from the server and FalkorDB. The agent selects read-only tools for current decisions, saved plans, affected work and reviewers. It selects observed graph fact IDs and proposed next steps. The server rejects unknown facts, unchecked authority and stale results. It does not execute model-generated Cypher or let the agent change plans or approvals. Each operation allows at most five model calls and four distinct tools. The renderer supports a custom A2UI v0.9 subset, not a complete official SDK implementation.
 
 | Agent tool | Graph work |
 | --- | --- |

@@ -22,7 +22,7 @@ Context, search, actions, agent operations, and reset return `{messages, trace, 
 
 The UI computes initials and formats server dates. It retains static UI labels and help text. It does not substitute company names, people, tasks, or source records on failure. A missing graph identity causes an error; it does not fall back to a local fixture.
 
-The UI state store holds the latest response, navigation, theme, sidebar mode, drafts, and loading state. Only theme, sidebar preference, and selected assignment ID use local storage. The server-reported AI availability is held only in memory. Users do not enter provider keys or invite codes. Server writes remain in FalkorDB and the AI budget remains in server-side SQLite.
+The UI state store holds the latest response, navigation, theme, sidebar mode, drafts, and loading state. Only theme, sidebar preference, and selected assignment ID use local storage. The server-reported AI availability is held only in memory. Users do not enter provider keys or invite codes. Server writes remain in FalkorDB. AI requests have request and concurrency limits, with bounded model calls. There is no persistent usage counter or application spending cap.
 
 This API is for synthetic hackathon workspaces. Employee identity is a server-owned sample, not production authentication or permission enforcement.
 
